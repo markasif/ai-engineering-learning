@@ -29,8 +29,14 @@ WHAT COMES NEXT (Feature 8):
   about what steps are needed, then executes them in sequence. This file handles
   the single-turn case; Feature 8 adds the loop that repeats until the task is done.
 
+FEATURE 9 EXTENSION:
+  run_agent_with_mcp() extends run_agent() to include MCP tools from connected
+  servers (shared/mcp_client.py). The LLM sees local tools + MCP tools in one
+  unified list and doesn't know which source each tool comes from.
+
 PUBLIC API:
   run_agent(message, session_id, tenant_id) → dict
+  run_agent_with_mcp(message, session_id, tenant_id) → dict  [Feature 9]
 """
 import json
 from typing import Any
@@ -207,3 +213,125 @@ async def run_agent(
         "steps": steps,
         "tools_used": list(dict.fromkeys(tools_used)),  # deduplicate, preserve order
     }
+
+
+async def run_agent_with_mcp(
+    message: str,
+    session_id: str,
+    tenant_id: str = "default",
+) -> dict:
+    """
+    Feature 9 extension of run_agent() — merges MCP tools with local tools.
+
+    The LLM sees a unified tool list (local tools + MCP server tools) and
+    decides which to call without knowing the source. Local tools are executed
+    via TOOLS_REGISTRY; MCP tools are executed via call_mcp_tool().
+
+    Steps that used an MCP tool have "source": "MCP:<server_name>" in their
+    result dict so the UI can tag them appropriately.
+
+    Falls back to run_agent() (local tools only) if the MCP package is not
+    installed or if no MCP servers are reachable.
+    """
+    # Import here to avoid circular imports and to make MCP optional.
+    try:
+        from shared.mcp_client import call_mcp_tool, get_mcp_tool_schemas, list_mcp_tools
+        mcp_schemas = await get_mcp_tool_schemas()
+        mcp_tool_names: set[str] = {t["name"] for t in await list_mcp_tools()}
+    except Exception:
+        # MCP not available — fall back to the basic agent loop.
+        return await run_agent(message=message, session_id=session_id, tenant_id=tenant_id)
+
+    combined_schemas = _TOOL_SCHEMAS + mcp_schemas
+
+    # Build messages from session history.
+    session = get_session(session_id, tenant_id=tenant_id)
+    history: list[dict] = []
+    if session:
+        for msg in session.messages[-20:]:
+            history.append({"role": msg.role, "content": msg.content})
+
+    messages: list[dict] = [
+        {"role": "system", "content": _AGENT_SYSTEM_PROMPT},
+        *history,
+        {"role": "user", "content": message},
+    ]
+
+    # Call 1: LLM with combined local + MCP tool schemas.
+    first_response = await call_llm(
+        messages=messages,
+        tools=combined_schemas,
+        temperature=0.3,
+        max_tokens=1000,
+    )
+
+    steps: list[dict] = []
+    tools_used: list[str] = []
+
+    if not first_response.tool_calls:
+        answer = first_response.content or ""
+        add_message(session_id, "user", message)
+        add_message(session_id, "assistant", answer)
+        return {"result": answer, "steps": [], "tools_used": []}
+
+    # Append the assistant's tool-call decision message.
+    messages.append({
+        "role": "assistant",
+        "content": first_response.content,
+        "tool_calls": [
+            {"id": tc["id"], "type": "function", "function": {"name": tc["name"], "arguments": json.dumps(tc["arguments"])}}
+            for tc in first_response.tool_calls
+        ],
+    })
+
+    # Execute each tool — local or MCP.
+    for tc in first_response.tool_calls:
+        tool_name = tc["name"]
+        tool_args = tc["arguments"]
+        tool_call_id = tc["id"]
+
+        if tool_name in mcp_tool_names:
+            # MCP tool — delegate to the connected server.
+            try:
+                tool_result = await call_mcp_tool(tool_name, tool_args)
+            except Exception as exc:
+                tool_result = {"error": str(exc)}
+            source = f"MCP:{_get_mcp_server_for_tool(tool_name)}"
+        else:
+            fn, _ = TOOLS_REGISTRY.get(tool_name, (None, None))
+            if fn is None:
+                tool_result = {"error": f"Unknown tool '{tool_name}'."}
+            else:
+                try:
+                    tool_result = fn(**tool_args)
+                except Exception as exc:
+                    tool_result = {"error": str(exc)}
+            source = "LOCAL"
+
+        steps.append({"tool": tool_name, "args": tool_args, "result": tool_result, "source": source})
+        tools_used.append(tool_name)
+        messages.append({"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(tool_result)})
+
+    # Call 2: synthesize final answer.
+    second_response = await call_llm(messages=messages, temperature=0.7, max_tokens=1000)
+    answer = second_response.content or ""
+    add_message(session_id, "user", message)
+    add_message(session_id, "assistant", answer)
+
+    return {
+        "result": answer,
+        "steps": steps,
+        "tools_used": list(dict.fromkeys(tools_used)),
+    }
+
+
+def _get_mcp_server_for_tool(tool_name: str) -> str:
+    """Look up which MCP server owns a given tool (for source tagging)."""
+    try:
+        from shared.mcp_client import _tool_cache
+        for server_name, tools in _tool_cache.items():
+            if any(t["name"] == tool_name for t in tools):
+                return server_name
+    except Exception:
+        pass
+    return "unknown"

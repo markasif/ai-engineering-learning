@@ -9,7 +9,7 @@ New models are added here as they are introduced in the course:
   - Feature 3 adds: Message, Session
   - Feature 4 adds: Document, Chunk
   - Feature 6 adds: SmartChatResponse, RetrievalLogEntry, KnowledgeDigest
-  - Feature 8 adds: ToolDefinition, ToolCall
+  - Feature 8 adds: AgentTask
 """
 from datetime import datetime
 from typing import Any, Dict, List, Literal
@@ -335,3 +335,60 @@ class KnowledgeDigest(BaseModel):
     source_session_count: int = Field(
         description="How many sessions' worth of retrieval data this digest covers."
     )
+
+
+# =============================================================================
+# Feature 8: Multi-step agent task
+# =============================================================================
+
+class AgentTask(BaseModel):
+    """
+    A long-running multi-step agent task tracked across the planning and
+    execution phases.
+
+    Lifecycle:
+      "planning"  → make_plan() is generating the step list
+      "executing" → execute_plan() is running steps one by one
+      "done"      → all steps complete; result holds the final answer
+      "error"     → an exception occurred; error holds the message
+
+    The task is created by POST /api/agent/plan and polled via
+    GET /api/agent/status/{task_id}. The UI renders live progress by
+    watching steps_completed grow between polls.
+    """
+
+    id: str = Field(description="Unique task ID (UUID).")
+    status: Literal["planning", "executing", "done", "error"] = Field(
+        description="Current lifecycle state of the task."
+    )
+    message: str = Field(description="The original user request that started this task.")
+    plan: List[str] | None = Field(
+        default=None,
+        description="Ordered list of step instructions produced by make_plan(). None until planning is complete.",
+    )
+    steps_completed: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description=(
+            "Steps that have finished executing. Each entry: "
+            "{step_index, step (instruction text), result (agent answer), tools_used}. "
+            "Grows one entry at a time as execute_plan() progresses."
+        ),
+    )
+    result: str | None = Field(
+        default=None,
+        description="Final synthesized answer, set when status='done'.",
+    )
+    error: str | None = Field(
+        default=None,
+        description="Error message, set when status='error'.",
+    )
+    session_id: str = Field(
+        default="default",
+        description="Session used to maintain conversation context across steps.",
+    )
+    tenant_id: str = Field(
+        default="default",
+        description="Tenant that owns this task (for multi-tenant isolation).",
+    )
+    created_at: datetime = Field(description="When this task was created, in UTC.")
+    updated_at: datetime = Field(description="When this task was last updated, in UTC.")

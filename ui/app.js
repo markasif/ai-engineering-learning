@@ -526,7 +526,8 @@ function switchTab(tabName) {
   // Load tenant info whenever the Admin tab is opened (Feature 6).
   if (tabName === "admin") loadTenantInfo();
   // Check session state when Agent tab is opened (Feature 7).
-  if (tabName === "agent") checkAgentSessionState();
+  // Also refresh MCP server count badge (Feature 9).
+  if (tabName === "agent") { checkAgentSessionState(); refreshMcpCount(); }
 }
 
 tabButtons.forEach((btn) => {
@@ -1067,13 +1068,26 @@ function agentAppendResponse(data) {
   card.className = "agent-response-card";
 
   // ── Tools used badges (compact header line) ──
+  // Build a source map so we can tag each badge with LOCAL / MCP:demo / MCP:domain.
+  const sourceMap = {};
+  (data.steps ?? []).forEach((step) => {
+    if (step.source && step.tool) sourceMap[step.tool] = step.source;
+  });
+
   if (data.tools_used?.length) {
     const toolsRow = document.createElement("div");
     toolsRow.className = "agent-tools-row";
     data.tools_used.forEach((t) => {
+      const source = sourceMap[t];
       const badge = document.createElement("span");
       badge.className = "agent-tool-badge";
       badge.textContent = t.replace(/_/g, " ");
+      if (source && source !== "LOCAL") {
+        const srcTag = document.createElement("span");
+        srcTag.className = "agent-source-tag";
+        srcTag.textContent = source;
+        badge.appendChild(srcTag);
+      }
       toolsRow.appendChild(badge);
     });
     card.appendChild(toolsRow);
@@ -1105,6 +1119,7 @@ function agentAppendResponse(data) {
       stepHeader.innerHTML = `
         <span class="agent-step-num">${i + 1}</span>
         <span class="agent-step-tool">${escapeHtml(step.tool ?? "")}</span>
+        ${step.source ? `<span class="agent-source-tag">${escapeHtml(step.source)}</span>` : ""}
       `;
 
       const argsEl = document.createElement("pre");
@@ -1182,9 +1197,9 @@ async function runAgent() {
   }
 }
 
-agentSendBtn?.addEventListener("click", runAgent);
+agentSendBtn?.addEventListener("click", dispatchAgent);
 agentInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAgent(); }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); dispatchAgent(); }
 });
 
 // Wire up example prompt buttons.
@@ -1201,6 +1216,344 @@ document.querySelectorAll(".agent-example-btn").forEach((btn) => {
     }
   });
 });
+
+// =============================================================================
+// Feature 8: Multi-Step Agent — mode switcher + plan/poll logic
+// =============================================================================
+
+/** "quick" = Feature 7 single-turn loop. "multistep" = Feature 8 plan-and-execute. */
+let agentMode = "quick";
+
+const agentModeBtns = document.querySelectorAll(".agent-mode-btn");
+agentModeBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    agentMode = btn.dataset.mode;
+    agentModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.mode === agentMode));
+  });
+});
+
+/**
+ * Route agent submit to Quick or Multi-Step depending on agentMode.
+ * Replaces the old direct binding to runAgent().
+ */
+function dispatchAgent() {
+  if (agentMode === "multistep") {
+    runMultiStepAgent();
+  } else {
+    runAgent();
+  }
+}
+
+/**
+ * Run the multi-step agent:
+ *   1. POST /api/agent/plan  → get task_id + plan
+ *   2. Render a live task progress card in agent history
+ *   3. Poll GET /api/agent/status/{task_id} every 1.5 s
+ *   4. Update the card as steps complete; show result or error when done
+ */
+async function runMultiStepAgent() {
+  const text = agentInput?.value.trim();
+  if (!text) return;
+
+  agentInput.value = "";
+  if (agentSendBtn) agentSendBtn.disabled = true;
+
+  agentAppendUser(text);
+  // Insert a placeholder progress card — we'll update it as the task runs.
+  const progressCard = agentAppendPlanningCard(text);
+
+  const headers = { "Content-Type": "application/json" };
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/agent/plan`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ message: text }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const { task_id, plan } = await res.json();
+    // Show the plan immediately — execution starts in the background.
+    updatePlanningCard(progressCard, { status: "executing", plan, steps_completed: [] });
+
+    // Poll until done or error.
+    await pollTaskStatus(task_id, progressCard);
+
+  } catch (err) {
+    updatePlanningCard(progressCard, {
+      status: "error",
+      error: err.message,
+      plan: null,
+      steps_completed: [],
+    });
+  } finally {
+    if (agentSendBtn) agentSendBtn.disabled = false;
+    agentInput?.focus();
+  }
+}
+
+/**
+ * Insert a "planning…" skeleton card into the agent history.
+ * Returns the card element so pollTaskStatus() can update it.
+ */
+function agentAppendPlanningCard(message) {
+  agentEmptyState?.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Agent";
+
+  const card = document.createElement("div");
+  card.className = "agent-task-card";
+
+  card.innerHTML = `
+    <div class="agent-task-status">
+      <span class="agent-task-spinner" aria-hidden="true"></span>
+      <span class="agent-task-status-text">Planning…</span>
+    </div>
+    <ol class="agent-task-plan" aria-label="Task plan"></ol>
+    <div class="agent-task-result" hidden></div>
+    <div class="agent-task-error" hidden></div>
+  `;
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(card);
+  agentHistory.appendChild(wrapper);
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+  return card;
+}
+
+/**
+ * Update the planning card DOM to reflect the current task state.
+ * @param {HTMLElement} card
+ * @param {{ status: string, plan: string[]|null, steps_completed: object[], result?: string, error?: string }} task
+ */
+function updatePlanningCard(card, task) {
+  const statusEl   = card.querySelector(".agent-task-status-text");
+  const spinnerEl  = card.querySelector(".agent-task-spinner");
+  const planEl     = card.querySelector(".agent-task-plan");
+  const resultEl   = card.querySelector(".agent-task-result");
+  const errorEl    = card.querySelector(".agent-task-error");
+
+  const plan            = task.plan ?? [];
+  const stepsCompleted  = task.steps_completed ?? [];
+  const completedIdxSet = new Set(stepsCompleted.map((s) => s.step_index));
+
+  // ── Status line ──
+  const statusLabels = {
+    planning:  "Planning…",
+    executing: `Executing — step ${stepsCompleted.length} of ${plan.length}`,
+    done:      "Done",
+    error:     "Error",
+  };
+  if (statusEl) statusEl.textContent = statusLabels[task.status] ?? task.status;
+  if (spinnerEl) spinnerEl.hidden = task.status === "done" || task.status === "error";
+
+  // ── Plan checklist ──
+  if (plan.length && planEl) {
+    planEl.innerHTML = "";
+    plan.forEach((step, i) => {
+      const isCompleted = completedIdxSet.has(i);
+      const isActive    = !isCompleted && i === stepsCompleted.length;
+      const stepRecord  = stepsCompleted.find((s) => s.step_index === i);
+
+      const li = document.createElement("li");
+      li.className = `agent-task-step ${isCompleted ? "done" : isActive ? "active" : "pending"}`;
+
+      li.innerHTML = `<span class="agent-task-step-label">${escapeHtml(step)}</span>`;
+
+      if (stepRecord?.result) {
+        const resultSpan = document.createElement("div");
+        resultSpan.className = "agent-task-step-result";
+        resultSpan.textContent = stepRecord.result;
+        li.appendChild(resultSpan);
+      }
+
+      if (stepRecord?.tools_used?.length) {
+        const tagsRow = document.createElement("div");
+        tagsRow.className = "agent-tools-row";
+        stepRecord.tools_used.forEach((t) => {
+          const badge = document.createElement("span");
+          badge.className = "agent-tool-badge";
+          badge.textContent = t.replace(/_/g, " ");
+          tagsRow.appendChild(badge);
+        });
+        li.appendChild(tagsRow);
+      }
+
+      planEl.appendChild(li);
+    });
+  }
+
+  // ── Final result ──
+  if (task.status === "done" && task.result && resultEl) {
+    resultEl.innerHTML = `
+      <div class="agent-task-result-header">Final Answer</div>
+      <p class="agent-task-result-text">${escapeHtml(task.result)}</p>
+    `;
+    resultEl.removeAttribute("hidden");
+  }
+
+  // ── Error ──
+  if (task.status === "error" && errorEl) {
+    errorEl.textContent = `Error: ${task.error ?? "Unknown error"}`;
+    errorEl.removeAttribute("hidden");
+  }
+
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+}
+
+/**
+ * Poll /api/agent/status/{task_id} every 1.5 s and update the card until done.
+ */
+async function pollTaskStatus(taskId, card) {
+  return new Promise((resolve) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/agent/status/${taskId}`);
+        if (!res.ok) return;  // keep polling on transient errors
+        const task = await res.json();
+        updatePlanningCard(card, task);
+        if (task.status === "done" || task.status === "error") {
+          clearInterval(interval);
+          loadSessions();
+          resolve();
+        }
+      } catch {
+        // network blip — keep polling
+      }
+    }, 1500);
+  });
+}
+
+// =============================================================================
+// Feature 9: MCP Connected Services panel
+// =============================================================================
+
+const mcpServicesToggle = document.getElementById("mcp-services-toggle");
+const mcpServicesBody   = document.getElementById("mcp-services-body");
+const mcpServicesCount  = document.getElementById("mcp-services-count");
+const mcpServersList    = document.getElementById("mcp-servers-list");
+
+mcpServicesToggle?.addEventListener("click", () => {
+  const expanded = mcpServicesToggle.getAttribute("aria-expanded") === "true";
+  mcpServicesToggle.setAttribute("aria-expanded", String(!expanded));
+  if (mcpServicesBody) mcpServicesBody.hidden = expanded;
+  const chevron = mcpServicesToggle.querySelector(".mcp-toggle-chevron");
+  if (chevron) chevron.textContent = expanded ? "▶" : "▼";
+  if (!expanded) loadMcpServices();
+});
+
+/**
+ * Load the server count badge without expanding the panel.
+ * Called each time the Agent tab is opened.
+ */
+async function refreshMcpCount() {
+  if (!mcpServicesCount) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/mcp/servers`);
+    if (!res.ok) return;
+    const servers = await res.json();
+    mcpServicesCount.textContent = `${servers.length} server${servers.length !== 1 ? "s" : ""}`;
+  } catch {
+    // Feature 9 server not running yet — count stays empty.
+  }
+}
+
+/**
+ * Load and render all MCP servers and their tools into the Connected Services panel.
+ * Fetches /api/mcp/servers and /api/mcp/tools in parallel.
+ */
+async function loadMcpServices() {
+  if (!mcpServersList) return;
+  mcpServersList.innerHTML = `<span class="mcp-loading">Connecting to MCP servers…</span>`;
+
+  try {
+    const [serversRes, toolsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/mcp/servers`),
+      fetch(`${API_BASE}/api/mcp/tools`),
+    ]);
+
+    const servers  = serversRes.ok ? await serversRes.json() : [];
+    const allTools = toolsRes.ok  ? await toolsRes.json()   : [];
+
+    if (mcpServicesCount) {
+      mcpServicesCount.textContent = `${servers.length} server${servers.length !== 1 ? "s" : ""}`;
+    }
+
+    if (!servers.length) {
+      mcpServersList.innerHTML = `<span class="mcp-loading">No servers connected. Is the Feature 9 server running?</span>`;
+      return;
+    }
+
+    mcpServersList.innerHTML = "";
+    servers.forEach((server) => {
+      const serverTools = allTools.filter((t) => t.server === server.name);
+      mcpServersList.appendChild(buildMcpServerCard(server, serverTools));
+    });
+  } catch (err) {
+    if (mcpServersList) {
+      mcpServersList.innerHTML = `<span class="mcp-loading" style="color:var(--color-pistache)">
+        Could not load services (requires Feature 9 server): ${escapeHtml(err.message)}
+      </span>`;
+    }
+  }
+}
+
+/**
+ * Build a DOM card for one MCP server, listing its tools.
+ * @param {{ name: string, transport: string, enabled: boolean, description: string }} server
+ * @param {{ name: string, description: string }[]} tools
+ */
+function buildMcpServerCard(server, tools) {
+  const card = document.createElement("div");
+  card.className = "mcp-server-card";
+
+  const isConnected = server.enabled !== false;
+
+  const header = document.createElement("div");
+  header.className = "mcp-server-header";
+  header.innerHTML = `
+    <span class="mcp-status-dot ${isConnected ? "connected" : "error"}"
+          title="${isConnected ? "Connected" : "Disabled"}"></span>
+    <span class="mcp-server-name">${escapeHtml(server.name)}</span>
+    <span class="mcp-transport-badge">${escapeHtml(server.transport ?? "stdio")}</span>
+    <span class="mcp-tool-count">${tools.length} tool${tools.length !== 1 ? "s" : ""}</span>
+  `;
+  card.appendChild(header);
+
+  if (server.description) {
+    const desc = document.createElement("p");
+    desc.className = "mcp-server-desc";
+    desc.textContent = server.description;
+    card.appendChild(desc);
+  }
+
+  if (tools.length) {
+    const toolList = document.createElement("ul");
+    toolList.className = "mcp-tool-list";
+    tools.forEach((tool) => {
+      const li = document.createElement("li");
+      li.className = "mcp-tool-item";
+      li.innerHTML = `
+        <span class="mcp-tool-name">${escapeHtml(tool.name)}</span>
+        <span class="mcp-tool-desc">${escapeHtml(tool.description ?? "")}</span>
+      `;
+      toolList.appendChild(li);
+    });
+    card.appendChild(toolList);
+  }
+
+  return card;
+}
 
 retrievalsLoadBtn?.addEventListener("click", async () => {
   if (!retrievalsList) return;

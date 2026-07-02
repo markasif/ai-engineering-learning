@@ -332,12 +332,41 @@
             Agent
             <span class="panel-subtitle">uses tools to take actions, not just answer</span>
           </h2>
+          <!-- ===================================================
+               FEATURE 8: Quick / Multi-Step mode switcher
+               Quick = Feature 7 single-turn tool-call loop.
+               Multi-Step = Feature 8 plan-and-execute loop with polling.
+               =================================================== -->
+          <div class="agent-mode-switcher" role="group" aria-label="Agent mode">
+            <button class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick">Quick</button>
+            <button class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep">Multi-Step</button>
+          </div>
         </div>
 
         <!-- Agent requires a session — prompt if none active -->
         <div id="agent-no-session" class="agent-no-session-notice" hidden>
           <p>The agent needs a session to track conversation history.</p>
           <button id="agent-create-session-btn" class="btn btn-primary" type="button">Start New Session</button>
+        </div>
+
+        <!-- ===================================================
+             FEATURE 9: Connected Services panel (MCP)
+             Collapsible — click to expand and see which MCP servers
+             are connected and what tools they expose.
+             =================================================== -->
+        <div class="mcp-services-section" id="mcp-services-section">
+          <button class="mcp-services-toggle" id="mcp-services-toggle" type="button"
+                  aria-expanded="false" aria-controls="mcp-services-body">
+            <span class="mcp-services-icon" aria-hidden="true">🔌</span>
+            <span class="mcp-services-label">Connected Services</span>
+            <span class="mcp-services-count" id="mcp-services-count"></span>
+            <span class="mcp-toggle-chevron" aria-hidden="true">▶</span>
+          </button>
+          <div class="mcp-services-body" id="mcp-services-body" hidden>
+            <div id="mcp-servers-list" class="mcp-servers-list">
+              <span class="mcp-loading">Click to load connected MCP servers…</span>
+            </div>
+          </div>
         </div>
 
         <!-- Conversation history -->
@@ -364,6 +393,22 @@
             autocomplete="off"
           />
           <button id="agent-send-btn" class="btn btn-primary" type="button">Run</button>
+        </div>
+
+        <!-- ===================================================
+             FEATURE 9: Week 3 Complete callout
+             =================================================== -->
+        <div class="week2-complete-callout week3-agent-callout">
+          <div class="week2-complete-icon" aria-hidden="true">🎓</div>
+          <div class="week2-complete-body">
+            <strong>Week 3 Complete — Tools, Multi-Step &amp; MCP</strong>
+            <p>
+              You've built the complete "Hands" layer: single-turn tool calling (F7),
+              Plan-and-Execute agent with live polling (F8), and MCP integration (F9).
+              Your agent can plan, execute, and call any MCP-compatible tool — local or remote.
+              Coming in Week 4: Docker, production deployment, and eval harness.
+            </p>
+          </div>
         </div>
       </section>
 

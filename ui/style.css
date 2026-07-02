@@ -1560,3 +1560,362 @@ html, body {
   max-height: 120px;
   overflow-y: auto;
 }
+
+/* =============================================================================
+   Feature 8: Multi-Step Agent — mode switcher + task progress card
+   ============================================================================= */
+
+/* ── Mode switcher (Quick / Multi-Step) ── */
+.agent-mode-switcher {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--color-pistache);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.agent-mode-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  color: var(--color-pistache);
+  transition: background 0.15s, color 0.15s;
+}
+
+.agent-mode-btn:first-child {
+  border-right: 1.5px solid var(--color-pistache);
+}
+
+.agent-mode-btn.active {
+  background: var(--color-matcha);
+  color: white;
+}
+
+.agent-mode-btn:hover:not(.active) {
+  background: var(--color-vanilla);
+  color: var(--color-carob);
+}
+
+/* ── Task progress card ── */
+.agent-task-card {
+  background: var(--color-vanilla);
+  border: 1px solid var(--color-pistache);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 260px;
+  max-width: 520px;
+}
+
+/* Status line */
+.agent-task-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-pistache);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agent-task-spinner {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--color-pistache);
+  border-top-color: var(--color-matcha);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.agent-task-spinner[hidden] {
+  display: none;
+}
+
+/* Plan ordered list */
+.agent-task-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.agent-task-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  font-size: 0.85rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.agent-task-step.pending {
+  border-left-color: var(--color-pistache);
+  opacity: 0.55;
+}
+
+.agent-task-step.active {
+  background: rgba(210, 171, 128, 0.18);
+  border-left-color: var(--color-chai);
+}
+
+.agent-task-step.done {
+  background: rgba(128, 150, 113, 0.12);
+  border-left-color: var(--color-matcha);
+}
+
+.agent-task-step-label {
+  font-weight: 600;
+  color: var(--color-carob);
+}
+
+.agent-task-step.pending .agent-task-step-label {
+  color: var(--color-pistache);
+}
+
+.agent-task-step-result {
+  font-size: 0.8rem;
+  color: var(--color-carob);
+  padding: 0.3rem 0.5rem;
+  background: rgba(255,255,255,0.5);
+  border-radius: var(--radius-sm);
+  margin-top: 0.15rem;
+}
+
+/* Final result card */
+.agent-task-result {
+  background: rgba(128, 150, 113, 0.12);
+  border: 1px solid rgba(128, 150, 113, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.agent-task-result[hidden] { display: none; }
+
+.agent-task-result-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-matcha);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.agent-task-result-text {
+  font-size: 0.9rem;
+  color: var(--color-carob);
+  line-height: 1.55;
+}
+
+/* Error box */
+.agent-task-error {
+  background: rgba(176, 74, 64, 0.10);
+  border: 1px solid rgba(176, 74, 64, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.84rem;
+  color: #7a2f28;
+}
+
+.agent-task-error[hidden] { display: none; }
+
+/* =============================================================================
+   Feature 9: MCP Connected Services panel + source tags + Week 3 callout
+   ============================================================================= */
+
+/* ── Connected Services collapsible section ── */
+.mcp-services-section {
+  border: 1px solid var(--color-pistache);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+
+.mcp-services-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  background: var(--color-almond);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-carob);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.mcp-services-toggle:hover {
+  background: rgba(210, 171, 128, 0.25);
+}
+
+.mcp-services-icon {
+  font-size: 0.85rem;
+}
+
+.mcp-services-label {
+  flex: 1;
+}
+
+.mcp-services-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--color-matcha);
+  color: white;
+  padding: 0.1rem 0.45rem;
+  border-radius: 99px;
+}
+
+.mcp-toggle-chevron {
+  font-size: 0.6rem;
+  color: var(--color-pistache);
+}
+
+.mcp-services-body {
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--color-pistache);
+}
+
+.mcp-servers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mcp-loading {
+  font-size: 0.78rem;
+  color: var(--color-pistache);
+}
+
+/* ── Individual server card ── */
+.mcp-server-card {
+  background: var(--color-vanilla);
+  border: 1px solid rgba(128, 150, 113, 0.22);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.mcp-server-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.mcp-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mcp-status-dot.connected { background: var(--color-matcha); }
+.mcp-status-dot.error     { background: #b04a40; }
+
+.mcp-server-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-carob);
+  font-family: var(--font-mono);
+}
+
+.mcp-transport-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-pistache);
+  border: 1px solid var(--color-pistache);
+  border-radius: 99px;
+  padding: 0.05rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mcp-tool-count {
+  font-size: 0.7rem;
+  color: var(--color-pistache);
+  margin-left: auto;
+}
+
+.mcp-server-desc {
+  font-size: 0.76rem;
+  color: var(--color-carob);
+  opacity: 0.7;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Tool list inside server card ── */
+.mcp-tool-list {
+  list-style: none;
+  padding: 0.35rem 0 0;
+  margin: 0.1rem 0 0;
+  border-top: 1px solid rgba(128, 150, 113, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.mcp-tool-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+}
+
+.mcp-tool-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-carob);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mcp-tool-desc {
+  color: var(--color-pistache);
+  font-size: 0.73rem;
+  line-height: 1.3;
+}
+
+/* ── Source tag on tool badges and step headers ── */
+.agent-source-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.06rem 0.32rem;
+  border-radius: 99px;
+  background: rgba(128, 150, 113, 0.15);
+  color: var(--color-matcha);
+  letter-spacing: 0.03em;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+/* ── Week 3 Complete callout (in Agent panel) ── */
+.week3-agent-callout {
+  margin-top: 0.75rem;
+  flex-shrink: 0;
+}
