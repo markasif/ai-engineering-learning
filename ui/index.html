@@ -78,6 +78,14 @@
           aria-selected="false"
           aria-controls="admin-panel"
         >Admin</button>
+        <button
+          class="tab-btn"
+          role="tab"
+          id="tab-agent"
+          data-tab="agent"
+          aria-selected="false"
+          aria-controls="agent-panel"
+        >Agent</button>
       </nav>
 
       <!-- ===================================================
@@ -310,6 +318,52 @@
           </p>
           <button id="retrievals-load-btn" class="btn btn-ghost">Load Recent Retrievals</button>
           <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
+        </div>
+      </section>
+
+      <!-- ===================================================
+           FEATURE 7: Agent panel
+           Uses the two-call tool-calling loop in shared/agent.py.
+           Shows a "🔧 Steps" audit trail for each tool invoked.
+           =================================================== -->
+      <section class="panel tab-panel" id="agent-panel" role="tabpanel" aria-labelledby="tab-agent" hidden>
+        <div class="panel-header-row">
+          <h2 class="panel-title">
+            Agent
+            <span class="panel-subtitle">uses tools to take actions, not just answer</span>
+          </h2>
+        </div>
+
+        <!-- Agent requires a session — prompt if none active -->
+        <div id="agent-no-session" class="agent-no-session-notice" hidden>
+          <p>The agent needs a session to track conversation history.</p>
+          <button id="agent-create-session-btn" class="btn btn-primary" type="button">Start New Session</button>
+        </div>
+
+        <!-- Conversation history -->
+        <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
+          <div class="empty-state" id="agent-empty-state">
+            The agent can <strong>check availability</strong>, <strong>create tickets</strong>,
+            and <strong>look up information</strong>. Try asking it to do one of these.
+            <div class="agent-example-prompts">
+              <button class="agent-example-btn" type="button">Is there an opening this Friday at 3 PM?</button>
+              <button class="agent-example-btn" type="button">I can't log in to my account</button>
+              <button class="agent-example-btn" type="button">What are your business hours?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input row -->
+        <div class="chat-input-row">
+          <label for="agent-input" class="sr-only">Agent message</label>
+          <input
+            type="text"
+            id="agent-input"
+            class="chat-input"
+            placeholder="Ask the agent to do something…"
+            autocomplete="off"
+          />
+          <button id="agent-send-btn" class="btn btn-primary" type="button">Run</button>
         </div>
       </section>
 

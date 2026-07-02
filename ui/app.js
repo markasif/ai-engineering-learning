@@ -525,6 +525,8 @@ function switchTab(tabName) {
   if (tabName === "search") loadSearchDocumentFilter();
   // Load tenant info whenever the Admin tab is opened (Feature 6).
   if (tabName === "admin") loadTenantInfo();
+  // Check session state when Agent tab is opened (Feature 7).
+  if (tabName === "agent") checkAgentSessionState();
 }
 
 tabButtons.forEach((btn) => {
@@ -985,6 +987,219 @@ digestViewBtn?.addEventListener("click", async () => {
       digestCard.removeAttribute("hidden");
     }
   }
+});
+
+// =============================================================================
+// Feature 7: Agent panel
+// =============================================================================
+
+const agentHistory        = document.getElementById("agent-history");
+const agentInput          = document.getElementById("agent-input");
+const agentSendBtn        = document.getElementById("agent-send-btn");
+const agentEmptyState     = document.getElementById("agent-empty-state");
+const agentNoSession      = document.getElementById("agent-no-session");
+const agentCreateSessBtn  = document.getElementById("agent-create-session-btn");
+
+/** Show/hide the "no session" notice based on whether a session is active. */
+function checkAgentSessionState() {
+  const hasSession = !!currentSessionId;
+  if (agentNoSession) agentNoSession.hidden = hasSession;
+  if (agentInput) agentInput.disabled = !hasSession;
+  if (agentSendBtn) agentSendBtn.disabled = !hasSession;
+}
+
+agentCreateSessBtn?.addEventListener("click", async () => {
+  await createNewSession();
+  checkAgentSessionState();
+});
+
+/** Append a user message bubble to the agent history. */
+function agentAppendUser(text) {
+  agentEmptyState?.remove();
+  const wrapper = document.createElement("div");
+  wrapper.className = "message user";
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "You";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+  agentHistory.appendChild(wrapper);
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+}
+
+/** Append a thinking indicator to the agent history. Returns the element. */
+function agentAppendThinking() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai thinking";
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Agent";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    bubble.appendChild(dot);
+  }
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+  agentHistory.appendChild(wrapper);
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+  return wrapper;
+}
+
+/**
+ * Render an agent response with optional "🔧 Steps" audit trail.
+ * @param {{ result: string, steps: Array, tools_used: string[] }} data
+ */
+function agentAppendResponse(data) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Agent";
+
+  const card = document.createElement("div");
+  card.className = "agent-response-card";
+
+  // ── Tools used badges (compact header line) ──
+  if (data.tools_used?.length) {
+    const toolsRow = document.createElement("div");
+    toolsRow.className = "agent-tools-row";
+    data.tools_used.forEach((t) => {
+      const badge = document.createElement("span");
+      badge.className = "agent-tool-badge";
+      badge.textContent = t.replace(/_/g, " ");
+      toolsRow.appendChild(badge);
+    });
+    card.appendChild(toolsRow);
+  }
+
+  // ── Answer text ──
+  const answerEl = document.createElement("p");
+  answerEl.className = "response-card-answer";
+  answerEl.textContent = data.result ?? "";
+  card.appendChild(answerEl);
+
+  // ── Steps panel (collapsible) ──
+  if (data.steps?.length) {
+    const stepsToggle = document.createElement("button");
+    stepsToggle.className = "agent-steps-toggle";
+    stepsToggle.textContent = `🔧 ${data.steps.length} step${data.steps.length !== 1 ? "s" : ""}`;
+    card.appendChild(stepsToggle);
+
+    const stepsContainer = document.createElement("div");
+    stepsContainer.className = "agent-steps-container";
+    stepsContainer.hidden = true;
+
+    data.steps.forEach((step, i) => {
+      const stepEl = document.createElement("div");
+      stepEl.className = "agent-step";
+
+      const stepHeader = document.createElement("div");
+      stepHeader.className = "agent-step-header";
+      stepHeader.innerHTML = `
+        <span class="agent-step-num">${i + 1}</span>
+        <span class="agent-step-tool">${escapeHtml(step.tool ?? "")}</span>
+      `;
+
+      const argsEl = document.createElement("pre");
+      argsEl.className = "agent-step-args";
+      argsEl.textContent = JSON.stringify(step.args ?? {}, null, 2);
+
+      const resultEl = document.createElement("div");
+      resultEl.className = "agent-step-result";
+      resultEl.innerHTML = `<span class="agent-step-result-label">Result:</span> `;
+      const resultPre = document.createElement("pre");
+      resultPre.className = "agent-step-result-pre";
+      resultPre.textContent = JSON.stringify(step.result ?? {}, null, 2);
+      resultEl.appendChild(resultPre);
+
+      stepEl.appendChild(stepHeader);
+      stepEl.appendChild(argsEl);
+      stepEl.appendChild(resultEl);
+      stepsContainer.appendChild(stepEl);
+    });
+
+    card.appendChild(stepsContainer);
+
+    stepsToggle.addEventListener("click", () => {
+      const hidden = stepsContainer.hidden;
+      stepsContainer.hidden = !hidden;
+      stepsToggle.textContent = `${hidden ? "▼" : "🔧"} ${data.steps.length} step${data.steps.length !== 1 ? "s" : ""}`;
+    });
+  }
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(card);
+  agentHistory.appendChild(wrapper);
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+}
+
+/** Send a message to the agent endpoint. */
+async function runAgent() {
+  const text = agentInput?.value.trim();
+  if (!text || !currentSessionId) return;
+
+  agentInput.value = "";
+  if (agentSendBtn) agentSendBtn.disabled = true;
+
+  agentAppendUser(text);
+  const thinkingEl = agentAppendThinking();
+
+  const headers = { "Content-Type": "application/json" };
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/sessions/${currentSessionId}/agent/run`,
+      { method: "POST", headers, body: JSON.stringify({ message: text }) },
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    thinkingEl.remove();
+    agentAppendResponse(data);
+    loadSessions();  // update sidebar message count
+  } catch (err) {
+    thinkingEl.remove();
+    agentAppendResponse({
+      result: `Error: ${err.message}. Is the Feature 7 server running?`,
+      steps: [],
+      tools_used: [],
+    });
+  } finally {
+    if (agentSendBtn) agentSendBtn.disabled = false;
+    agentInput?.focus();
+  }
+}
+
+agentSendBtn?.addEventListener("click", runAgent);
+agentInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAgent(); }
+});
+
+// Wire up example prompt buttons.
+document.querySelectorAll(".agent-example-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (!currentSessionId) {
+      createNewSession().then(() => {
+        if (agentInput) agentInput.value = btn.textContent ?? "";
+        checkAgentSessionState();
+      });
+    } else {
+      if (agentInput) agentInput.value = btn.textContent ?? "";
+      agentInput?.focus();
+    }
+  });
 });
 
 retrievalsLoadBtn?.addEventListener("click", async () => {

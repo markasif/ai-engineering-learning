@@ -1376,3 +1376,187 @@ html, body {
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* =============================================================================
+   Feature 7: Agent panel
+   ============================================================================= */
+
+/* Panel subtitle */
+.panel-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-pistache);
+  margin-left: 0.5rem;
+}
+
+/* No-session notice */
+.agent-no-session-notice {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--color-vanilla);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  color: var(--color-carob);
+}
+
+.agent-no-session-notice p { margin-bottom: 0.75rem; }
+
+/* Example prompt buttons */
+.agent-example-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.agent-example-btn {
+  background: white;
+  border: 1px solid var(--color-pistache);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.84rem;
+  color: var(--color-carob);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.agent-example-btn:hover {
+  border-color: var(--color-matcha);
+  background: rgba(128,150,113,0.06);
+}
+
+/* Agent response card */
+.agent-response-card {
+  background: white;
+  border: 1px solid var(--color-almond);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  max-width: 680px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tools used badges (compact header) */
+.agent-tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.agent-tool-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  background: rgba(114,92,58,0.10);
+  border: 1px solid var(--color-chai);
+  color: var(--color-carob);
+  white-space: nowrap;
+}
+
+/* Steps toggle */
+.agent-steps-toggle {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--color-pistache);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.15rem 0;
+  text-decoration: underline dotted;
+}
+
+.agent-steps-toggle:hover { color: var(--color-carob); }
+
+/* Steps container */
+.agent-steps-container {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  background: var(--color-almond);
+  border-radius: var(--radius-sm);
+}
+
+/* Individual step */
+.agent-step {
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--color-chai);
+}
+
+.agent-step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.agent-step-num {
+  font-size: 0.68rem;
+  font-weight: 700;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--color-carob);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.agent-step-tool {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--color-carob);
+}
+
+.agent-step-args {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--color-almond);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.6rem;
+  margin: 0 0 0.4rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--color-carob);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.agent-step-result {
+  font-size: 0.8rem;
+}
+
+.agent-step-result-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-pistache);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.agent-step-result-pre {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: rgba(128,150,113,0.08);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.6rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--color-carob);
+  max-height: 120px;
+  overflow-y: auto;
+}
