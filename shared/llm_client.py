@@ -5,13 +5,16 @@ Every feature imports from here. The underlying provider is configured entirely
 through .env — switching providers never requires changing feature code.
 
 Quick reference:
-    from shared.llm_client import call_llm, transcribe_audio, synthesize_speech
+    from shared.llm_client import call_llm, transcribe_audio, synthesize_speech, analyze_image
     from shared.providers.base import LLMResponse
 """
+import logging
 from typing import Optional, List
 
 from shared.providers.base import LLMResponse
 from shared.providers.factory import get_provider
+
+logger = logging.getLogger(__name__)
 
 
 async def call_llm(
@@ -91,3 +94,47 @@ async def synthesize_speech(text: str, voice: str = "default") -> bytes:
     """
     provider = get_provider("voice")
     return await provider.synthesize_speech(text, voice)
+
+
+async def analyze_image(
+    image_bytes: bytes,
+    prompt: str,
+    detail: str = "auto",
+) -> LLMResponse:
+    """
+    Analyze an image with a text prompt (Vision Language Model / VLM).
+
+    Uses the VLM_PROVIDER if set in .env, otherwise the main LLM_PROVIDER.
+    Set VLM_MODEL in .env to select the vision model:
+      - OpenAI: gpt-4o or gpt-4o-mini (both support vision)
+      - Ollama: llava, phi3:vision, or llava-phi3 (free, local, private)
+
+    Args:
+        image_bytes: Raw image bytes (JPEG, PNG, WebP, GIF).
+        prompt:      Question or instruction for the model about the image.
+        detail:      "auto" (default), "high" (fine text), or "low" (fast overview).
+
+    Returns:
+        LLMResponse with .content containing the answer/analysis.
+        Falls back gracefully with a helpful message if the provider does not
+        support vision — instead of crashing, it returns an LLMResponse explaining
+        what to set in .env.
+    """
+    try:
+        provider = get_provider("vlm")
+        return await provider.analyze_image(image_bytes, prompt, detail)
+    except NotImplementedError as exc:
+        logger.warning(
+            "VLM_MODEL does not support image input — %s. "
+            "Set VLM_PROVIDER=openai (gpt-4o) or VLM_PROVIDER=ollama (llava) in .env.",
+            exc,
+        )
+        return LLMResponse(
+            content=(
+                "Image analysis is not available with the current configuration. "
+                "Set VLM_PROVIDER=openai and VLM_MODEL=gpt-4o, or "
+                "VLM_PROVIDER=ollama and VLM_MODEL=llava in your .env file."
+            ),
+            provider="none",
+            model="none",
+        )

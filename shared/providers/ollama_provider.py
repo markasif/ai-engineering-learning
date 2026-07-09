@@ -162,3 +162,57 @@ class OllamaProvider(OpenAIProvider):
             "keeping LLM_PROVIDER=ollama for chat. "
             "See docs/provider-setup-guide.md for details."
         )
+
+    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+        """
+        Analyze an image using a local Ollama VLM (LLaVA, Phi-3 Vision, LLaVA-Phi, etc.).
+
+        Uses VLM_MODEL from .env (not the chat OLLAMA_MODEL), so you can run
+        llama3.1 for chat and llava for vision at the same time.
+
+        Ollama's /v1/chat/completions supports the same OpenAI vision message format,
+        so this works identically to the OpenAI provider — just with a different
+        base_url and model name.
+
+        To use: set VLM_PROVIDER=ollama and VLM_MODEL=llava (or phi3:vision, llava-phi3)
+                then run: ollama pull llava
+        """
+        import base64
+        from openai import AsyncOpenAI
+
+        from shared.config import settings
+
+        vlm_model = settings.vlm_model or "llava"
+        b64 = base64.b64encode(image_bytes).decode()
+
+        # Ollama supports the same OpenAI vision message format via its /v1 endpoint.
+        # We create a fresh client here targeting the VLM model (which may differ
+        # from the chat model set in OLLAMA_MODEL).
+        client = AsyncOpenAI(
+            api_key="ollama",
+            base_url=f"{settings.ollama_base_url}/v1",
+        )
+        completion = await client.chat.completions.create(
+            model=vlm_model,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{b64}",
+                            "detail": detail,
+                        },
+                    },
+                ],
+            }],
+            max_tokens=1500,
+        )
+        message = completion.choices[0].message
+        from shared.providers.base import LLMResponse
+        return LLMResponse(
+            content=message.content,
+            provider="ollama",
+            model=vlm_model,
+        )

@@ -105,6 +105,44 @@ async def classify_query(query: str) -> dict:
         }
 
 
+def detect_modality(
+    has_audio: bool = False,
+    has_image: bool = False,
+    content_type: str | None = None,
+) -> str:
+    """
+    Detect the input modality of an incoming request.
+
+    This is the Feature 10 extension of the Feature 6 Smart Router concept:
+    instead of routing between "use docs" vs "use general knowledge," we now
+    route between "text / voice / vision." The pattern is identical — inspect
+    the request, decide which pipeline to invoke, pass through to it.
+
+    Priority: explicit file uploads take precedence over Content-Type sniffing.
+
+    Args:
+        has_audio:    True when an audio file is present in the request.
+        has_image:    True when an image file is present in the request.
+        content_type: The HTTP Content-Type header (used when no explicit files).
+
+    Returns:
+        "voice"  — caller should invoke the STT → LLM → TTS pipeline
+        "vision" — caller should invoke the image analysis (VLM) pipeline
+        "text"   — caller should invoke the normal text chat pipeline
+    """
+    if has_audio:
+        return "voice"
+    if has_image:
+        return "vision"
+    if content_type:
+        ct = content_type.lower()
+        if "audio" in ct:
+            return "voice"
+        if "image" in ct:
+            return "vision"
+    return "text"
+
+
 # =============================================================================
 # PAGEINDEX ROUTING (optional — for professional document domains)
 #

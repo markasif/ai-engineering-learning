@@ -1,28 +1,55 @@
 """
-Feature 9: MCP Integration — starter
+Feature 10: Multimodal AI — solution
 
-Your tasks for this feature:
-  1. Open starter/mcp_client.py and implement list_mcp_tools() (STEP 1)
-  2. Open starter/mcp_client.py and implement call_mcp_tool() (STEP 2)
-  3. Restart this server and verify GET /api/mcp/tools returns the demo tools
-  4. Add at least one real tool to shared/domain_mcp_server.py
-  5. Set ENABLE_DOMAIN_MCP_SERVER=true in .env and restart — your tool appears
+Up until now, everything has been text in → text out. But real-world AI
+assistants communicate through multiple channels — voice, images, documents
+as images, screenshots. These different channels are called "modalities."
 
-New endpoints in this feature:
-  GET  /api/mcp/servers   — list connected MCP servers
-  GET  /api/mcp/tools     — list all tools from all connected servers
-  POST /api/mcp/execute   — directly invoke an MCP tool by name
+This feature adds two new modalities to your assistant:
+  - Part A: Voice  — record a question, hear the answer (STT → LLM → TTS)
+  - Part B: Vision — upload an image, ask a question about it (VLM)
+  - Part C: Unified modality router — one endpoint detects and routes all three
 
-The agent endpoint (/api/sessions/{id}/agent/run) already uses run_agent_with_mcp,
-which merges local tools + MCP tools. Once you implement mcp_client.py, MCP tools
-will appear in the agent's tool list automatically.
+WHAT IS A VLM?
+  A Vision Language Model (VLM) accepts images alongside text — the same chat
+  interface, but the "user" message includes an image. Examples:
+    Cloud: GPT-4o (OpenAI), Claude 3 (Anthropic)
+    Local: LLaVA 7B, Phi-3 Vision, LLaVA-Phi (free via Ollama)
+
+  Set VLM_PROVIDER and VLM_MODEL in .env to choose your vision model.
+  You can use a cloud LLM for chat (LLM_PROVIDER=groq) while using a local
+  VLM for image tasks (VLM_PROVIDER=ollama, VLM_MODEL=llava) — or vice versa.
+
+SLM NOTE (Ollama users):
+  Ollama does NOT support speech APIs natively.
+  Set VOICE_PROVIDER=openai in .env to enable voice while keeping your local
+  SLM for chat. Your chat/agents continue to run on the local model.
+
+CONNECTION TO FEATURE 6 (Anti-RAG / Smart Router):
+  The modality router in Part C is the same concept as the Feature 6 Smart Router,
+  extended: instead of routing between "use docs" vs "use general knowledge,"
+  we now route between "text / voice / vision." Same pattern, new dimension.
+
+New endpoints vs Feature 9:
+  POST /api/voice/transcribe  — audio → text (STT only)
+  POST /api/voice/chat        — audio in → JSON with audio + transcript out
+  POST /api/vision/analyze    — image + prompt → analysis (stateless)
+  POST /api/vision/chat       — image + prompt + session → session-aware vision
+  POST /api/chat/multimodal   — unified router: text/voice/vision → correct pipeline
+
+All Feature 1-9 endpoints remain unchanged.
 
 Run with:
     uvicorn main:app --reload --port 8000
 
-IMPORTANT: This starter carries forward ALL working code from Feature 8.
-Only the MCP-specific functions in starter/mcp_client.py are stubbed.
+WHAT YOU BUILT → FRAMEWORK EQUIVALENT:
+  transcribe_audio()           → OpenAI Whisper / Groq Whisper API client
+  synthesize_speech()          → OpenAI TTS / ElevenLabs API client
+  analyze_image()              → LangChain HumanMessage with image content blocks
+  detect_modality() + routing  → custom routing layer (no standard framework yet —
+                                 modality routing is still hand-rolled in production)
 """
+import base64
 import json
 import sys
 import uuid
@@ -36,14 +63,16 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-# Feature 9: import run_agent_with_mcp (falls back to run_agent if MCP not configured)
 from shared.agent import run_agent_with_mcp
 from shared.document_store import (
     delete_document, get_chunks, get_document, list_documents,
     save_chunk, save_document, update_document,
 )
 from shared.ingestion import CHUNKING_STRATEGIES, extract_pages, extract_text
-from shared.llm_client import call_llm
+from shared.llm_client import analyze_image, call_llm, synthesize_speech, transcribe_audio
+from shared.mcp_client import (
+    SERVER_REGISTRY, call_mcp_tool, get_mcp_tool_schemas, list_mcp_tools,
+)
 from shared.models import (
     AgentTask, Chunk, Document, Message, SmartChatResponse, StructuredResponse,
 )
@@ -52,7 +81,7 @@ from shared.provider_check import check_provider_config
 from shared.retrieval_memory import (
     build_knowledge_digest, get_current_digest, get_recent_retrievals, log_retrieval,
 )
-from shared.router import classify_query
+from shared.router import classify_query, detect_modality
 from shared.session_store import add_message, create_session, get_session, list_sessions
 from shared.task_store import create_task, get_task, update_task
 from shared.tenant_context import get_tenant_id
@@ -60,31 +89,61 @@ from shared.vector_store import (
     add_chunks, delete_document_chunks, get_stats as vector_get_stats, search as vector_search,
 )
 
-# Feature 9: import mcp_client from this starter's local copy.
-# Once you implement list_mcp_tools() and call_mcp_tool() in mcp_client.py,
-# these imports will work. Until then, NotImplementedError is caught below.
-try:
-    from mcp_client import SERVER_REGISTRY, call_mcp_tool, list_mcp_tools
-    _MCP_CLIENT_AVAILABLE = True
-except ImportError:
-    _MCP_CLIENT_AVAILABLE = False
-    SERVER_REGISTRY = []
-    list_mcp_tools = None
-    call_mcp_tool = None
-
 CONTEXT_WINDOW_SIZE = 20
 
+# ---------------------------------------------------------------------------
+# OpenAPI tag definitions — appear as collapsible sections in /docs
+# ---------------------------------------------------------------------------
 OPENAPI_TAGS = [
-    {"name": "F1 · Hello AI",         "description": "**Week 1 · Feature 1** — Basic text chat."},
-    {"name": "F2 · Prompt Mastery",    "description": "**Week 1 · Feature 2** — Structured JSON-mode responses."},
-    {"name": "F3 · AI Memory",         "description": "**Week 1 · Feature 3** — Session management and conversation history."},
-    {"name": "F4 · Feed the Brain",    "description": "**Week 2 · Feature 4** — Document upload, chunking, and indexing."},
-    {"name": "F5 · Find the Answer",   "description": "**Week 2 · Feature 5** — Semantic search over document chunks."},
-    {"name": "F6 · Smart Router",      "description": "**Week 2 · Feature 6** — Intelligent routing between LLM and RAG. Includes tenant isolation (Part B) and retrieval memory (Part C)."},
-    {"name": "F7 · First Agent",       "description": "**Week 3 · Feature 7** — Tool-calling agent (ReAct pattern)."},
-    {"name": "F8 · Multi-Step Agent",  "description": "**Week 3 · Feature 8** — Plan-and-Execute agent with background execution and polling."},
-    {"name": "F9 · MCP Integration",   "description": "**Week 3 · Feature 9** — MCP tool servers. Implement mcp_client.py to unlock these endpoints."},
-    {"name": "Infrastructure",         "description": "Health check and active provider info."},
+    {
+        "name": "F1 · Hello AI",
+        "description": "**Week 1 · Feature 1** — Basic text chat. The LLM receives your message and replies.",
+    },
+    {
+        "name": "F2 · Prompt Mastery",
+        "description": "**Week 1 · Feature 2** — Structured (JSON-mode) responses with intent, confidence, and answer fields.",
+    },
+    {
+        "name": "F3 · AI Memory",
+        "description": "**Week 1 · Feature 3** — Session management and sliding-window conversation history.",
+    },
+    {
+        "name": "F4 · Feed the Brain",
+        "description": "**Week 2 · Feature 4** — Document ingestion: upload, chunk, and index files (PDF, DOCX, TXT).",
+    },
+    {
+        "name": "F5 · Find the Answer",
+        "description": "**Week 2 · Feature 5** — Semantic search over document chunks using vector embeddings.",
+    },
+    {
+        "name": "F6 · Smart Router",
+        "description": "**Week 2 · Feature 6** — Intelligent routing between direct LLM, RAG retrieval, and hybrid modes. Includes tenant isolation (Part B) and retrieval memory (Part C).",
+    },
+    {
+        "name": "F7 · First Agent",
+        "description": "**Week 3 · Feature 7** — Tool-calling agent (ReAct pattern). Local tools: check_availability, create_ticket, lookup_info.",
+    },
+    {
+        "name": "F8 · Multi-Step Agent",
+        "description": "**Week 3 · Feature 8** — Plan-and-Execute agent. Breaks a request into steps, runs them in the background, poll for status.",
+    },
+    {
+        "name": "F9 · MCP Integration",
+        "description": "**Week 3 · Feature 9** — Model Context Protocol. Connect to external tool servers; browse and invoke MCP tools alongside local ones.",
+    },
+    {
+        "name": "F10 · Multimodal AI",
+        "description": (
+            "**Week 4 · Feature 10** — Voice (STT/TTS) and Vision (VLM). "
+            "Part A: record audio → transcribe → LLM → speak the answer. "
+            "Part B: upload an image → VLM analyzes it → returns text answer. "
+            "Part C: unified modality router detects text/voice/vision and routes automatically."
+        ),
+    },
+    {
+        "name": "Infrastructure",
+        "description": "Health check, active provider info — useful for deployment monitoring.",
+    },
 ]
 
 
@@ -98,14 +157,18 @@ app = FastAPI(
     title="My AI BlockSeBlock Assistant",
     description=(
         "Domain-Specific AI Assistant — AI Engineering Bootcamp, BlockseBlock\n\n"
-        "Endpoints are grouped by **course feature**. "
-        "F9 · MCP Integration endpoints return HTTP 501 until you implement `mcp_client.py`."
+        "Endpoints are grouped by **course feature** so you can find exactly what was "
+        "added each week. Expand a section to see its endpoints and try them live."
     ),
-    version="9.0.0",
+    version="10.0.0",
     lifespan=lifespan,
     openapi_tags=OPENAPI_TAGS,
 )
 
+
+# ---------------------------------------------------------------------------
+# Request / Response models
+# ---------------------------------------------------------------------------
 
 class ChatRequest(BaseModel):
     message: str
@@ -137,9 +200,31 @@ class McpExecuteRequest(BaseModel):
     tool_name: str
     arguments: dict[str, Any] = {}
 
+class VoiceChatResponse(BaseModel):
+    transcript: str       # what the user said (after STT)
+    answer: str           # LLM's text reply
+    audio_base64: str     # TTS output, base64-encoded MP3
+    audio_mime: str = "audio/mpeg"
+
+class VisionAnalyzeResponse(BaseModel):
+    answer: str
+    model_used: str
+
+class MultimodalChatResponse(BaseModel):
+    modality: str                   # "text" | "voice" | "vision"
+    answer: str
+    source: str | None = None       # text: llm/rag/hybrid
+    chunks_used: list[dict] = []    # text: retrieved chunks
+    confidence: float | None = None # text: router confidence
+    retrieval_method: str | None = None
+    transcript: str | None = None   # voice: what the user said
+    audio_base64: str | None = None # voice: TTS output
+    audio_mime: str | None = None
+    model_used: str | None = None   # vision: which VLM
+
 
 # ---------------------------------------------------------------------------
-# Features 1–8: Carry-forward (complete, no TODOs)
+# Features 1–3: Basic chat + sessions (carry-forward)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
@@ -211,6 +296,10 @@ async def session_history(session_id: str, tenant_id: str = Depends(get_tenant_i
     return session.messages
 
 
+# ---------------------------------------------------------------------------
+# Feature 4: Document ingestion
+# ---------------------------------------------------------------------------
+
 @app.post("/api/documents/upload", response_model=Document, tags=["F4 · Feed the Brain"])
 async def upload_document(file: UploadFile = File(...), strategy: str = Form("sentence"), tenant_id: str = Depends(get_tenant_id)) -> Document:
     if strategy not in CHUNKING_STRATEGIES:
@@ -255,6 +344,10 @@ async def document_chunks(doc_id: str, tenant_id: str = Depends(get_tenant_id)) 
     return get_chunks(doc_id)
 
 
+# ---------------------------------------------------------------------------
+# Feature 5: Semantic search
+# ---------------------------------------------------------------------------
+
 @app.post("/api/search", tags=["F5 · Find the Answer"])
 async def search_documents(req: SearchRequest, tenant_id: str = Depends(get_tenant_id)) -> list[dict]:
     return vector_search(req.query, top_k=req.top_k, filters={"document_id": req.document_id} if req.document_id else None, tenant_id=tenant_id)
@@ -264,6 +357,10 @@ async def search_documents(req: SearchRequest, tenant_id: str = Depends(get_tena
 async def search_stats() -> dict:
     return vector_get_stats()
 
+
+# ---------------------------------------------------------------------------
+# Feature 6: Smart Router
+# ---------------------------------------------------------------------------
 
 _SMART_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely in plain English."
 _SMART_RAG_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Use the provided document excerpts to answer accurately."
@@ -352,6 +449,10 @@ async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_
             for e in get_recent_retrievals(tenant_id=tenant_id, limit=limit)]
 
 
+# ---------------------------------------------------------------------------
+# Feature 7: Agent (ReAct pattern, MCP-aware)
+# ---------------------------------------------------------------------------
+
 @app.post("/api/sessions/{session_id}/agent/run", tags=["F7 · First Agent"])
 async def agent_run(session_id: str, request: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
     session = get_session(session_id, tenant_id=tenant_id)
@@ -359,6 +460,10 @@ async def agent_run(session_id: str, request: AgentRequest, tenant_id: str = Dep
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     return await run_agent_with_mcp(message=request.message, session_id=session_id, tenant_id=tenant_id)
 
+
+# ---------------------------------------------------------------------------
+# Feature 8: Multi-step agent (Plan-and-Execute)
+# ---------------------------------------------------------------------------
 
 @app.post("/api/agent/plan", tags=["F8 · Multi-Step Agent"])
 async def agent_plan(request: PlanRequest, background_tasks: BackgroundTasks, tenant_id: str = Depends(get_tenant_id)) -> dict:
@@ -398,40 +503,227 @@ async def mcp_servers() -> list[dict]:
 
 @app.get("/api/mcp/tools", tags=["F9 · MCP Integration"])
 async def mcp_tools_list() -> list[dict]:
-    """
-    List all tools available from connected MCP servers.
-
-    Returns HTTP 501 until you implement list_mcp_tools() in mcp_client.py
-    (TODO STEP 1). Once implemented, this returns the demo server's tools.
-    """
-    if list_mcp_tools is None:
-        raise HTTPException(status_code=503, detail="MCP client not available — check mcp_client.py import.")
+    """List all tools available from connected MCP servers."""
     try:
         tools = await list_mcp_tools(use_cache=False)
         return tools
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=f"Not implemented: {exc}")
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Could not list MCP tools: {exc}")
 
 
 @app.post("/api/mcp/execute", tags=["F9 · MCP Integration"])
 async def mcp_execute(request: McpExecuteRequest) -> dict:
-    """
-    Directly invoke an MCP tool by name.
-
-    Returns HTTP 501 until you implement call_mcp_tool() in mcp_client.py
-    (TODO STEP 2). Once implemented, you can test tools from the UI or curl.
-    """
-    if call_mcp_tool is None:
-        raise HTTPException(status_code=503, detail="MCP client not available — check mcp_client.py import.")
+    """Directly invoke an MCP tool by name with given arguments."""
     try:
         result = await call_mcp_tool(request.tool_name, request.arguments)
         return {"tool_name": request.tool_name, "result": result}
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=f"Not implemented: {exc}")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Feature 10 — Part A: Voice (STT + TTS)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/voice/transcribe", tags=["F10 · Multimodal AI"])
+async def voice_transcribe(audio: UploadFile = File(...)) -> dict:
+    """
+    Convert an audio recording to text (Speech-to-Text only).
+
+    Upload a WAV, MP3, WebM, or M4A file and get back the transcribed text.
+    Uses VOICE_PROVIDER (or LLM_PROVIDER if not set separately).
+
+    Note for Ollama users: set VOICE_PROVIDER=openai or VOICE_PROVIDER=groq
+    in .env — Ollama doesn't support speech APIs natively.
+    """
+    audio_bytes = await audio.read()
+    text = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+    return {"text": text, "filename": audio.filename}
+
+
+@app.post("/api/voice/chat", response_model=VoiceChatResponse, tags=["F10 · Multimodal AI"])
+async def voice_chat(
+    audio: UploadFile = File(...),
+    session_id: str = Form(""),
+    tenant_id: str = Depends(get_tenant_id),
+) -> VoiceChatResponse:
+    """
+    Full voice pipeline: audio in → text → LLM → audio out.
+
+    The voice pipeline has four stages (log timestamps to find your bottleneck):
+      1. Record  — browser MediaRecorder captures the user's speech
+      2. Transcribe — STT converts audio bytes to text (this endpoint)
+      3. LLM    — smart chat classifies and answers the text question
+      4. Synthesize — TTS converts the text answer back to audio
+
+    Returns JSON with the transcript (what you said), the answer (text), and
+    base64-encoded audio (the spoken answer). The UI can play the audio and
+    display the transcript simultaneously.
+    """
+    # Stage 2: transcribe
+    audio_bytes = await audio.read()
+    transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+
+    # Stage 3: LLM — use smart chat if a session is active, plain LLM otherwise
+    if session_id:
+        session = get_session(session_id, tenant_id=tenant_id)
+        if session:
+            smart_resp = await smart_chat(session_id, SmartChatRequest(message=transcript), tenant_id)
+            answer = smart_resp.answer
+        else:
+            result = await call_llm([
+                {"role": "system", "content": _SMART_SYSTEM_PROMPT},
+                {"role": "user", "content": transcript},
+            ])
+            answer = result.content or ""
+    else:
+        result = await call_llm([
+            {"role": "system", "content": _SMART_SYSTEM_PROMPT},
+            {"role": "user", "content": transcript},
+        ])
+        answer = result.content or ""
+
+    # Stage 4: synthesize
+    audio_out = await synthesize_speech(answer)
+    return VoiceChatResponse(
+        transcript=transcript,
+        answer=answer,
+        audio_base64=base64.b64encode(audio_out).decode(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Feature 10 — Part B: Vision (VLM image understanding)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/vision/analyze", response_model=VisionAnalyzeResponse, tags=["F10 · Multimodal AI"])
+async def vision_analyze(
+    image: UploadFile = File(...),
+    prompt: str = Form("Describe this image in detail."),
+    detail: str = Form("auto"),
+) -> VisionAnalyzeResponse:
+    """
+    Stateless image analysis — upload an image and ask a question about it.
+
+    No session required. For domain use cases:
+      - Product photo Q&A: "What colour is this jacket?"
+      - Document scanning: "What does the form in this image say?"
+      - Screenshot analysis: "What error is shown in this screenshot?"
+
+    Set VLM_PROVIDER and VLM_MODEL in .env to choose your vision model.
+    Local options (free): VLM_PROVIDER=ollama, VLM_MODEL=llava
+    Cloud options: VLM_PROVIDER=openai, VLM_MODEL=gpt-4o
+    """
+    image_bytes = await image.read()
+    result = await analyze_image(image_bytes, prompt, detail)
+    return VisionAnalyzeResponse(answer=result.content or "", model_used=result.model)
+
+
+@app.post("/api/vision/chat", response_model=VisionAnalyzeResponse, tags=["F10 · Multimodal AI"])
+async def vision_chat(
+    image: UploadFile = File(...),
+    prompt: str = Form("Describe this image in detail."),
+    detail: str = Form("auto"),
+    session_id: str = Form(""),
+    tenant_id: str = Depends(get_tenant_id),
+) -> VisionAnalyzeResponse:
+    """
+    Session-aware vision chat — image analysis stored in conversation history.
+
+    The image question and answer are stored in the session as a special
+    [IMAGE] message pair, visible in /api/sessions/{id}/history. This lets
+    the agent reference "the image you uploaded earlier" in follow-up turns.
+    """
+    image_bytes = await image.read()
+    result = await analyze_image(image_bytes, prompt, detail)
+    answer = result.content or ""
+
+    if session_id:
+        session = get_session(session_id, tenant_id=tenant_id)
+        if session:
+            # Store with [IMAGE] marker so history readers can distinguish
+            # image turns from text turns.
+            add_message(session_id, "user", f"[IMAGE] {prompt}")
+            add_message(session_id, "assistant", answer)
+
+    return VisionAnalyzeResponse(answer=answer, model_used=result.model)
+
+
+# ---------------------------------------------------------------------------
+# Feature 10 — Part C: Unified modality router
+# ---------------------------------------------------------------------------
+
+@app.post("/api/chat/multimodal", response_model=MultimodalChatResponse, tags=["F10 · Multimodal AI"])
+async def multimodal_chat(
+    session_id: str = Form(...),
+    message: str = Form(""),
+    audio: UploadFile | None = File(None),
+    image: UploadFile | None = File(None),
+    prompt: str = Form(""),
+    tenant_id: str = Depends(get_tenant_id),
+) -> MultimodalChatResponse:
+    """
+    Unified multimodal endpoint — send text, audio, or image; get a routed response.
+
+    This is the Feature 10 extension of Feature 6's Smart Router:
+      Feature 6 route: "should I retrieve docs, or answer from LLM knowledge?"
+      Feature 10 route: "is this text, voice, or vision? → route to correct pipeline"
+
+    The pattern is identical: inspect the request, decide the pipeline, delegate.
+    Modality detection is based on which file fields are present:
+      - audio file present  → voice pipeline (STT → LLM → return transcript + answer)
+      - image file present  → vision pipeline (VLM → return answer + model_used)
+      - neither present     → text pipeline (smart chat)
+
+    Returns a unified MultimodalChatResponse with a "modality" field so the
+    UI knows which pipeline ran and can render the appropriate UI card.
+    """
+    has_audio = audio is not None and bool(audio.filename)
+    has_image = image is not None and bool(image.filename)
+    modality = detect_modality(has_audio=has_audio, has_image=has_image)
+
+    if modality == "voice":
+        audio_bytes = await audio.read()  # type: ignore[union-attr]
+        transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")  # type: ignore[union-attr]
+        smart_resp = await smart_chat(session_id, SmartChatRequest(message=transcript), tenant_id)
+        audio_out = await synthesize_speech(smart_resp.answer)
+        return MultimodalChatResponse(
+            modality="voice",
+            answer=smart_resp.answer,
+            source=smart_resp.source,
+            chunks_used=list(smart_resp.chunks_used),
+            confidence=smart_resp.confidence,
+            retrieval_method=smart_resp.retrieval_method,
+            transcript=transcript,
+            audio_base64=base64.b64encode(audio_out).decode(),
+            audio_mime="audio/mpeg",
+        )
+
+    if modality == "vision":
+        image_bytes = await image.read()  # type: ignore[union-attr]
+        text_prompt = prompt or message or "Describe this image in detail."
+        result = await analyze_image(image_bytes, text_prompt)
+        answer = result.content or ""
+        session = get_session(session_id, tenant_id=tenant_id)
+        if session:
+            add_message(session_id, "user", f"[IMAGE] {text_prompt}")
+            add_message(session_id, "assistant", answer)
+        return MultimodalChatResponse(
+            modality="vision",
+            answer=answer,
+            model_used=result.model,
+        )
+
+    # Default: text → smart chat
+    smart_resp = await smart_chat(session_id, SmartChatRequest(message=message), tenant_id)
+    return MultimodalChatResponse(
+        modality="text",
+        answer=smart_resp.answer,
+        source=smart_resp.source,
+        chunks_used=list(smart_resp.chunks_used),
+        confidence=smart_resp.confidence,
+        retrieval_method=smart_resp.retrieval_method,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -454,11 +746,14 @@ async def provider_info():
         "bedrock": settings.bedrock_model_id, "vertex": settings.vertex_model,
     }
     voice_name = settings.effective_voice_provider().lower().strip()
+    vlm_name = settings.effective_vlm_provider().lower().strip()
     return {
         "llm_provider": llm_name,
         "llm_model": model_map.get(llm_name, "unknown"),
         "voice_provider": voice_name if voice_name != llm_name else None,
         "voice_model": model_map.get(voice_name) if voice_name != llm_name else None,
+        "vlm_provider": vlm_name if vlm_name != llm_name else None,
+        "vlm_model": settings.vlm_model if vlm_name != llm_name else None,
     }
 
 

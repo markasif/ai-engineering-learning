@@ -105,3 +105,33 @@ class LLMProvider(ABC):
         Raises:
             NotImplementedError: If this provider does not support TTS.
         """
+
+    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> "LLMResponse":
+        """
+        Analyze an image with a text prompt (Vision Language Model / VLM).
+
+        Args:
+            image_bytes: Raw image bytes (JPEG, PNG, WebP, etc.).
+            prompt:      The question or instruction for the model about the image.
+            detail:      How closely the model examines the image.
+                         "auto"  — model chooses (default, good for most uses).
+                         "high"  — full-resolution; use for documents, screenshots,
+                                   forms, and charts where fine text details matter.
+                                   Costs more tokens but significantly more accurate
+                                   on text-heavy images.
+                         "low"   — fast, low-cost; use for quick yes/no or simple
+                                   object identification where exact text doesn't matter.
+
+        Returns:
+            LLMResponse with .content containing the image description or answer.
+
+        Raises:
+            NotImplementedError: If this provider does not support vision input.
+                                 Set VLM_PROVIDER in .env to a vision-capable provider
+                                 (openai with gpt-4o, or ollama with llava/phi3:vision).
+        """
+        raise NotImplementedError(
+            f"Provider '{type(self).__name__}' does not support image analysis. "
+            "Set VLM_PROVIDER=openai (with gpt-4o) or VLM_PROVIDER=ollama "
+            "(with VLM_MODEL=llava or phi3:vision) in .env to enable vision."
+        )

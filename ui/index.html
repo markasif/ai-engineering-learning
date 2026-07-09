@@ -143,6 +143,28 @@
             autofocus
           />
           <button id="send-btn" class="btn btn-primary" type="button">Send</button>
+
+          <!-- ===================================================
+               FEATURE 10: Voice + Image input buttons
+               🎤 records audio via MediaRecorder → /api/voice/chat
+               📷 opens file picker (images) → /api/vision/chat
+               =================================================== -->
+          <button id="voice-btn" class="btn btn-multimodal" type="button"
+                  title="Click to record voice message (Feature 10)"
+                  aria-label="Record voice message">🎤</button>
+          <label for="image-input" class="btn btn-multimodal btn-image-label"
+                 title="Attach an image (Feature 10)"
+                 aria-label="Attach image">
+            📷
+            <input type="file" id="image-input" accept="image/*" class="sr-only" />
+          </label>
+        </div>
+
+        <!-- Voice recording status bar (shown while recording) -->
+        <div id="voice-status-bar" class="voice-status-bar" hidden>
+          <span class="voice-recording-dot" aria-hidden="true"></span>
+          <span id="voice-status-text">Recording…</span>
+          <button id="voice-stop-btn" class="btn btn-ghost btn-sm" type="button">Stop</button>
         </div>
       </section>
 

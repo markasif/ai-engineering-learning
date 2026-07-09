@@ -107,3 +107,28 @@ class OpenAIProvider(LLMProvider):
             input=text,
         )
         return response.content
+
+    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+        """Analyze an image using the OpenAI vision API (gpt-4o, gpt-4o-mini, etc.)."""
+        import base64
+
+        b64 = base64.b64encode(image_bytes).decode()
+
+        # OpenAI vision message format: content is an array of typed blocks.
+        # The image_url block embeds the image as a data URI so no external
+        # hosting is required — the model receives the image directly.
+        messages: list[dict] = [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64}",
+                        "detail": detail,
+                    },
+                },
+            ],
+        }]
+
+        return await self.chat(messages, max_tokens=1500)

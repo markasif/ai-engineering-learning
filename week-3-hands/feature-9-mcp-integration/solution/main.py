@@ -78,6 +78,53 @@ from shared.vector_store import (
 
 CONTEXT_WINDOW_SIZE = 20
 
+# ---------------------------------------------------------------------------
+# OpenAPI tag definitions — appear as collapsible sections in /docs
+# Each tag maps to one course feature so students can find endpoints by week.
+# ---------------------------------------------------------------------------
+OPENAPI_TAGS = [
+    {
+        "name": "F1 · Hello AI",
+        "description": "**Week 1 · Feature 1** — Basic text chat. The LLM receives your message and replies.",
+    },
+    {
+        "name": "F2 · Prompt Mastery",
+        "description": "**Week 1 · Feature 2** — Structured (JSON-mode) responses with intent, confidence, and answer fields.",
+    },
+    {
+        "name": "F3 · AI Memory",
+        "description": "**Week 1 · Feature 3** — Session management and sliding-window conversation history.",
+    },
+    {
+        "name": "F4 · Feed the Brain",
+        "description": "**Week 2 · Feature 4** — Document ingestion: upload, chunk, and index files (PDF, DOCX, TXT).",
+    },
+    {
+        "name": "F5 · Find the Answer",
+        "description": "**Week 2 · Feature 5** — Semantic search over document chunks using vector embeddings.",
+    },
+    {
+        "name": "F6 · Smart Router",
+        "description": "**Week 2 · Feature 6** — Intelligent routing between direct LLM, RAG retrieval, and hybrid modes. Includes tenant isolation (Part B) and retrieval memory (Part C).",
+    },
+    {
+        "name": "F7 · First Agent",
+        "description": "**Week 3 · Feature 7** — Tool-calling agent (ReAct pattern). Local tools: check_availability, create_ticket, lookup_info.",
+    },
+    {
+        "name": "F8 · Multi-Step Agent",
+        "description": "**Week 3 · Feature 8** — Plan-and-Execute agent. Breaks a request into steps, runs them in the background, poll for status.",
+    },
+    {
+        "name": "F9 · MCP Integration",
+        "description": "**Week 3 · Feature 9** — Model Context Protocol. Connect to external tool servers; browse and invoke MCP tools alongside local ones.",
+    },
+    {
+        "name": "Infrastructure",
+        "description": "Health check, active provider info — useful for deployment monitoring.",
+    },
+]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -87,9 +134,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="My AI BlockSeBlock Assistant",
-    description="Domain-Specific AI Assistant — AI Engineering Bootcamp, BlockseBlock",
+    description=(
+        "Domain-Specific AI Assistant — AI Engineering Bootcamp, BlockseBlock\n\n"
+        "Endpoints are grouped by **course feature** so you can find exactly what was "
+        "added each week. Expand a section to see its endpoints and try them live."
+    ),
     version="9.0.0",
     lifespan=lifespan,
+    openapi_tags=OPENAPI_TAGS,
 )
 
 
@@ -128,7 +180,7 @@ class McpExecuteRequest(BaseModel):
 # Features 1–7: Carry-forward (same as Feature 8 solution)
 # ---------------------------------------------------------------------------
 
-@app.post("/api/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
 async def chat(request: ChatRequest) -> ChatResponse:
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely."},
@@ -149,7 +201,7 @@ def _parse_structured(raw_text: str) -> StructuredResponse:
         return StructuredResponse(intent="unclear", answer=raw_text or "", confidence=0.0, sources_needed=False)
 
 
-@app.post("/api/chat/structured", response_model=StructuredResponse)
+@app.post("/api/chat/structured", response_model=StructuredResponse, tags=["F2 · Prompt Mastery"])
 async def chat_structured(request: ChatRequest) -> StructuredResponse:
     result = await call_llm(
         [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": request.message}],
@@ -158,12 +210,12 @@ async def chat_structured(request: ChatRequest) -> StructuredResponse:
     return _parse_structured(result.content or "")
 
 
-@app.post("/api/sessions")
+@app.post("/api/sessions", tags=["F3 · AI Memory"])
 async def new_session(tenant_id: str = Depends(get_tenant_id)) -> dict:
     return {"session_id": create_session(tenant_id=tenant_id)}
 
 
-@app.get("/api/sessions", response_model=list[SessionSummary])
+@app.get("/api/sessions", response_model=list[SessionSummary], tags=["F3 · AI Memory"])
 async def sessions_list() -> list[SessionSummary]:
     summaries = []
     for s in list_sessions():
@@ -173,7 +225,7 @@ async def sessions_list() -> list[SessionSummary]:
     return summaries
 
 
-@app.post("/api/sessions/{session_id}/chat", response_model=StructuredResponse)
+@app.post("/api/sessions/{session_id}/chat", response_model=StructuredResponse, tags=["F3 · AI Memory"])
 async def session_chat(session_id: str, request: ChatRequest, tenant_id: str = Depends(get_tenant_id)) -> StructuredResponse:
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
@@ -189,7 +241,7 @@ async def session_chat(session_id: str, request: ChatRequest, tenant_id: str = D
     return structured
 
 
-@app.get("/api/sessions/{session_id}/history", response_model=list[Message])
+@app.get("/api/sessions/{session_id}/history", response_model=list[Message], tags=["F3 · AI Memory"])
 async def session_history(session_id: str, tenant_id: str = Depends(get_tenant_id)) -> list[Message]:
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
@@ -197,7 +249,7 @@ async def session_history(session_id: str, tenant_id: str = Depends(get_tenant_i
     return session.messages
 
 
-@app.post("/api/documents/upload", response_model=Document)
+@app.post("/api/documents/upload", response_model=Document, tags=["F4 · Feed the Brain"])
 async def upload_document(file: UploadFile = File(...), strategy: str = Form("sentence"), tenant_id: str = Depends(get_tenant_id)) -> Document:
     if strategy not in CHUNKING_STRATEGIES:
         raise HTTPException(status_code=400, detail=f"Unknown strategy '{strategy}'.")
@@ -220,12 +272,12 @@ async def upload_document(file: UploadFile = File(...), strategy: str = Form("se
     return get_document(doc.id, tenant_id=tenant_id)  # type: ignore[return-value]
 
 
-@app.get("/api/documents", response_model=list[Document])
+@app.get("/api/documents", response_model=list[Document], tags=["F4 · Feed the Brain"])
 async def documents_list(tenant_id: str = Depends(get_tenant_id)) -> list[Document]:
     return list_documents(tenant_id=tenant_id)
 
 
-@app.delete("/api/documents/{doc_id}")
+@app.delete("/api/documents/{doc_id}", tags=["F4 · Feed the Brain"])
 async def remove_document(doc_id: str, tenant_id: str = Depends(get_tenant_id)) -> dict:
     if get_document(doc_id, tenant_id=tenant_id) is None:
         raise HTTPException(status_code=404, detail=f"Document '{doc_id}' not found.")
@@ -234,19 +286,19 @@ async def remove_document(doc_id: str, tenant_id: str = Depends(get_tenant_id)) 
     return {"deleted": doc_id}
 
 
-@app.get("/api/documents/{doc_id}/chunks", response_model=list[Chunk])
+@app.get("/api/documents/{doc_id}/chunks", response_model=list[Chunk], tags=["F4 · Feed the Brain"])
 async def document_chunks(doc_id: str, tenant_id: str = Depends(get_tenant_id)) -> list[Chunk]:
     if get_document(doc_id, tenant_id=tenant_id) is None:
         raise HTTPException(status_code=404, detail=f"Document '{doc_id}' not found.")
     return get_chunks(doc_id)
 
 
-@app.post("/api/search")
+@app.post("/api/search", tags=["F5 · Find the Answer"])
 async def search_documents(req: SearchRequest, tenant_id: str = Depends(get_tenant_id)) -> list[dict]:
     return vector_search(req.query, top_k=req.top_k, filters={"document_id": req.document_id} if req.document_id else None, tenant_id=tenant_id)
 
 
-@app.get("/api/search/stats")
+@app.get("/api/search/stats", tags=["F5 · Find the Answer"])
 async def search_stats() -> dict:
     return vector_get_stats()
 
@@ -265,7 +317,7 @@ def _build_context_block(chunks: list[dict]) -> str:
     return "\n".join(lines)
 
 
-@app.post("/api/sessions/{session_id}/chat/smart", response_model=SmartChatResponse)
+@app.post("/api/sessions/{session_id}/chat/smart", response_model=SmartChatResponse, tags=["F6 · Smart Router"])
 async def smart_chat(session_id: str, request: SmartChatRequest, tenant_id: str = Depends(get_tenant_id)) -> SmartChatResponse:
     from shared.config import settings
     session = get_session(session_id, tenant_id=tenant_id)
@@ -307,14 +359,14 @@ async def smart_chat(session_id: str, request: SmartChatRequest, tenant_id: str 
     return SmartChatResponse(answer=answer, source=source, chunks_used=chunks_used, confidence=classification["confidence"], retrieval_method=retrieval_method)  # type: ignore[arg-type]
 
 
-@app.get("/api/tenant/info")
+@app.get("/api/tenant/info", tags=["F6 · Smart Router"])
 async def tenant_info(tenant_id: str = Depends(get_tenant_id)) -> dict:
     from shared.config import settings
     return {"tenant_id": tenant_id, "multi_tenant_enabled": settings.enable_multi_tenant,
             "document_count": len(list_documents(tenant_id=tenant_id))}
 
 
-@app.post("/api/retrieval-memory/rebuild")
+@app.post("/api/retrieval-memory/rebuild", tags=["F6 · Smart Router"])
 async def retrieval_memory_rebuild(tenant_id: str = Depends(get_tenant_id)) -> dict:
     digest = await build_knowledge_digest(tenant_id=tenant_id)
     if digest is None:
@@ -323,7 +375,7 @@ async def retrieval_memory_rebuild(tenant_id: str = Depends(get_tenant_id)) -> d
             "source_session_count": digest.source_session_count, "last_updated": digest.last_updated.isoformat()}
 
 
-@app.get("/api/retrieval-memory/digest")
+@app.get("/api/retrieval-memory/digest", tags=["F6 · Smart Router"])
 async def retrieval_memory_digest(tenant_id: str = Depends(get_tenant_id)) -> dict:
     digest = get_current_digest(tenant_id=tenant_id)
     if digest is None:
@@ -332,7 +384,7 @@ async def retrieval_memory_digest(tenant_id: str = Depends(get_tenant_id)) -> di
             "source_session_count": digest.source_session_count, "last_updated": digest.last_updated.isoformat()}
 
 
-@app.get("/api/retrieval-memory/recent")
+@app.get("/api/retrieval-memory/recent", tags=["F6 · Smart Router"])
 async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_tenant_id)) -> list[dict]:
     return [{"session_id": e.session_id, "query": e.query, "timestamp": e.timestamp.isoformat(), "retrieval_method": e.retrieval_method}
             for e in get_recent_retrievals(tenant_id=tenant_id, limit=limit)]
@@ -342,7 +394,7 @@ async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_
 # Feature 7: Agent — updated to use run_agent_with_mcp
 # ---------------------------------------------------------------------------
 
-@app.post("/api/sessions/{session_id}/agent/run")
+@app.post("/api/sessions/{session_id}/agent/run", tags=["F7 · First Agent"])
 async def agent_run(session_id: str, request: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
@@ -354,7 +406,7 @@ async def agent_run(session_id: str, request: AgentRequest, tenant_id: str = Dep
 # Feature 8: Multi-step agent — carries forward
 # ---------------------------------------------------------------------------
 
-@app.post("/api/agent/plan")
+@app.post("/api/agent/plan", tags=["F8 · Multi-Step Agent"])
 async def agent_plan(request: PlanRequest, background_tasks: BackgroundTasks, tenant_id: str = Depends(get_tenant_id)) -> dict:
     session_id = create_session(tenant_id=tenant_id)
     task = create_task(message=request.message, session_id=session_id, tenant_id=tenant_id)
@@ -364,7 +416,7 @@ async def agent_plan(request: PlanRequest, background_tasks: BackgroundTasks, te
     return {"task_id": task.id, "session_id": session_id, "plan": plan}
 
 
-@app.get("/api/agent/status/{task_id}")
+@app.get("/api/agent/status/{task_id}", tags=["F8 · Multi-Step Agent"])
 async def agent_status(task_id: str) -> dict:
     task = get_task(task_id)
     if task is None:
@@ -376,7 +428,7 @@ async def agent_status(task_id: str) -> dict:
 # Feature 9: MCP endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/api/mcp/servers")
+@app.get("/api/mcp/servers", tags=["F9 · MCP Integration"])
 async def mcp_servers() -> list[dict]:
     """List connected MCP servers with name, transport, and enabled status."""
     return [
@@ -390,7 +442,7 @@ async def mcp_servers() -> list[dict]:
     ]
 
 
-@app.get("/api/mcp/tools")
+@app.get("/api/mcp/tools", tags=["F9 · MCP Integration"])
 async def mcp_tools_list() -> list[dict]:
     """List all tools available from connected MCP servers."""
     try:
@@ -400,7 +452,7 @@ async def mcp_tools_list() -> list[dict]:
         raise HTTPException(status_code=503, detail=f"Could not list MCP tools: {exc}")
 
 
-@app.post("/api/mcp/execute")
+@app.post("/api/mcp/execute", tags=["F9 · MCP Integration"])
 async def mcp_execute(request: McpExecuteRequest) -> dict:
     """
     Directly invoke an MCP tool by name with given arguments.
@@ -417,12 +469,12 @@ async def mcp_execute(request: McpExecuteRequest) -> dict:
 # Health + provider info
 # ---------------------------------------------------------------------------
 
-@app.get("/api/health")
+@app.get("/api/health", tags=["Infrastructure"])
 async def health():
     return {"status": "ok"}
 
 
-@app.get("/api/provider-info")
+@app.get("/api/provider-info", tags=["Infrastructure"])
 async def provider_info():
     from shared.config import settings
     llm_name = settings.llm_provider.lower().strip()

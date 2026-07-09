@@ -114,17 +114,20 @@ def get_provider(role: str = "llm") -> LLMProvider:
     Return the provider instance for the given role.
 
     Args:
-        role: "llm" (default) for chat/agents/RAG, or "voice" for STT/TTS.
-              The "voice" role uses VOICE_PROVIDER if set, otherwise falls back
-              to LLM_PROVIDER — so students who use a speech-capable provider
-              everywhere don't need to set VOICE_PROVIDER separately.
+        role: "llm" (default) for chat/agents/RAG.
+              "voice" for STT/TTS (Feature 10 Part A).
+              "vlm"   for image analysis (Feature 10 Part B).
+              Voice and VLM roles fall back to LLM_PROVIDER if their specific
+              provider env vars (VOICE_PROVIDER / VLM_PROVIDER) are not set.
 
-    Results are cached per (role, provider_name) — switching LLM_PROVIDER in
-    .env and restarting the server will use the new provider on the first call.
+    Results are cached per (role, provider_name) — switching providers in
+    .env and restarting the server picks up the new value on the first call.
     Call get_provider.cache_clear() in tests to force re-instantiation.
     """
     if role == "voice":
         provider_name = settings.effective_voice_provider().lower().strip()
+    elif role == "vlm":
+        provider_name = settings.effective_vlm_provider().lower().strip()
     else:
         provider_name = settings.llm_provider.lower().strip()
 

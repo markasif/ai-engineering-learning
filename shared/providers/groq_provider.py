@@ -89,3 +89,11 @@ class GroqProvider(OpenAIProvider):
             "Set VOICE_PROVIDER=openai for TTS, while keeping LLM_PROVIDER=groq "
             "for chat and STT. Both can be set simultaneously — see .env.example."
         )
+
+    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> "LLMResponse":
+        raise NotImplementedError(
+            "Groq does not currently support vision/image input. "
+            "Set VLM_PROVIDER=openai (gpt-4o) or VLM_PROVIDER=ollama (llava / phi3:vision) "
+            "in .env for image analysis, while keeping LLM_PROVIDER=groq for chat. "
+            "See docs/provider-setup-guide.md for details."
+        )

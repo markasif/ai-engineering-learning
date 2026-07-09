@@ -229,10 +229,7 @@ cd week-1-brain/feature-1-hello-ai/solution
 Then start the server:
 
 ```bash
-
-
-
-
+uvicorn main:app --reload --port 8000
 ```
 
 What each part means:

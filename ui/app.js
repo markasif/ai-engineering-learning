@@ -1555,6 +1555,277 @@ function buildMcpServerCard(server, tools) {
   return card;
 }
 
+// =============================================================================
+// Feature 10: Multimodal AI — Voice (Part A) + Vision (Part B)
+// =============================================================================
+
+// ── DOM refs ──
+const voiceBtn       = document.getElementById("voice-btn");
+const voiceStopBtn   = document.getElementById("voice-stop-btn");
+const voiceStatusBar = document.getElementById("voice-status-bar");
+const voiceStatusTxt = document.getElementById("voice-status-text");
+const imageInput     = document.getElementById("image-input");
+
+/** Currently active MediaRecorder (null when not recording). */
+let mediaRecorder = null;
+/** Accumulated audio chunks during recording. */
+let audioChunks = [];
+
+/**
+ * Start recording from the user's microphone via the MediaRecorder API.
+ * Stores chunks in audioChunks; sendVoiceMessage() is called on dataavailable.
+ */
+async function startVoiceRecording() {
+  if (mediaRecorder) return;  // already recording
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.addEventListener("dataavailable", (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    });
+
+    mediaRecorder.addEventListener("stop", async () => {
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      stream.getTracks().forEach((t) => t.stop());  // release mic
+      mediaRecorder = null;
+      await sendVoiceMessage(blob);
+    });
+
+    mediaRecorder.start();
+
+    // Show recording status bar.
+    if (voiceStatusBar) voiceStatusBar.removeAttribute("hidden");
+    if (voiceStatusTxt) voiceStatusTxt.textContent = "Recording — click Stop when done";
+    if (voiceBtn) voiceBtn.classList.add("recording");
+
+  } catch (err) {
+    appendMessage("ai", `Microphone error: ${err.message}. Check browser permissions.`);
+  }
+}
+
+/** Stop an active recording and trigger sendVoiceMessage via the "stop" event. */
+function stopVoiceRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+  if (voiceStatusBar) voiceStatusBar.setAttribute("hidden", "");
+  if (voiceBtn) voiceBtn.classList.remove("recording");
+}
+
+/**
+ * Send a recorded audio Blob to POST /api/voice/chat and handle the response.
+ * Plays the TTS audio and shows the transcript + answer as chat messages.
+ *
+ * @param {Blob} audioBlob - the recorded audio in WebM format
+ */
+async function sendVoiceMessage(audioBlob) {
+  if (voiceStatusTxt) voiceStatusTxt.textContent = "Processing…";
+  if (voiceStatusBar) voiceStatusBar.removeAttribute("hidden");
+
+  const thinkingEl = appendMessage("ai", "", true);
+
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "recording.webm");
+  if (currentSessionId) formData.append("session_id", currentSessionId);
+
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/voice/chat`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    thinkingEl.remove();
+
+    // Show the transcript (what the user said) as a user bubble.
+    appendMessage("user", `🎤 "${data.transcript ?? ""}"`);
+
+    // Show the text answer.
+    appendMessage("ai", data.answer ?? "(no response)");
+
+    // Play the TTS audio if present.
+    if (data.audio_base64) {
+      playBase64Audio(data.audio_base64, data.audio_mime ?? "audio/mpeg");
+    }
+
+    if (currentSessionId) loadSessions();
+
+  } catch (err) {
+    thinkingEl.remove();
+    appendMessage("ai", `Voice error: ${err.message}. Is the Feature 10 server running?`);
+  } finally {
+    if (voiceStatusBar) voiceStatusBar.setAttribute("hidden", "");
+  }
+}
+
+/**
+ * Decode base64 audio and play it in the browser.
+ * @param {string} b64 - base64-encoded audio bytes
+ * @param {string} mime - MIME type, e.g. "audio/mpeg"
+ */
+function playBase64Audio(b64, mime = "audio/mpeg") {
+  try {
+    const raw = atob(b64);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime });
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.addEventListener("ended", () => URL.revokeObjectURL(url));
+    audio.play().catch((e) => console.warn("Audio playback failed:", e));
+  } catch (e) {
+    console.warn("Could not decode/play audio:", e);
+  }
+}
+
+// 🎤 button: toggle recording on/off.
+voiceBtn?.addEventListener("click", () => {
+  if (mediaRecorder) {
+    stopVoiceRecording();
+  } else {
+    startVoiceRecording();
+  }
+});
+
+// Stop button in the status bar.
+voiceStopBtn?.addEventListener("click", stopVoiceRecording);
+
+/**
+ * Send an image file to POST /api/vision/chat and show the result as a
+ * visual card with a thumbnail and a VLM badge.
+ *
+ * @param {File} file - the image file from the file picker
+ */
+async function sendImageMessage(file) {
+  const thinkingEl = appendMessage("ai", "", true);
+
+  // Create a local object URL so we can show a thumbnail without uploading yet.
+  const thumbUrl = URL.createObjectURL(file);
+
+  const prompt = `Describe this image in the context of [YOUR_DOMAIN].`;
+
+  const formData = new FormData();
+  formData.append("image", file, file.name);
+  formData.append("prompt", prompt);
+  formData.append("detail", "auto");
+  if (currentSessionId) formData.append("session_id", currentSessionId);
+
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/vision/chat`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    thinkingEl.remove();
+
+    // Show the image attachment as a user bubble.
+    appendImageUserBubble(thumbUrl, file.name);
+
+    // Show the vision response card.
+    appendVisionResponse(data, thumbUrl);
+
+    URL.revokeObjectURL(thumbUrl);
+
+    if (currentSessionId) loadSessions();
+
+  } catch (err) {
+    URL.revokeObjectURL(thumbUrl);
+    thinkingEl.remove();
+    appendMessage("ai", `Vision error: ${err.message}. Is the Feature 10 server running?`);
+  }
+}
+
+/**
+ * Render the user's image upload as a bubble in the conversation.
+ * @param {string} thumbUrl - object URL for thumbnail display
+ * @param {string} filename - image filename
+ */
+function appendImageUserBubble(thumbUrl, filename) {
+  document.getElementById("empty-state")?.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message user";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "You";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble image-bubble";
+  bubble.innerHTML = `
+    <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(filename)}" class="vision-thumb" />
+    <span class="vision-filename">${escapeHtml(filename)}</span>
+  `;
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+  messageHistory.appendChild(wrapper);
+  messageHistory.scrollTop = messageHistory.scrollHeight;
+}
+
+/**
+ * Render a vision analysis response as a card with VLM badge.
+ * @param {{ answer: string, model_used: string }} data
+ * @param {string} thumbUrl - object URL for the thumbnail
+ */
+function appendVisionResponse(data, thumbUrl) {
+  document.getElementById("empty-state")?.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Assistant";
+
+  const card = document.createElement("div");
+  card.className = "vision-response-card";
+
+  card.innerHTML = `
+    <div class="vision-response-header">
+      <span class="vlm-badge">VLM</span>
+      <span class="vision-model-tag">${escapeHtml(data.model_used ?? "vision model")}</span>
+    </div>
+    <p class="response-card-answer">${escapeHtml(data.answer ?? "")}</p>
+  `;
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(card);
+  messageHistory.appendChild(wrapper);
+  messageHistory.scrollTop = messageHistory.scrollHeight;
+}
+
+// 📷 image input handler.
+imageInput?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    sendImageMessage(file);
+    imageInput.value = "";  // reset so the same file can be re-selected
+  }
+});
+
 retrievalsLoadBtn?.addEventListener("click", async () => {
   if (!retrievalsList) return;
 

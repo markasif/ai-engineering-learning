@@ -135,3 +135,39 @@ class AnthropicProvider(LLMProvider):
             "to use voice features while keeping LLM_PROVIDER=anthropic for chat. "
             "See docs/provider-setup-guide.md for details."
         )
+
+    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+        """Analyze an image using Claude's native vision capabilities (Claude 3+ all support vision)."""
+        import base64
+
+        b64 = base64.b64encode(image_bytes).decode()
+
+        # Anthropic's vision format: image goes BEFORE the text prompt in the content array.
+        # The "detail" parameter doesn't apply here; Anthropic controls resolution internally.
+        # Note: media_type is declared as image/jpeg — works for JPEG, PNG, GIF, WebP.
+        response = await self._client.messages.create(
+            model=self._model,
+            max_tokens=1500,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": b64,
+                        },
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }],
+        )
+
+        text_parts = [block.text for block in response.content if block.type == "text"]
+        return LLMResponse(
+            content="\n".join(text_parts) if text_parts else None,
+            provider="anthropic",
+            model=self._model,
+            raw=response.model_dump(),
+        )

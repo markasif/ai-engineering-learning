@@ -192,6 +192,15 @@ class Settings(BaseSettings):
         """
         return self.voice_provider or self.llm_provider
 
+    def effective_vlm_provider(self) -> str:
+        """Return the provider to use for image analysis (VLM).
+
+        Falls back to the main LLM provider if VLM_PROVIDER is not set.
+        If your main provider doesn't support vision (groq, cohere), set
+        VLM_PROVIDER=openai or VLM_PROVIDER=ollama with a vision model.
+        """
+        return self.vlm_provider or self.llm_provider
+
 
 # Single shared instance — import this object, don't instantiate Settings yourself.
 settings = Settings()
