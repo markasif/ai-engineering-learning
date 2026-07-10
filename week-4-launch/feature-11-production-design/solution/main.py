@@ -1,78 +1,81 @@
 """
-Feature 10: Multimodal AI — solution
+Feature 11: Production Design — solution
 
-Up until now, everything has been text in → text out. But real-world AI
-assistants communicate through multiple channels — voice, images, documents
-as images, screenshots. These different channels are called "modalities."
+Up until now, we've been building features. This feature is about making
+what you built production-ready. Two concerns:
 
-This feature adds two new modalities to your assistant:
-  - Part A: Voice  — record a question, hear the answer (STT → LLM → TTS)
-  - Part B: Vision — upload an image, ask a question about it (VLM)
-  - Part C: Unified modality router — one endpoint detects and routes all three
+  Part A — Observability: you can't fix what you can't see.
+    - Structured JSON logging: every request is a machine-readable log line
+    - Request tracing: X-Request-ID header links logs to the specific request
+    - Latency + error metrics: GET /api/metrics exposes live numbers
+    - Richer health check: shows version, provider, and live metric snapshot
+    - Rate limiting: protect the API from abuse with slowapi
 
-WHAT IS A VLM?
-  A Vision Language Model (VLM) accepts images alongside text — the same chat
-  interface, but the "user" message includes an image. Examples:
-    Cloud: GPT-4o (OpenAI), Claude 3 (Anthropic)
-    Local: LLaVA 7B, Phi-3 Vision, LLaVA-Phi (free via Ollama)
+  Part B — Eval Harness: you can't trust what you don't test.
+    - Golden test set (tests/eval_cases_example.json): 10 Alpine Trail Co. cases
+    - POST /api/eval/run: runs all cases, scores each one, returns a report
+    - GET /api/eval/last: fetch the most recent report (stored in-memory)
+    - Checks: intent routing, source routing (llm/rag/hybrid), content keywords
+    - UI: metrics dashboard + eval panel in Admin tab, auto-refreshes every 5s
 
-  Set VLM_PROVIDER and VLM_MODEL in .env to choose your vision model.
-  You can use a cloud LLM for chat (LLM_PROVIDER=groq) while using a local
-  VLM for image tasks (VLM_PROVIDER=ollama, VLM_MODEL=llava) — or vice versa.
+New endpoints vs Feature 10:
+  GET /api/health    — richer: version, provider, live metrics snapshot
+  GET /api/metrics   — total_requests, avg_latency_ms, error_rate, eval_last_run
+  POST /api/eval/run — run tests/eval_cases_example.json; save report in-memory
+  GET /api/eval/last — retrieve the most recent eval report
 
-SLM NOTE (Ollama users):
-  Ollama does NOT support speech APIs natively.
-  Set VOICE_PROVIDER=openai in .env to enable voice while keeping your local
-  SLM for chat. Your chat/agents continue to run on the local model.
+Rate-limited endpoints:
+  POST /api/chat               — 60/minute per IP
+  POST /api/chat/structured    — 60/minute per IP
+  POST /api/sessions/{id}/agent/run — 30/minute per IP
+  (session/smart chat is called internally by voice/multimodal, so not decorated)
 
-CONNECTION TO FEATURE 6 (Anti-RAG / Smart Router):
-  The modality router in Part C is the same concept as the Feature 6 Smart Router,
-  extended: instead of routing between "use docs" vs "use general knowledge,"
-  we now route between "text / voice / vision." Same pattern, new dimension.
+Middleware added:
+  RequestIDMiddleware — assigns X-Request-ID UUID to every request
+  TimingMiddleware    — records latency + error to in-memory metrics
 
-New endpoints vs Feature 9:
-  POST /api/voice/transcribe  — audio → text (STT only)
-  POST /api/voice/chat        — audio in → JSON with audio + transcript out
-  POST /api/vision/analyze    — image + prompt → analysis (stateless)
-  POST /api/vision/chat       — image + prompt + session → session-aware vision
-  POST /api/chat/multimodal   — unified router: text/voice/vision → correct pipeline
+All Feature 1-10 endpoints remain unchanged.
 
-All Feature 1-9 endpoints remain unchanged.
+WHAT YOU BUILT → FRAMEWORK EQUIVALENT:
+  JSONFormatter + setup_logging()  → structlog or python-json-logger library
+  RequestIDMiddleware              → OpenTelemetry trace context propagation
+  TimingMiddleware                 → Prometheus request_duration_seconds middleware
+  shared/metrics.py               → Prometheus in-process registry (Counter + Histogram)
+  run_eval() + EvalCase/Report    → LangSmith evaluate() / RAGAS evaluate()
+  @limiter.limit("60/minute")     → nginx/Caddy rate limiting or AWS WAF throttle rules
 
 Run with:
     uvicorn main:app --reload --port 8000
-
-WHAT YOU BUILT → FRAMEWORK EQUIVALENT:
-  transcribe_audio()           → OpenAI Whisper / Groq Whisper API client
-  synthesize_speech()          → OpenAI TTS / ElevenLabs API client
-  analyze_image()              → LangChain HumanMessage with image content blocks
-  detect_modality() + routing  → custom routing layer (no standard framework yet —
-                                 modality routing is still hand-rolled in production)
 """
 import base64
 import json
+import logging
 import sys
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+from shared import metrics
 from shared.agent import run_agent_with_mcp
 from shared.document_store import (
     delete_document, get_chunks, get_document, list_documents,
     save_chunk, save_document, update_document,
 )
+from shared.eval_harness import EvalCase, EvalReport, run_eval
 from shared.ingestion import CHUNKING_STRATEGIES, extract_pages, extract_text
 from shared.llm_client import analyze_image, call_llm, synthesize_speech, transcribe_audio
+from shared.logging_config import setup_logging
 from shared.mcp_client import (
     SERVER_REGISTRY, call_mcp_tool, get_mcp_tool_schemas, list_mcp_tools,
 )
+from shared.middleware import RequestIDMiddleware, TimingMiddleware
 from shared.models import (
     AgentTask, Chunk, Document, Message, SmartChatResponse, StructuredResponse,
 )
@@ -89,7 +92,29 @@ from shared.vector_store import (
     add_chunks, delete_document_chunks, get_stats as vector_get_stats, search as vector_search,
 )
 
+# slowapi is an optional dependency — gracefully degrade if not installed.
+# In production, install with: pip install slowapi
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
+    _limiter: Limiter | None = Limiter(key_func=get_remote_address)
+    _RATE_LIMITING = True
+except ImportError:
+    _limiter = None
+    _RATE_LIMITING = False
+
+
+def _rl(rate: str):
+    """Apply @_limiter.limit(rate) if slowapi is installed, else pass through."""
+    def deco(func):
+        return _limiter.limit(rate)(func) if _limiter else func  # type: ignore[union-attr]
+    return deco
+
+_log = logging.getLogger(__name__)
+
 CONTEXT_WINDOW_SIZE = 20
+_EVAL_CASES_PATH = Path(__file__).parent.parent / "tests" / "eval_cases_example.json"
 
 # ---------------------------------------------------------------------------
 # OpenAPI tag definitions — appear as collapsible sections in /docs
@@ -141,15 +166,25 @@ OPENAPI_TAGS = [
         ),
     },
     {
+        "name": "F11 · Production Design",
+        "description": (
+            "**Week 4 · Feature 11** — Observability and eval harness. "
+            "Part A: structured JSON logging, request tracing (X-Request-ID), latency metrics, rate limiting. "
+            "Part B: golden test set + automated quality scoring via POST /api/eval/run."
+        ),
+    },
+    {
         "name": "Infrastructure",
-        "description": "Health check, active provider info — useful for deployment monitoring.",
+        "description": "Health check, active provider info, live metrics — useful for deployment monitoring.",
     },
 ]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
     await check_provider_config()
+    _log.info("Feature 11 server started", extra={"event": "startup"})
     yield
 
 
@@ -160,10 +195,19 @@ app = FastAPI(
         "Endpoints are grouped by **course feature** so you can find exactly what was "
         "added each week. Expand a section to see its endpoints and try them live."
     ),
-    version="10.0.0",
+    version="11.0.0",
     lifespan=lifespan,
     openapi_tags=OPENAPI_TAGS,
 )
+
+# Middleware — order matters: RequestIDMiddleware is outermost (processes requests first).
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(TimingMiddleware)
+
+# Rate limiting — only if slowapi is installed.
+if _RATE_LIMITING and _limiter is not None:
+    app.state.limiter = _limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -201,9 +245,9 @@ class McpExecuteRequest(BaseModel):
     arguments: dict[str, Any] = {}
 
 class VoiceChatResponse(BaseModel):
-    transcript: str       # what the user said (after STT)
-    answer: str           # LLM's text reply
-    audio_base64: str     # TTS output, base64-encoded MP3
+    transcript: str
+    answer: str
+    audio_base64: str
     audio_mime: str = "audio/mpeg"
 
 class VisionAnalyzeResponse(BaseModel):
@@ -211,16 +255,16 @@ class VisionAnalyzeResponse(BaseModel):
     model_used: str
 
 class MultimodalChatResponse(BaseModel):
-    modality: str                   # "text" | "voice" | "vision"
+    modality: str
     answer: str
-    source: str | None = None       # text: llm/rag/hybrid
-    chunks_used: list[dict] = []    # text: retrieved chunks
-    confidence: float | None = None # text: router confidence
+    source: str | None = None
+    chunks_used: list[dict] = []
+    confidence: float | None = None
     retrieval_method: str | None = None
-    transcript: str | None = None   # voice: what the user said
-    audio_base64: str | None = None # voice: TTS output
+    transcript: str | None = None
+    audio_base64: str | None = None
     audio_mime: str | None = None
-    model_used: str | None = None   # vision: which VLM
+    model_used: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +272,9 @@ class MultimodalChatResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
-async def chat(request: ChatRequest) -> ChatResponse:
+@_rl("60/minute")
+async def chat(http_request: Request, request: ChatRequest) -> ChatResponse:
+    """Basic chat endpoint — rate limited to 60 requests per minute per IP."""
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely."},
         {"role": "user", "content": request.message},
@@ -249,7 +295,9 @@ def _parse_structured(raw_text: str) -> StructuredResponse:
 
 
 @app.post("/api/chat/structured", response_model=StructuredResponse, tags=["F2 · Prompt Mastery"])
-async def chat_structured(request: ChatRequest) -> StructuredResponse:
+@_rl("60/minute")
+async def chat_structured(http_request: Request, request: ChatRequest) -> StructuredResponse:
+    """Structured JSON-mode chat — rate limited to 60 requests per minute per IP."""
     result = await call_llm(
         [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": request.message}],
         temperature=0.3, response_format={"type": "json_object"},
@@ -454,7 +502,9 @@ async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_
 # ---------------------------------------------------------------------------
 
 @app.post("/api/sessions/{session_id}/agent/run", tags=["F7 · First Agent"])
-async def agent_run(session_id: str, request: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
+@_rl("30/minute")
+async def agent_run(http_request: Request, session_id: str, request: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
+    """Agent endpoint — rate limited to 30 requests per minute per IP."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
@@ -489,7 +539,6 @@ async def agent_status(task_id: str) -> dict:
 
 @app.get("/api/mcp/servers", tags=["F9 · MCP Integration"])
 async def mcp_servers() -> list[dict]:
-    """List connected MCP servers with name, transport, and enabled status."""
     return [
         {
             "name":        s["name"],
@@ -503,7 +552,6 @@ async def mcp_servers() -> list[dict]:
 
 @app.get("/api/mcp/tools", tags=["F9 · MCP Integration"])
 async def mcp_tools_list() -> list[dict]:
-    """List all tools available from connected MCP servers."""
     try:
         tools = await list_mcp_tools(use_cache=False)
         return tools
@@ -513,7 +561,6 @@ async def mcp_tools_list() -> list[dict]:
 
 @app.post("/api/mcp/execute", tags=["F9 · MCP Integration"])
 async def mcp_execute(request: McpExecuteRequest) -> dict:
-    """Directly invoke an MCP tool by name with given arguments."""
     try:
         result = await call_mcp_tool(request.tool_name, request.arguments)
         return {"tool_name": request.tool_name, "result": result}
@@ -527,15 +574,6 @@ async def mcp_execute(request: McpExecuteRequest) -> dict:
 
 @app.post("/api/voice/transcribe", tags=["F10 · Multimodal AI"])
 async def voice_transcribe(audio: UploadFile = File(...)) -> dict:
-    """
-    Convert an audio recording to text (Speech-to-Text only).
-
-    Upload a WAV, MP3, WebM, or M4A file and get back the transcribed text.
-    Uses VOICE_PROVIDER (or LLM_PROVIDER if not set separately).
-
-    Note for Ollama users: set VOICE_PROVIDER=openai or VOICE_PROVIDER=groq
-    in .env — Ollama doesn't support speech APIs natively.
-    """
     audio_bytes = await audio.read()
     text = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
     return {"text": text, "filename": audio.filename}
@@ -547,24 +585,9 @@ async def voice_chat(
     session_id: str = Form(""),
     tenant_id: str = Depends(get_tenant_id),
 ) -> VoiceChatResponse:
-    """
-    Full voice pipeline: audio in → text → LLM → audio out.
-
-    The voice pipeline has four stages (log timestamps to find your bottleneck):
-      1. Record  — browser MediaRecorder captures the user's speech
-      2. Transcribe — STT converts audio bytes to text (this endpoint)
-      3. LLM    — smart chat classifies and answers the text question
-      4. Synthesize — TTS converts the text answer back to audio
-
-    Returns JSON with the transcript (what you said), the answer (text), and
-    base64-encoded audio (the spoken answer). The UI can play the audio and
-    display the transcript simultaneously.
-    """
-    # Stage 2: transcribe
     audio_bytes = await audio.read()
     transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
 
-    # Stage 3: LLM — use smart chat if a session is active, plain LLM otherwise
     if session_id:
         session = get_session(session_id, tenant_id=tenant_id)
         if session:
@@ -583,21 +606,14 @@ async def voice_chat(
         ])
         answer = result.content or ""
 
-    # Stage 4: synthesize (optional — not all providers support TTS)
-    # If TTS is unavailable (e.g. VOICE_PROVIDER=groq which only does STT),
-    # we still return the transcript and text answer; audio_base64 is empty.
     audio_base64 = ""
     try:
         audio_out = await synthesize_speech(answer)
         audio_base64 = base64.b64encode(audio_out).decode()
     except NotImplementedError:
-        pass  # TTS not supported by this provider — text answer still shown in UI
+        pass
 
-    return VoiceChatResponse(
-        transcript=transcript,
-        answer=answer,
-        audio_base64=audio_base64,
-    )
+    return VoiceChatResponse(transcript=transcript, answer=answer, audio_base64=audio_base64)
 
 
 # ---------------------------------------------------------------------------
@@ -610,18 +626,6 @@ async def vision_analyze(
     prompt: str = Form("Describe this image in detail."),
     detail: str = Form("auto"),
 ) -> VisionAnalyzeResponse:
-    """
-    Stateless image analysis — upload an image and ask a question about it.
-
-    No session required. For domain use cases:
-      - Product photo Q&A: "What colour is this jacket?"
-      - Document scanning: "What does the form in this image say?"
-      - Screenshot analysis: "What error is shown in this screenshot?"
-
-    Set VLM_PROVIDER and VLM_MODEL in .env to choose your vision model.
-    Local options (free): VLM_PROVIDER=ollama, VLM_MODEL=llava
-    Cloud options: VLM_PROVIDER=openai, VLM_MODEL=gpt-4o
-    """
     image_bytes = await image.read()
     result = await analyze_image(image_bytes, prompt, detail)
     return VisionAnalyzeResponse(answer=result.content or "", model_used=result.model)
@@ -635,13 +639,6 @@ async def vision_chat(
     session_id: str = Form(""),
     tenant_id: str = Depends(get_tenant_id),
 ) -> VisionAnalyzeResponse:
-    """
-    Session-aware vision chat — image analysis stored in conversation history.
-
-    The image question and answer are stored in the session as a special
-    [IMAGE] message pair, visible in /api/sessions/{id}/history. This lets
-    the agent reference "the image you uploaded earlier" in follow-up turns.
-    """
     image_bytes = await image.read()
     result = await analyze_image(image_bytes, prompt, detail)
     answer = result.content or ""
@@ -649,8 +646,6 @@ async def vision_chat(
     if session_id:
         session = get_session(session_id, tenant_id=tenant_id)
         if session:
-            # Store with [IMAGE] marker so history readers can distinguish
-            # image turns from text turns.
             add_message(session_id, "user", f"[IMAGE] {prompt}")
             add_message(session_id, "assistant", answer)
 
@@ -670,22 +665,6 @@ async def multimodal_chat(
     prompt: str = Form(""),
     tenant_id: str = Depends(get_tenant_id),
 ) -> MultimodalChatResponse:
-    """
-    Unified multimodal endpoint — send text, audio, or image; get a routed response.
-
-    This is the Feature 10 extension of Feature 6's Smart Router:
-      Feature 6 route: "should I retrieve docs, or answer from LLM knowledge?"
-      Feature 10 route: "is this text, voice, or vision? → route to correct pipeline"
-
-    The pattern is identical: inspect the request, decide the pipeline, delegate.
-    Modality detection is based on which file fields are present:
-      - audio file present  → voice pipeline (STT → LLM → return transcript + answer)
-      - image file present  → vision pipeline (VLM → return answer + model_used)
-      - neither present     → text pipeline (smart chat)
-
-    Returns a unified MultimodalChatResponse with a "modality" field so the
-    UI knows which pipeline ran and can render the appropriate UI card.
-    """
     has_audio = audio is not None and bool(audio.filename)
     has_image = image is not None and bool(image.filename)
     modality = detect_modality(has_audio=has_audio, has_image=has_image)
@@ -694,7 +673,12 @@ async def multimodal_chat(
         audio_bytes = await audio.read()  # type: ignore[union-attr]
         transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")  # type: ignore[union-attr]
         smart_resp = await smart_chat(session_id, SmartChatRequest(message=transcript), tenant_id)
-        audio_out = await synthesize_speech(smart_resp.answer)
+        audio_base64 = ""
+        try:
+            audio_out = await synthesize_speech(smart_resp.answer)
+            audio_base64 = base64.b64encode(audio_out).decode()
+        except NotImplementedError:
+            pass
         return MultimodalChatResponse(
             modality="voice",
             answer=smart_resp.answer,
@@ -703,7 +687,7 @@ async def multimodal_chat(
             confidence=smart_resp.confidence,
             retrieval_method=smart_resp.retrieval_method,
             transcript=transcript,
-            audio_base64=base64.b64encode(audio_out).decode(),
+            audio_base64=audio_base64,
             audio_mime="audio/mpeg",
         )
 
@@ -716,13 +700,8 @@ async def multimodal_chat(
         if session:
             add_message(session_id, "user", f"[IMAGE] {text_prompt}")
             add_message(session_id, "assistant", answer)
-        return MultimodalChatResponse(
-            modality="vision",
-            answer=answer,
-            model_used=result.model,
-        )
+        return MultimodalChatResponse(modality="vision", answer=answer, model_used=result.model)
 
-    # Default: text → smart chat
     smart_resp = await smart_chat(session_id, SmartChatRequest(message=message), tenant_id)
     return MultimodalChatResponse(
         modality="text",
@@ -735,16 +714,95 @@ async def multimodal_chat(
 
 
 # ---------------------------------------------------------------------------
+# Feature 11 — Part A: Observability endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/metrics", tags=["F11 · Production Design"])
+async def get_metrics() -> dict:
+    """
+    Live metrics snapshot from the in-memory metrics store.
+
+    Updated by TimingMiddleware on every /api/* request.
+    Fields:
+      total_requests  — total API calls since server start
+      total_errors    — calls that returned 5xx
+      avg_latency_ms  — mean response time across all calls
+      error_rate      — fraction of calls that errored (0.0–1.0)
+      eval_last_run   — the most recent eval report, or null
+    """
+    return metrics.get_metrics()
+
+
+# ---------------------------------------------------------------------------
+# Feature 11 — Part B: Eval harness endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/api/eval/run", tags=["F11 · Production Design"])
+async def eval_run() -> EvalReport:
+    """
+    Run the golden test set and return a scored report.
+
+    Loads eval_cases_example.json from the tests/ directory alongside this
+    solution folder. Runs classify_query + vector_search + call_llm for each
+    case — same pipeline as smart_chat, but called directly (no HTTP).
+
+    The report is also stored in-memory so GET /api/eval/last can retrieve it.
+    Eval pass rate appears in GET /api/metrics under eval_last_run.
+
+    NOTE: domain_question cases (source: rag) will route to "hybrid" or "llm"
+    if no documents are indexed — upload documents first for realistic results.
+    """
+    if not _EVAL_CASES_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Eval cases file not found at {_EVAL_CASES_PATH}. "
+                   "Create tests/eval_cases_example.json relative to this solution folder.",
+        )
+
+    raw = json.loads(_EVAL_CASES_PATH.read_text())
+    cases = [EvalCase(**c) for c in raw]
+    report = await run_eval(cases)
+    metrics.set_eval_result(report.model_dump())
+    _log.info(
+        "Eval run complete",
+        extra={"passed": report.passed, "total": report.total, "pass_rate": report.pass_rate},
+    )
+    return report
+
+
+@app.get("/api/eval/last", tags=["F11 · Production Design"])
+async def eval_last() -> dict:
+    """Retrieve the most recent eval report (stored in-memory since last POST /api/eval/run)."""
+    data = metrics.get_metrics().get("eval_last_run")
+    if data is None:
+        raise HTTPException(status_code=404, detail="No eval has been run yet. POST /api/eval/run first.")
+    return data
+
+
+# ---------------------------------------------------------------------------
 # Health + provider info
 # ---------------------------------------------------------------------------
 
 @app.get("/api/health", tags=["Infrastructure"])
-async def health():
-    return {"status": "ok"}
+async def health() -> dict:
+    """
+    Health check with live metrics snapshot.
+
+    Returns version, active provider, and a snapshot of request metrics.
+    This enriched health check is useful for load balancer health checks and
+    uptime monitors that want more than a plain {"status":"ok"}.
+    """
+    from shared.config import settings
+    return {
+        "status":   "ok",
+        "version":  "11.0.0",
+        "provider": settings.llm_provider,
+        "metrics":  metrics.get_metrics(),
+    }
 
 
 @app.get("/api/provider-info", tags=["Infrastructure"])
-async def provider_info():
+async def provider_info() -> dict:
     from shared.config import settings
     llm_name = settings.llm_provider.lower().strip()
     model_map = {
@@ -754,14 +812,15 @@ async def provider_info():
         "bedrock": settings.bedrock_model_id, "vertex": settings.vertex_model,
     }
     voice_name = settings.effective_voice_provider().lower().strip()
-    vlm_name = settings.effective_vlm_provider().lower().strip()
+    vlm_name   = settings.effective_vlm_provider().lower().strip()
     return {
-        "llm_provider": llm_name,
-        "llm_model": model_map.get(llm_name, "unknown"),
+        "llm_provider":  llm_name,
+        "llm_model":     model_map.get(llm_name, "unknown"),
         "voice_provider": voice_name if voice_name != llm_name else None,
-        "voice_model": model_map.get(voice_name) if voice_name != llm_name else None,
-        "vlm_provider": vlm_name if vlm_name != llm_name else None,
-        "vlm_model": settings.vlm_model if vlm_name != llm_name else None,
+        "voice_model":    model_map.get(voice_name) if voice_name != llm_name else None,
+        "vlm_provider":   vlm_name if vlm_name != llm_name else None,
+        "vlm_model":      settings.vlm_model if vlm_name != llm_name else None,
+        "rate_limiting":  _RATE_LIMITING,
     }
 
 

@@ -524,7 +524,17 @@ function switchTab(tabName) {
   // Refresh search document filter whenever the Search tab is opened.
   if (tabName === "search") loadSearchDocumentFilter();
   // Load tenant info whenever the Admin tab is opened (Feature 6).
-  if (tabName === "admin") loadTenantInfo();
+  // Feature 11: also start metrics auto-refresh when Admin opens, stop when leaving.
+  if (tabName === "admin") {
+    loadTenantInfo();
+    loadMetrics();
+    if (!metricsRefreshInterval) {
+      metricsRefreshInterval = setInterval(loadMetrics, 5000);
+    }
+  } else if (metricsRefreshInterval) {
+    clearInterval(metricsRefreshInterval);
+    metricsRefreshInterval = null;
+  }
   // Check session state when Agent tab is opened (Feature 7).
   // Also refresh MCP server count badge (Feature 9).
   if (tabName === "agent") { checkAgentSessionState(); refreshMcpCount(); }
@@ -1825,6 +1835,200 @@ imageInput?.addEventListener("change", (e) => {
     imageInput.value = "";  // reset so the same file can be re-selected
   }
 });
+
+// =============================================================================
+// Feature 11: Production Design — Metrics Dashboard + Eval Harness
+// =============================================================================
+
+/** Interval ID for the 5-second metrics auto-refresh. */
+let metricsRefreshInterval = null;
+
+const metricsRefreshDot = document.getElementById("metrics-refresh-dot");
+
+/**
+ * Fetch GET /api/metrics and render the four metric cards.
+ * Called on Admin tab open and every 5 s while the tab is active.
+ */
+async function loadMetrics() {
+  const grid = document.getElementById("metrics-grid");
+  if (!grid) return;
+
+  // Flash the refresh dot to show a poll happened.
+  if (metricsRefreshDot) {
+    metricsRefreshDot.classList.add("active");
+    setTimeout(() => metricsRefreshDot.classList.remove("active"), 400);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/metrics`);
+    if (!res.ok) throw new Error("metrics endpoint not available");
+    const data = await res.json();
+    renderMetrics(data);
+  } catch (err) {
+    grid.innerHTML = `<p class="sidebar-empty" style="font-size:0.82rem;grid-column:1/-1">
+      Metrics require the Feature 11 server: ${escapeHtml(err.message)}
+    </p>`;
+  }
+}
+
+/**
+ * Render the four metric cards into #metrics-grid.
+ * @param {{ total_requests: number, avg_latency_ms: number, error_rate: number, eval_last_run: object|null }} data
+ */
+function renderMetrics(data) {
+  const grid = document.getElementById("metrics-grid");
+  if (!grid) return;
+
+  const passRate = data.eval_last_run
+    ? `${Math.round((data.eval_last_run.pass_rate ?? 0) * 100)}%`
+    : "—";
+
+  const errorPct  = Math.round((data.error_rate ?? 0) * 10000) / 100; // 2 decimal places
+  const latency   = data.avg_latency_ms ?? 0;
+  const latencyStr = latency >= 1000 ? `${(latency / 1000).toFixed(1)}s` : `${Math.round(latency)}ms`;
+
+  grid.innerHTML = `
+    <div class="metric-card">
+      <div class="metric-value">${data.total_requests ?? 0}</div>
+      <div class="metric-label">Total Requests</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">${latencyStr}</div>
+      <div class="metric-label">Avg Latency</div>
+    </div>
+    <div class="metric-card" data-level="${errorPct > 5 ? 'high' : errorPct > 1 ? 'medium' : 'low'}">
+      <div class="metric-value">${errorPct}%</div>
+      <div class="metric-label">Error Rate</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">${passRate}</div>
+      <div class="metric-label">Last Eval Pass Rate</div>
+    </div>
+  `;
+}
+
+/**
+ * POST /api/eval/run — run the golden test set and render the report.
+ * Takes 10–60 seconds depending on the LLM provider.
+ */
+async function runEval() {
+  const btn      = document.getElementById("eval-run-btn");
+  const resultEl = document.getElementById("eval-results");
+
+  if (btn) { btn.disabled = true; btn.textContent = "Running…"; }
+  if (resultEl) {
+    resultEl.innerHTML = `
+      <div class="eval-running">
+        <span class="upload-spinner" aria-hidden="true"></span>
+        <span>Running 10 eval cases — this may take 15–60 seconds…</span>
+      </div>`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/eval/run`, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    const report = await res.json();
+    renderEvalReport(report);
+    loadMetrics();  // refresh pass rate in metric cards
+  } catch (err) {
+    if (resultEl) {
+      resultEl.innerHTML = `<p style="color:var(--color-pistache);font-size:0.82rem">
+        Eval failed: ${escapeHtml(err.message)}<br>
+        Make sure you're running the Feature 11 server (<code>solution/main.py</code>).
+      </p>`;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Run Eval"; }
+  }
+}
+
+/**
+ * GET /api/eval/last — fetch and render the most recent saved eval report.
+ */
+async function loadLastEval() {
+  const resultEl = document.getElementById("eval-results");
+  if (!resultEl) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/eval/last`);
+    if (res.status === 404) {
+      resultEl.innerHTML = `<p class="sidebar-empty" style="font-size:0.82rem">No eval has been run yet. Click "Run Eval" to start.</p>`;
+      return;
+    }
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const report = await res.json();
+    renderEvalReport(report);
+  } catch (err) {
+    resultEl.innerHTML = `<p style="color:var(--color-pistache);font-size:0.82rem">
+      Failed: ${escapeHtml(err.message)}
+    </p>`;
+  }
+}
+
+/**
+ * Render a full EvalReport into #eval-results.
+ * @param {{ total: number, passed: number, failed: number, pass_rate: number, cases: object[], ran_at: string }} report
+ */
+function renderEvalReport(report) {
+  const el = document.getElementById("eval-results");
+  if (!el) return;
+
+  const pct = Math.round((report.pass_rate ?? 0) * 100);
+  const barColor = pct >= 80 ? "var(--color-matcha)" : pct >= 50 ? "var(--color-chai)" : "#c0392b";
+
+  let html = `
+    <div class="eval-summary-row">
+      <strong class="eval-summary-score">${report.passed}/${report.total} passed</strong>
+      <span class="eval-pass-rate-badge" data-level="${pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low'}">${pct}%</span>
+      <span class="eval-ran-at">Run at ${report.ran_at ? new Date(report.ran_at).toLocaleString() : "—"}</span>
+    </div>
+    <div class="eval-bar-track" title="${pct}% pass rate">
+      <div class="eval-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+    </div>
+    <table class="eval-case-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Question</th>
+          <th>Intent</th>
+          <th>Source</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  (report.cases ?? []).forEach((c) => {
+    const status   = c.passed
+      ? `<span class="eval-pass-badge">PASS</span>`
+      : `<span class="eval-fail-badge">FAIL</span>`;
+    const failures = (c.checks_failed ?? []).length
+      ? `<div class="eval-fail-details">${c.checks_failed.map(escapeHtml).join(" · ")}</div>`
+      : "";
+    const questionShort = (c.question || "").slice(0, 55) + ((c.question || "").length > 55 ? "…" : "");
+
+    html += `
+      <tr class="${c.passed ? "eval-row-pass" : "eval-row-fail"}">
+        <td><code class="eval-case-id">${escapeHtml(c.case_id || "")}</code></td>
+        <td class="eval-question-cell" title="${escapeHtml(c.question || "")}">${escapeHtml(questionShort)}</td>
+        <td><span class="eval-intent-tag">${escapeHtml(c.actual_intent || "")}</span></td>
+        <td><span class="eval-source-tag" data-source="${escapeHtml(c.actual_source || "")}">${escapeHtml(c.actual_source || "")}</span></td>
+        <td>${status}${failures}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+document.getElementById("eval-run-btn")?.addEventListener("click", runEval);
+document.getElementById("eval-last-btn")?.addEventListener("click", loadLastEval);
+
+// ---------------------------------------------------------------------------
 
 retrievalsLoadBtn?.addEventListener("click", async () => {
   if (!retrievalsList) return;

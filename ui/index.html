@@ -341,6 +341,48 @@
           <button id="retrievals-load-btn" class="btn btn-ghost">Load Recent Retrievals</button>
           <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
         </div>
+
+        <!-- ===================================================
+             FEATURE 11: Metrics Dashboard (Part A)
+             Auto-refreshes every 5 seconds when Admin tab is open.
+             Populated by app.js calling GET /api/metrics.
+             =================================================== -->
+        <div class="admin-section">
+          <h3 class="admin-section-title">
+            Live Metrics
+            <span class="admin-part-badge">Feature 11</span>
+            <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
+          </h3>
+          <p class="admin-section-desc">
+            Request counts, avg latency, and error rate since the server started.
+            Updated by <code>TimingMiddleware</code> on every <code>/api/*</code> call.
+            Requires the Feature 11 server.
+          </p>
+          <div class="metrics-grid" id="metrics-grid">
+            <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
+          </div>
+        </div>
+
+        <!-- ===================================================
+             FEATURE 11: Eval Harness (Part B)
+             Runs tests/eval_cases_example.json against the live server.
+             =================================================== -->
+        <div class="admin-section">
+          <h3 class="admin-section-title">
+            Eval Harness
+            <span class="admin-part-badge">Feature 11</span>
+          </h3>
+          <p class="admin-section-desc">
+            Runs 10 Alpine Trail Co. golden test cases through the Smart Router pipeline
+            and scores each one. Uses <code>POST /api/eval/run</code>.
+            Upload documents first for accurate domain-question scoring.
+          </p>
+          <div class="eval-controls">
+            <button id="eval-run-btn" class="btn btn-primary" type="button">Run Eval</button>
+            <button id="eval-last-btn" class="btn btn-ghost" type="button">Load Last Report</button>
+          </div>
+          <div id="eval-results" class="eval-results"></div>
+        </div>
       </section>
 
       <!-- ===================================================
