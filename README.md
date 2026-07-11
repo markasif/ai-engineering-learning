@@ -144,3 +144,65 @@ python -c "from shared.secrets import get_secret; print(get_secret('OPENAI_API_K
 | [docs/student-projects.md](docs/student-projects.md) | See what other students built |
 | [docs/architecture/](docs/architecture/) | System diagrams added week by week |
 | [docs/ollama-privacy-guide.md](docs/ollama-privacy-guide.md) | Verify local inference, disable history, air-gapped deployment |
+| [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md) | Platform comparison: Railway, Render, AWS App Runner, GCP Cloud Run, Azure |
+
+---
+
+## 🎓 Course Complete
+
+You've finished all 12 features. Here's what you built:
+
+```
+                     ┌─────────────────────────────────┐
+                     │      Your AI Assistant          │
+                     │    running in Docker · CI/CD    │
+                     └──────────────┬──────────────────┘
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              │                     │                     │
+     ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐
+     │  Week 4: Launch │  │  Week 3: Hands  │  │  Week 2: Know.  │
+     │ F10 Voice+Vision│  │ F7  ReAct Agent │  │ F4  Doc Upload  │
+     │ F11 Observ+Eval │  │ F8  Plan+Execute│  │ F5  Embeddings  │
+     │ F12 Docker+CI   │  │ F9  MCP Tools   │  │ F6  Smart Router│
+     └─────────────────┘  └─────────────────┘  └────────┬────────┘
+                                                         │
+                                               ┌────────▼────────┐
+                                               │  Week 1: Brain  │
+                                               │ F1  Basic Chat  │
+                                               │ F2  Struct. Out │
+                                               │ F3  Sessions    │
+                                               └─────────────────┘
+```
+
+### What You Built → Framework Equivalent
+
+| What you built | Framework / production equivalent |
+|---|---|
+| `shared/llm_client.py` | LangChain `ChatOpenAI` / LlamaIndex `LLM` |
+| `shared/vector_store.py` | LangChain `Chroma` vectorstore |
+| `shared/router.py` `classify_query()` | LangChain routing chains / semantic router |
+| `shared/agent.py` `run_agent()` | LangGraph ReAct agent |
+| `shared/planner.py` | LangGraph Plan-and-Execute |
+| `shared/mcp_client.py` | LangChain MCP adapter |
+| `shared/eval_harness.py` `run_eval()` | LangSmith `evaluate()` / RAGAS |
+| `shared/logging_config.py` `JSONFormatter` | `structlog` / `python-json-logger` |
+| `shared/middleware.py` `RequestIDMiddleware` | OpenTelemetry trace context propagation |
+| `shared/metrics.py` | Prometheus in-process registry |
+| `@_rl("60/minute")` slowapi decorator | nginx / Caddy rate limiting / AWS WAF |
+| `Dockerfile` multi-stage build | Standard production Python container pattern |
+| `docker-compose.yml` named volumes | AWS EFS / GCP Persistent Disk |
+| `.github/workflows/eval.yml` | CircleCI / GitLab CI eval quality step |
+
+### Deploy Your App
+
+```bash
+# Run locally in Docker
+cd week-4-launch/feature-12-ship-it/
+docker compose up --build
+
+# Open in browser
+open http://localhost:8000
+```
+
+For cloud deployment: [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md)
