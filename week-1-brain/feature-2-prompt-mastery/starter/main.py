@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="My AI BlockSeBlock Assistant",
-    description="Domain-Specific AI Assistant — AI Engineering Bootcamp, BlockseBlock",
+    title="HR Policy Assistant for NeoIntelli",
+    description="HR Policy Assistant for NeoIntelli",
     version="2.0.0",
     lifespan=lifespan,
 )
@@ -68,7 +68,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         {
             "role": "system",
             "content": (
-                "You are a helpful AI assistant for [YOUR_DOMAIN]. "
+                "You are a helpful AI assistant for HR Policy Assistant for NeoIntelli. "
                 "Answer clearly and concisely. "
                 "If you don't know something, say so honestly rather than guessing."
             ),
@@ -105,20 +105,26 @@ async def chat(request: ChatRequest) -> ChatResponse:
 #
 # See resource/prompt-engineering-workbook.md for worked examples and exercises.
 _STRUCTURED_SYSTEM_PROMPT = """
-# TODO (Feature 2, Step 1): Replace this string with your structured system prompt.
-# The prompt should instruct the model to return JSON matching StructuredResponse.
-# See the comments above for the required fields and tips.
-"""
+You are a helpful AI assistant for HR Policy Assistant for NeoIntelli.
+For every user message, respond ONLY with a JSON object (no markdown, no extra text)
+with exactly these four fields:
+{
+  "intent": "<one of: general_question | domain_question | action_request | unclear>",
+  "answer": "<your response to the user, written in plain English>",
+  "confidence": <a number between 0.0 and 1.0 representing how sure you are>,
+  "sources_needed": <true if domain documents would improve this answer, false otherwise>
+}
 
+Intent definitions:
+- "general_question": factual/knowledge query not specific to HR Policy Assistant for NeoIntelli
+- "domain_question": question about HR policies or procedures
+- "action_request": request for a specific HR action (e.g., leave request, salary adjustment)
+- "unclear": the user's message is unclear or not related to HR
+"""
 
 @app.post("/api/chat/structured", response_model=StructuredResponse)
 async def chat_structured(request: ChatRequest) -> StructuredResponse:
-    """
-    Send a message and receive a structured response with intent classification.
 
-    Your task: build the system prompt (Step 1 above) and parse the model's
-    JSON reply into a StructuredResponse (Step 2 below).
-    """
     messages = [
         {"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT},
         {"role": "user", "content": request.message},
@@ -132,27 +138,16 @@ async def chat_structured(request: ChatRequest) -> StructuredResponse:
 
     raw_text = result.content or ""
 
-    # TODO (Feature 2, Step 2): Parse raw_text into a StructuredResponse.
-    #
-    # 1. Parse the JSON:
-    #      data = json.loads(raw_text)
-    #
-    # 2. Construct the Pydantic model:
-    #      return StructuredResponse(**data)
-    #
-    # 3. Wrap both lines in a try/except — if the model returns invalid JSON,
-    #    return a safe fallback so the server doesn't crash:
-    #      return StructuredResponse(
-    #          intent="unclear",
-    #          answer=raw_text or "The assistant returned an unexpected response.",
-    #          confidence=0.0,
-    #          sources_needed=False,
-    #      )
-    #
-    # The fallback is important: even with JSON mode enabled, some providers
-    # may occasionally return malformed output, and a graceful degradation is
-    # always better than a 500 error.
-    pass
+    try:
+        data = json.loads(raw_text)
+        return StructuredResponse(**data)
+    except (json.JSONDecodeError, Exception):
+        return StructuredResponse(
+            intent="unclear",
+            answer=raw_text or "The assistant returned an unexpected response.",
+            confidence=0.0,
+            sources_needed=False,
+        )
 
 
 @app.get("/api/health")

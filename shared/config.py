@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # Groq (recommended for beginners — free tier at console.groq.com)
     # -------------------------------------------------------------------------
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = ""
 
     # -------------------------------------------------------------------------
     # OpenAI
@@ -178,7 +178,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Domain / assistant identity
     # -------------------------------------------------------------------------
-    assistant_name: str = "My AI Assistant"
+    assistant_name: str = "HR Policy Assistant for NeoIntelli"
     assistant_description: str = (
         "You are a helpful assistant. Replace this with your domain description."
     )

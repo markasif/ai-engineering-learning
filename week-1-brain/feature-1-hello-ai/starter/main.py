@@ -35,9 +35,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
+
 app = FastAPI(
-    title="My AI Assistant",
-    description="Domain-Specific AI Assistant — AI Engineering Bootcamp, BlockseBlock",
+    title="HR Policy Assistant",
+    description="HR Policy Assistant for NeoIntelli",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -45,12 +46,7 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     """The body expected by POST /api/chat."""
-
-    # TODO (Feature 1, Step 1): Add a field called `message` of type str.
-    # This is what the user sends to the assistant.
-    # Hint: the syntax is:  field_name: field_type
-    pass
-
+    message: str
 
 class ChatResponse(BaseModel):
     """The body returned by POST /api/chat."""
@@ -66,20 +62,23 @@ async def chat(request: ChatRequest) -> ChatResponse:
     Your task: build the `messages` list (a system message + the user's message),
     call `call_llm(messages)`, and return the result as a ChatResponse.
     """
-    # TODO (Feature 1, Step 2): Implement this function.
-    #
-    # 1. Create a `messages` list with two dicts:
-    #      - {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. ..."}
-    #        Replace [YOUR_DOMAIN] with your chosen domain — this is the assistant's personality.
-    #      - {"role": "user", "content": request.message}
-    #        This is what the user just typed.
-    #
-    # 2. Call:  result = await call_llm(messages)
-    #
-    # 3. Return: ChatResponse(response=result.content or "")
-    #
-    # See GLOSSARY.md for explanations of "system prompt", "LLM", and "token".
-    pass
+    messages = [
+        {
+            "role": "system",
+            "content" : (
+                "You are a helpful AI assistant for HR Policy Assistant for NeoIntelli. "  
+                    "Answer clearly and concisely. "
+                    "If you don't know something, say so honestly rather than guessing."
+            )
+        },
+        {
+            "role": "user",
+            "content": request.message
+        },
+    ]
+
+    result = await call_llm(messages)
+    return ChatResponse(response=result.content or "")
 
 
 @app.get("/api/health")
@@ -101,6 +100,7 @@ async def provider_info():
         "anthropic": settings.anthropic_model,
         "cohere": settings.cohere_model,
         "ollama": settings.ollama_model,
+        "groq":settings.groq_model,
         "custom": settings.custom_model,
     }
 

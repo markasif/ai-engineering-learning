@@ -22,17 +22,6 @@ from pydantic import BaseModel, Field
 # =============================================================================
 
 class StructuredResponse(BaseModel):
-    """
-    A structured reply from the AI assistant that includes classification metadata
-    alongside the answer text.
-
-    Instead of returning plain text, the assistant analyzes the query, decides
-    what kind of question it is, and returns that classification together with its
-    answer and a confidence estimate. This lets the UI (and any downstream code)
-    make decisions based on the *type* of question — for example, showing a
-    warning when confidence is low, or routing action requests to a separate flow.
-    """
-
     intent: Literal["general_question", "domain_question", "action_request", "unclear"] = Field(
         description=(
             "What kind of request the user made. "
