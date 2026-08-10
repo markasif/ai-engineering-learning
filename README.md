@@ -1,6 +1,5 @@
 # AI Engineering Bootcamp
 
-**BlockseBlock · Instructor: Naureen Fathima**
 
 > Build a production-ready, domain-specific AI assistant — one feature per week, twelve weeks from zero to shipped.
 
