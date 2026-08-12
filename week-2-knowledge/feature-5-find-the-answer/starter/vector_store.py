@@ -106,21 +106,15 @@ def add_chunks(document_id: str, chunks: list[str], metadatas: list[dict]) -> No
     collection = get_collection()
     ids = [f"{document_id}_{i}" for i in range(len(chunks))]
 
-    # Add document_id to metadata and remove None values (Chroma rejects them).
     cleaned_metadatas = [
         {k: v for k, v in {**m, "document_id": document_id}.items() if v is not None}
         for m in metadatas
     ]
 
-    # TODO (Feature 5, Step 1): call collection.add() to embed and store the chunks.
-    #
-    # collection.add(
-    #     documents=chunks,           # list[str] — Chroma embeds these automatically
-    #     metadatas=cleaned_metadatas, # list[dict] — stored alongside each vector
-    #     ids=ids,                    # list[str]  — unique ID per chunk
-    # )
-    raise NotImplementedError(
-        "Implement the collection.add() call — see the TODO above (Step 1)."
+    collection.add(
+      documents = chunks,
+      metadatas=cleaned_metadatas,
+      ids=ids
     )
 
 
@@ -164,33 +158,19 @@ def search(
     kwargs: dict = {"query_texts": [query], "n_results": n_results}
     if filters:
         kwargs["where"] = filters
-
-    # TODO (Feature 5, Step 2): call collection.query() to find similar chunks.
-    #
-    # results = collection.query(**kwargs)
-    #
-    # The results dict has these keys (each a list-of-lists, one per query):
-    #   results["documents"][0]  → list[str]   — the chunk texts
-    #   results["metadatas"][0]  → list[dict]  — metadata for each chunk
-    #   results["distances"][0]  → list[float] — L2 distances (lower = more similar)
-    raise NotImplementedError(
-        "Implement collection.query() — see the TODO above (Step 2)."
-    )
-
-    # TODO (Feature 5, Step 3): convert distances to scores and build output.
-    #
-    # output = []
-    # for doc_text, meta, distance in zip(
-    #     results["documents"][0],
-    #     results["metadatas"][0],
-    #     results["distances"][0],
-    # ):
-    #     score = max(0.0, 1.0 - (distance / 2.0))  # flip: lower distance = higher score
-    #     output.append({
-    #         "text": doc_text,
-    #         "filename": meta.get("filename", ""),
-    #         "chunk_index": meta.get("chunk_index", 0),
-    #         "score": round(score, 4),
-    #         "document_id": meta.get("document_id", ""),
-    #     })
-    # return output
+    results = collection.query(**kwargs)
+    output = []
+    for doc_text, meta, distance in zip(
+      results["documents"][0],
+      results["metadatas"][0],
+      results["distances"][0]
+    ):
+      score = max(0.0, 1.0 - (distance / 2.0))
+      output.append({
+        "text": doc_text,
+        "filename": meta.get("filename", ""),
+        "chunk_index": meta.get("chunk_index", 0),
+        "score": round(score, 4),
+        "document_id": meta.get("document_id", ""),
+      })
+    return output

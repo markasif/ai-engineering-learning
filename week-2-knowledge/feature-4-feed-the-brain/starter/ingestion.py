@@ -39,62 +39,28 @@ import io
 import re
 from pathlib import Path
 from typing import Callable
-
-
-# =============================================================================
-# Extraction
-# =============================================================================
+from pypdf import PdfReader
+from docx import Document
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
-    """
-    Extract plain text from the given file bytes.
 
-    Dispatch on the file extension:
-
-      .txt  — the bytes ARE the text; decode as UTF-8 (errors="replace").
-               No extra library needed. One line:
-               return file_bytes.decode("utf-8", errors="replace")
-
-      .pdf  — use pypdf:
-                from pypdf import PdfReader
-                reader = PdfReader(io.BytesIO(file_bytes))
-                return "\\n".join(page.extract_text() or "" for page in reader.pages)
-
-      .docx — use python-docx:
-                from docx import Document
-                doc = Document(io.BytesIO(file_bytes))
-                return "\\n".join(para.text for para in doc.paragraphs if para.text.strip())
-
-      anything else — raise a clear ValueError:
-                raise ValueError(f"Unsupported file type: '{ext}'. Supported: .txt, .pdf, .docx")
-
-    Args:
-      file_bytes: raw bytes of the uploaded file
-      filename:   original filename (used only to determine extension)
-
-    Returns:
-      the extracted text as a single string
-    """
     ext = Path(filename).suffix.lower()
 
-    # TODO (Feature 4, Step 1a): Handle .txt files.
-    # Hint: return file_bytes.decode("utf-8", errors="replace")
     if ext == ".txt":
-        raise NotImplementedError("Implement .txt extraction — see the docstring above.")
+       return file_bytes.decode("utf-8", errors="replace")
 
-    # TODO (Feature 4, Step 1b): Handle .pdf files.
-    # Hint: from pypdf import PdfReader; use io.BytesIO(file_bytes)
     if ext == ".pdf":
-        raise NotImplementedError("Implement .pdf extraction — see the docstring above.")
+        reader = PdfReader(io.BytesIO(file_bytes))
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
 
-    # TODO (Feature 4, Step 1c): Handle .docx files.
-    # Hint: from docx import Document; doc.paragraphs gives you a list of Paragraph objects
     if ext == ".docx":
-        raise NotImplementedError("Implement .docx extraction — see the docstring above.")
+        doc = Document(io.BytesIO(file_bytes))
+        return "\n".join(para.text for para in doc.paragraphs if para.text.strip())
 
-    # TODO (Feature 4, Step 1d): Raise a clear error for unsupported types.
     raise ValueError(
-        f"Unsupported file type: '{ext}'. Supported formats: .txt, .pdf, .docx."
+       f"Unsupported file type: '{ext}'. "
+        "Supported formats: .txt, .pdf, .docx. "
+        "Convert your file to one of these formats and re-upload."
     )
 
 
@@ -111,7 +77,6 @@ def extract_pages(file_bytes: bytes, filename: str) -> list[dict]:
     ext = Path(filename).suffix.lower()
 
     if ext == ".pdf":
-        from pypdf import PdfReader
         reader = PdfReader(io.BytesIO(file_bytes))
         return [
             {"page_number": i + 1, "text": page.extract_text() or ""}
@@ -126,34 +91,6 @@ def extract_pages(file_bytes: bytes, filename: str) -> list[dict]:
 # =============================================================================
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
-    """
-    Strategy: Sentence-aware fixed-size chunking.
-
-    Split on sentence boundaries (. ! ?), group sentences until ~chunk_size
-    characters, carry ~overlap characters from the tail of the previous chunk
-    into the start of the next for context continuity.
-
-    This is the DEFAULT strategy — works for most document types.
-
-    Algorithm:
-      1. (Given) Split text into sentences using regex.
-      2. (Your work) For each sentence:
-           a. If adding it would exceed chunk_size AND current is not empty:
-              - emit " ".join(current) as a chunk
-              - build overlap tail: walk reversed(current) until tail_len > overlap
-              - set current = tail, current_len = tail_len
-           b. Append the sentence: current.append(sentence); current_len += len(sentence) + 1
-      3. (Given) Emit the final chunk.
-
-    Args:
-      text:       full document text
-      chunk_size: target character length per chunk (default 500)
-      overlap:    characters from previous chunk tail to carry forward (default 50)
-
-    Returns:
-      list of non-empty chunk strings; empty list if text is blank
-    """
-    # Step 1 (given — do not modify): split into sentences.
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     sentences = [s.strip() for s in sentences if s.strip()]
 
@@ -161,40 +98,28 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
         return []
 
     chunks: list[str] = []
-    current: list[str] = []   # sentences accumulated in the current chunk
-    current_len = 0            # approximate character count of current chunk
+    current: list[str] = []   
+    current_len = 0           
 
     for sentence in sentences:
         slen = len(sentence)
 
-        # TODO (Feature 4, Step 2a): if current is non-empty AND adding this
-        # sentence would exceed chunk_size, emit the current chunk and reset.
-        #
-        # Emit:
-        #   chunks.append(" ".join(current))
-        #
-        # Build overlap tail (carry last ~overlap chars into next chunk):
-        #   tail, tail_len = [], 0
-        #   for s in reversed(current):
-        #       if tail_len + len(s) + 1 > overlap:
-        #           break
-        #       tail.insert(0, s)
-        #       tail_len += len(s) + 1
-        #   current, current_len = tail, tail_len
 
         if current and current_len + slen > chunk_size:
-            raise NotImplementedError(
-                "Implement chunk emission and overlap tail — see the TODO above (Step 2a)."
-            )
+            chunks.append(" ".join(current))
+            tail: list[str] = []
+            tail_len = 0
+            for s in reversed(current):
+                if tail_len + len(s) + 1 > overlap:
+                    break
+                tail.insert(0,s)
+                tail_len += len(s) + 1
+            current=tail
+            current_len=tail_len
 
-        # TODO (Feature 4, Step 2b): append the sentence to current and update current_len.
-        # current.append(sentence)
-        # current_len += slen + 1   # +1 for the space join() inserts between sentences
-        raise NotImplementedError(
-            "Implement sentence accumulation — see the TODO above (Step 2b)."
-        )
 
-    # Step 3 (given — do not modify): emit the last chunk.
+        current.append(sentence)
+        current_len += slen + 1
     if current:
         chunks.append(" ".join(current))
 
@@ -222,11 +147,7 @@ def chunk_by_paragraph(text: str, max_chunk_size: int = 800) -> list[str]:
         if len(para) <= max_chunk_size:
             chunks.append(para)
         else:
-            # TODO (Feature 4, optional stretch): call chunk_text(para, chunk_size=max_chunk_size)
-            # and extend chunks with the result. One line.
-            # This is already implemented in shared/ingestion.py — read it for reference.
             chunks.extend(chunk_text(para, chunk_size=max_chunk_size))
-
     return chunks
 
 

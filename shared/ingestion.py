@@ -154,6 +154,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
 
         if current and current_len + slen > chunk_size:
             chunks.append(" ".join(current))
+            
 
             # Overlap tail: carry back sentences until we reach ~overlap chars.
             tail: list[str] = []
