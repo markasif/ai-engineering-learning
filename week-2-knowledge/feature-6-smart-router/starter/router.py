@@ -62,11 +62,34 @@ from shared.llm_client import call_llm
 # no markdown, no extra text.
 # ============================================================
 
-_CLASSIFIER_SYSTEM_PROMPT = """
-# TODO: write the classifier system prompt here.
-# See the docstring above for what fields to request and what each means.
-# Remove this comment and replace with your prompt string.
-"""
+_CLASSIFIER_SYSTEM_PROMPT ="""You are a query classifier for a document Q&A assistant.
+
+Analyze the user's query and respond ONLY with a JSON object (no markdown, no extra text):
+{
+  "needs_retrieval": <true if this question likely needs uploaded domain documents, false if answerable from general knowledge>,
+  "confidence": <0.0-1.0 — how certain you are about this classification>,
+  "reasoning": "<one sentence explaining your decision>",
+  "query_type": "<one of: general | domain | professional_document | ambiguous>"
+}
+
+Query type definitions:
+- "general": common knowledge — greetings, math, basic facts, general how-to questions.
+  These don't need domain documents (e.g. "What is the capital of France?", "Hello").
+- "domain": questions about the organization's products, services, policies, or procedures
+  that would benefit from uploaded documents (e.g. "What is your return policy?").
+- "professional_document": questions requiring precise navigation of structured professional
+  documents — financial filings, legal contracts, regulatory documents, technical specs.
+  The answer requires finding a specific section, not just a semantically similar passage.
+  (e.g. "What was net revenue in Q3?", "What are the termination clauses?").
+- "ambiguous": genuinely unclear whether domain documents would help.
+
+Confidence guide:
+- 0.9–1.0: very clear (obvious greeting vs obvious domain question)
+- 0.7–0.8: reasonably clear but some uncertainty
+- 0.4–0.6: genuinely ambiguous — could go either way
+- Below 0.4: you really can't tell
+
+Be strict with "general": only use it when you're confident retrieval won't help."""
 
 
 async def classify_query(query: str) -> dict:
@@ -82,50 +105,27 @@ async def classify_query(query: str) -> dict:
     Fallback: if classification fails, returns needs_retrieval=True, confidence=0.5
     (hybrid path) — better to retrieve unnecessarily than to miss needed context.
     """
-    # ============================================================
-    # TODO STEP 2: Call the LLM with the classifier system prompt
-    #
-    # Hints:
-    #   - Use call_llm() from shared.llm_client
-    #   - Pass temperature=0.1 (low, for deterministic classification)
-    #   - Pass response_format={"type": "json_object"}
-    #   - Build the messages list with:
-    #       system: _CLASSIFIER_SYSTEM_PROMPT
-    #       user:   the query string
-    # ============================================================
-
-    raise NotImplementedError(
-        "TODO: call the LLM with _CLASSIFIER_SYSTEM_PROMPT and temperature=0.1. "
-        "See the docstring and hints above."
-    )
-
-    # ============================================================
-    # TODO STEP 3: Parse the LLM response and return a dict
-    #
-    # Hints:
-    #   - json.loads(result.content or "{}") to parse the JSON
-    #   - Extract: needs_retrieval (bool), confidence (float, clamp 0.0–1.0),
-    #     reasoning (str), query_type (str)
-    #   - Wrap in try/except — if parsing fails, return the safe fallback:
-    #       {
-    #           "needs_retrieval": True,
-    #           "confidence": 0.5,
-    #           "reasoning": "Classification failed — defaulting to retrieval.",
-    #           "query_type": "ambiguous",
-    #       }
-    # ============================================================
+    result = await call_llm(
+          messages = [
+              {"role":"system","content":_CLASSIFIER_SYSTEM_PROMPT},
+              {"role":"user","content":query}
+          ]
+        )
+    try:
+      data = json.loads(result.content or "{}")
+      return {
+            "needs_retrieval": bool(data.get("needs_retrieval", True)),
+            "confidence": min(1.0, max(0.0, float(data.get("confidence", 0.5)))),
+            "reasoning": str(data.get("reasoning", "")),
+            "query_type": data.get("query_type", "ambiguous"),
+        }
+    except Exception:
+        return {
+            "needs_retrieval": True,
+            "confidence": 0.5,
+            "reasoning": "Classification failed — defaulting to retrieval (safe fallback).",
+            "query_type": "ambiguous",
+        }
 
 
-# ============================================================
-# PAGEINDEX ROUTING (read-only — no implementation needed here)
-#
-# When your classify_query returns query_type="professional_document"
-# AND ENABLE_PAGEINDEX=true, the router in main.py will take the
-# PageIndex path instead of vector search.
-#
-# This comment is here to show you WHERE that decision happens:
-# in main.py, inside smart_chat(), after you return from this function.
-#
-# See shared/router.py (the PAGEINDEX_ROUTING block) for the full
-# integration pattern and setup instructions.
-# ============================================================
+   

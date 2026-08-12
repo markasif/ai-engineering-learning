@@ -424,14 +424,84 @@ async def smart_chat(
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
 
     try:
-        # ============================================================
-        # TODO STEP 4–6: implement the routing logic described above.
-        # The hints in the docstring walk you through each branch.
-        # ============================================================
-        raise NotImplementedError(
-            "TODO: implement the Smart Router routing logic. "
-            "Read the docstring above — it describes every branch with variable names."
+        classification = await classify_query(request.message)
+        needs_retrieval = classification["needs_retrieval"]
+        confidence = classification["confidence"]
+        query_type = classification["query_type"]
+
+        chunks_used: list[dict] = []
+        source: str
+        retrieval_method: str = "none"
+        system_prompt: str
+
+        high_confidence = confidence > 0.6
+        low_confidence = confidence <= 0.6 
+
+        if high_confidence and needs_retrieval:
+            if query_type == "professional_document" and settings.enable_pageindex:
+                source = "pageindex"
+                retrieval_method = "pageindex"
+                chunks_used = vector_search(request.message,top_k=5,tenant_id=tenant_id)
+            else:
+                chunks_used = vector_search(request.message,top_k=5,tenant_id=tenant_id)
+                source="rag"
+                retrieval_method="vector"
+            system_prompt = _SMART_RAG_SYSTEM_PROMPT
+        elif high_confidence and not needs_retrieval:
+            source = "llm"
+            retrieval_method = "none"
+            system_prompt = _SMART_SYSTEM_PROMPT
+        else:
+            chunks_used = vector_search(request.message,top_k=5,tenant_id=tenant_id)
+            source = "hybrid"
+            retrieval_method = "vector"
+            system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+
+        if settings.enable_long_term_context:
+            digest = get_current_digest(tenant_id)
+            if digest and digest.summary:
+                system_prompt += f"\n\nContext about this user's history: {digest.summary}"
+        messages: list[dict] = [{"role": "system", "content": system_prompt}]
+
+        if chunks_used:
+            context_block = _build_context_block(chunks_used)
+            messages.append({"role": "system", "content": context_block})
+
+        history = session.messages[-CONTEXT_WINDOW_SIZE:]
+        for msg in history:
+            messages.append({"role": msg.role, "content": msg.content})
+        messages.append({"role": "user", "content": request.message})
+
+        result = await call_llm(messages=messages)
+        answer = result.content or ""
+
+
+        add_message(session_id, "user", request.message)
+        add_message(session_id, "assistant", answer)
+
+        if chunks_used and settings.enable_long_term_context:
+            chunk_ids = [
+            f"{c.get('document_id', '')}_{c.get('chunk_index', 0)}"
+            for c in chunks_used
+        ]
+            log_retrieval(
+                session_id=session_id,
+                tenant_id=tenant_id,
+                query=request.message,
+                chunk_ids=chunk_ids,
+                retrieval_method=retrieval_method,
+            )
+
+
+        
+        return SmartChatResponse(
+            answer = answer,
+            source = source,
+            chunks_used = chunks_used,
+            confidence = confidence,
+            retrieval_method = retrieval_method,
         )
+
 
     except NotImplementedError:
         raise HTTPException(
