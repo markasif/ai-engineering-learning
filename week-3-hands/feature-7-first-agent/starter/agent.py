@@ -55,7 +55,7 @@ TOOLS_REGISTRY: dict[str, tuple[Any, dict]] = {
 
 _TOOL_SCHEMAS = [schema for _, schema in TOOLS_REGISTRY.values()]
 
-_AGENT_SYSTEM_PROMPT = """You are a helpful AI assistant for [YOUR_DOMAIN].
+_AGENT_SYSTEM_PROMPT = """You are a helpful AI assistant for Hr System Assistant.
 You have access to tools that can check availability, create support tickets,
 and look up factual information. Use these tools whenever the user's request
 would benefit from real data — don't guess at facts you could look up.
@@ -97,87 +97,79 @@ async def run_agent(
         {"role": "user", "content": message},
     ]
 
-    # =========================================================================
-    # TODO STEP 1: Make the first LLM call with tools.
-    #
-    # Call call_llm() with:
-    #   - messages=messages
-    #   - tools=_TOOL_SCHEMAS        ← this is what tells the LLM what tools exist
-    #   - temperature=0.3            ← lower = more deterministic tool selection
-    #   - max_tokens=1000
-    #
-    # Store the result in: first_response
-    # =========================================================================
-    raise NotImplementedError(
-        "TODO STEP 1: Call call_llm() with messages and tools=_TOOL_SCHEMAS. "
-        "See the docstring above."
+    first_response = await call_llm ( 
+        messages = messages,
+        tools = _TOOL_SCHEMAS,
+        temperature = 0.3,
+        max_tokens = 1000
     )
 
     steps: list[dict] = []
     tools_used: list[str] = []
 
-    # =========================================================================
-    # TODO STEP 2: Check if the LLM called any tools.
-    #
-    # If first_response.tool_calls is empty (the LLM answered directly):
-    #   - Get the answer from first_response.content
-    #   - Call add_message() twice to persist both turns to session history
-    #   - Return {"result": answer, "steps": [], "tools_used": []}
-    #
-    # Hint: first_response.tool_calls is a list of dicts:
-    #   [{"id": "call_abc", "name": "check_availability", "arguments": {...}}]
-    # =========================================================================
+    if not first_response.tool_calls:
+        answer = first_response.content
+        add_message(session_id,"user",message)
+        add_message(session_id,"assistant",answer)
+        return{
+            "result" : answer, "steps": [], "tools_used" : []
+        }
+    tool_call_message: dict = {
+        "role" :  "assistant",
+        "content" : first_response.content,
+        "tool_calls" : [
+            {
+                "id" : tc["id"],
+                "type" : "function",
+                "function" : {
+                    "name" : tc["name"],
+                    "arguments" : json.dumps(tc["arguments"]),
+                },
+            }
+            for tc in first_response.tool_calls
+        ],
+    }
+    messages.append(tool_call_message)
 
-    # =========================================================================
-    # TODO STEP 3: Execute each tool call.
-    #
-    # For each tc in first_response.tool_calls:
-    #   a. Look up the function: fn, _ = TOOLS_REGISTRY.get(tc["name"], (None, None))
-    #   b. If fn is None: tool_result = {"error": f"Unknown tool '{tc['name']}'"}
-    #   c. Otherwise: tool_result = fn(**tc["arguments"])
-    #      (wrap in try/except — return {"error": str(exc)} on failure)
-    #   d. Append {"tool": tc["name"], "args": tc["arguments"], "result": tool_result}
-    #      to steps, and tc["name"] to tools_used.
-    #   e. Append the tool result as a "tool" role message:
-    #      messages.append({
-    #          "role": "tool",
-    #          "tool_call_id": tc["id"],
-    #          "content": json.dumps(tool_result),
-    #      })
-    #
-    # IMPORTANT: Before appending tool results, you MUST first append the
-    # assistant's tool-call message so the LLM knows what it previously decided:
-    #   messages.append({
-    #       "role": "assistant",
-    #       "content": first_response.content,   # may be None
-    #       "tool_calls": [
-    #           {
-    #               "id": tc["id"],
-    #               "type": "function",
-    #               "function": {
-    #                   "name": tc["name"],
-    #                   "arguments": json.dumps(tc["arguments"]),
-    #               },
-    #           }
-    #           for tc in first_response.tool_calls
-    #       ],
-    #   })
-    # =========================================================================
+    for tc in first_response.tool_calls:
+        tool_name = tc["name"]
+        tool_args = tc["arguments"]
+        tool_call_id = tc["id"]
+        print("ahudhsad",tc)
 
-    # =========================================================================
-    # TODO STEP 4: Make the second LLM call to synthesize the final answer.
-    #
-    # Call call_llm() again with:
-    #   - messages=messages   ← now includes tool results from Step 3
-    #   - temperature=0.7
-    #   - max_tokens=1000
-    #   - NO tools parameter (we want a natural-language response, not more calls)
-    #
-    # Get the answer from second_response.content.
-    # Call add_message() twice to persist both turns to session history.
-    # Return {
-    #     "result": answer,
-    #     "steps": steps,
-    #     "tools_used": list(dict.fromkeys(tools_used)),  # deduplicated
-    # }
-    # =========================================================================
+        fn, _ = TOOLS_REGISTRY.get(tool_name,(None,None))
+        if fn is None:
+             tool_result = {"error": f"Unknown tool '{tool_name}'. Available: {list(TOOLS_REGISTRY)}"}
+        else:
+            try:
+                tool_result = fn(**tool_args)
+            except Exception as exc:
+                tool_result = {"error": str(exc)}
+
+        steps.append({"tool": tool_name, "args": tool_args, "result": tool_result})
+        tools_used.append(tool_name)
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id" : tool_call_id,
+                "content" : json.dumps(tool_result),
+            }
+        )
+
+    second_response = await call_llm(
+        messages = messages,
+        temperature = 0.7,
+        max_tokens = 1000,
+    )
+
+    answer =  second_response.content or ""
+
+    add_message(session_id,"user",message)
+    add_message(session_id,"assistant",answer)
+
+    return {
+        "result": answer,
+        "steps" : steps,
+        "tools_used" : list(dict.fromkeys(tools_used))
+    }
+        

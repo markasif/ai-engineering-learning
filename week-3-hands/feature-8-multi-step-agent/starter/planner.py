@@ -27,6 +27,7 @@ Test messages:
    with the result and look up our business hours"   → 3-step plan
   "What is the weather today?"                       → probably 1-step plan
 """
+from cohere.finetuning.finetuning.types import status
 import json
 
 from shared.agent import run_agent
@@ -58,107 +59,74 @@ Write a clear, concise final summary for the user that:
 
 
 async def make_plan(message: str) -> list[str]:
-    """
-    Ask the LLM to decompose a user request into 2–5 concrete steps.
-
-    Returns a list of step strings.
-
-    =========================================================================
-    TODO STEP 1: Build messages and call the LLM.
-
-    messages = [
-        {"role": "system", "content": _PLANNER_SYSTEM_PROMPT},
-        {"role": "user", "content": message},
-    ]
-
-    Call call_llm() with:
-      - messages=messages
-      - temperature=0.3
-      - max_tokens=500
-      - response_format={"type": "json_object"}
-
-    Store the result in: response
-    =========================================================================
-
-    =========================================================================
-    TODO STEP 2: Parse the JSON response.
-
-    raw = response.content or "[]"
-    parsed = json.loads(raw)
-
-    The LLM may return {"steps": [...]} instead of a bare list.
-    Check if parsed is a dict; if so, look for a "steps", "plan", or "tasks"
-    key that holds a list, and use that list.
-
-    Cap at 5 items: parsed[:5]
-    Return [str(s) for s in parsed]
-
-    Fall back to [message] (single-step plan) if parsing fails.
-    =========================================================================
-    """
-    raise NotImplementedError(
-        "TODO: Implement make_plan(). See the step-by-step comments above."
-    )
+   messages  = [{
+        "role":"system","content": _PLANNER_SYSTEM_PROMPT},
+        { "role":"user","content":message },]
+   response = await call_llm(
+      messages=messages,
+      temperature=0.3,
+      max_tokens=500,
+      response_format={"type":"json_object"}
+  )
+   raw = response.content or "[]"
+   try:
+      parsed = json.loads(raw)
+      if isinstance(parsed,dict):
+        for key in ("steps","plan","tasks"):
+          if isinstance(parsed.get(key),list):
+              parsed = parsed[key]
+              break
+      if isinstance(parsed,list) and parsed:
+        return [str(s) for s in parsed[:5]]
+   except (json.JSONDecodeError,TypeError):
+      pass
+   return [message]
+     
+  
 
 
 async def execute_plan(task_id: str) -> None:
-    """
-    Execute every step in an AgentTask's plan using the Feature 7 agent loop.
-
-    This function runs as a FastAPI BackgroundTask — it updates the AgentTask
-    after each step so the polling endpoint shows live progress.
-
-    =========================================================================
-    TODO STEP 3: Run each step through the agent.
-
     task = get_task(task_id)
-    update_task(task_id, status="executing", steps_completed=[])
-
+    if task is None:
+      return
+    update_task(task_id, status="executing",steps_completed= [])
+    
     steps_completed = []
-    plan = task.plan or []
+    try:
+        plan = task.plan or []
+        for i,step in enumerate(plan):
+            step_result = await run_agent (
+                message=step,
+                session_id=task.session_id,
+                tenant_id=task.tenant_id,
+            )
+            step_record = {
+                  "step_index": i,
+                  "step": step,
+                  "result": step_result.get("result", ""),
+                  "tools_used": step_result.get("tools_used", []),
+              }
+            steps_completed.append(step_record)
+            update_task(task_id,steps_completed=list(steps_completed))
+        
+        step_summary = "\n".join(
+            f"Step {r['step_index'] + 1} ({r['step']}): {r['result']}"
+            for r in steps_completed
+        )
+        synth_messages = [
+            {"role": "system", "content": _SYNTHESIZER_SYSTEM_PROMPT},
+            {"role": "user", "content": f"Original request: {task.message}\n\nStep results:\n{step_summary}"},
+        ]
+        synth_response = await call_llm(synth_messages, temperature=0.7, max_tokens=800)
+        final_result = synth_response.content or "Task completed."
 
-    For each i, step in enumerate(plan):
-      a. Call: step_result = await run_agent(
-             message=step,
-             session_id=task.session_id,
-             tenant_id=task.tenant_id,
-         )
-      b. Build a step record:
-         step_record = {
-             "step_index": i,
-             "step": step,
-             "result": step_result.get("result", ""),
-             "tools_used": step_result.get("tools_used", []),
-         }
-      c. Append to steps_completed, then:
-         update_task(task_id, steps_completed=list(steps_completed))
-         (This write-after-every-step is what makes the UI's live progress work.)
-    =========================================================================
+        update_task(task_id, status="done", result=final_result)
 
-    =========================================================================
-    TODO STEP 4: Synthesize the final answer.
+    except Exception as exc:
+        update_task(task_id, status="error", error=str(exc))
 
-    Build a step_summary string:
-      "Step 1 (check availability): There is an opening on Friday at 3 PM."
-      "Step 2 (create ticket): Ticket #1234 created."
-      ...
 
-    Call call_llm() with:
-      messages = [
-          {"role": "system", "content": _SYNTHESIZER_SYSTEM_PROMPT},
-          {"role": "user", "content":
-              f"Original request: {task.message}\n\nStep results:\n{step_summary}"},
-      ]
-      temperature=0.7
-      max_tokens=800
+          
+      
 
-    Get the final answer from synth_response.content.
-    Call: update_task(task_id, status="done", result=final_result)
-
-    Wrap the ENTIRE execute logic in try/except Exception as exc:
-      update_task(task_id, status="error", error=str(exc))
-    =========================================================================
-    """
-    raise NotImplementedError(
-        "TODO: Implement execute_plan(). See the step-by-step comments above."
-    )
+  

@@ -321,6 +321,7 @@ async def smart_chat(
 ) -> SmartChatResponse:
     from shared.config import settings
     session = get_session(session_id, tenant_id=tenant_id)
+    print("shdnjsadjd",session)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     classification = await classify_query(request.message)
