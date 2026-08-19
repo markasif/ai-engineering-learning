@@ -83,7 +83,11 @@ async def _list_tools_from_server(server_entry: dict) -> list[dict]:
     """Connect to a server subprocess, list its tools, and disconnect. (Given — no TODO.)"""
     if not _MCP_AVAILABLE:
         raise ImportError("Run: pip install mcp")
-    params = StdioServerParameters(command=server_entry["command"][0], args=server_entry["command"][1:])
+    from pathlib import Path
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3])
+    
+    params = StdioServerParameters(command=server_entry["command"][0], args=server_entry["command"][1:], env=env)
     tools: list[dict] = []
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
@@ -96,32 +100,28 @@ async def _list_tools_from_server(server_entry: dict) -> list[dict]:
 
 
 async def list_mcp_tools(use_cache: bool = True) -> list[dict]:
-    """
-    Return the combined list of tools from all enabled MCP servers.
+    
 
-    =========================================================================
-    TODO STEP 1: Implement this function.
-
-    For each entry in SERVER_REGISTRY where entry["enabled"] is True:
-
-      a. Check the cache:
-         if use_cache and entry["name"] in _tool_cache:
-             all_tools.extend(_tool_cache[entry["name"]])
-             continue
-
-      b. Call: tools = await _list_tools_from_server(entry)
-         Cache: _tool_cache[entry["name"]] = tools
-         Extend: all_tools.extend(tools)
-
-      c. Wrap each server in try/except Exception as exc:
-         On failure: print a warning to stderr and continue.
-         (One unreachable server shouldn't crash the whole list.)
-
-    Return all_tools.
-    =========================================================================
-    """
     if not _MCP_AVAILABLE:
         return []
+
+    all_tools: list[dict] = []
+    for entry in SERVER_REGISTRY:
+        if not entry.get("enabled"):
+            continue
+        name = entry["name"]
+        if use_cache and name in _tool_cache:
+            all_tools.extend(_tool_cache[name])
+            continue
+        try:
+            tools = await _list_tools_from_server(entry)
+            _tool_cache[name] = tools
+            all_tools.extend(tools)
+        except Exception as exc:
+            print(f"[mcp_client] Warning: could not list tools from '{name}': {exc}", file=sys.stderr)
+    return all_tools
+    
+
     raise NotImplementedError(
         "TODO STEP 1: Implement list_mcp_tools(). See the comments above."
     )
@@ -131,7 +131,12 @@ async def _call_tool_on_server(server_entry: dict, tool_name: str, arguments: di
     """Connect to a server, call a tool, and return the JSON result. (Given — no TODO.)"""
     if not _MCP_AVAILABLE:
         raise ImportError("Run: pip install mcp")
-    params = StdioServerParameters(command=server_entry["command"][0], args=server_entry["command"][1:])
+    import os
+    from pathlib import Path
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3])
+    
+    params = StdioServerParameters(command=server_entry["command"][0], args=server_entry["command"][1:], env=env)
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
@@ -146,41 +151,23 @@ async def _call_tool_on_server(server_entry: dict, tool_name: str, arguments: di
 
 
 async def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
-    """
-    Invoke a named MCP tool and return its result.
+    if not _tool_cache:
+        await list_mcp_tools()
+    owner_name: Optional[str] = None
+    for server_name, tools in _tool_cache.items():
+        if any(t["name"] == tool_name for t in tools):
+            owner_name =server_name
+            break
+    if owner_name is None:
+         return {"error": f"Tool '{tool_name}' not found in any connected MCP server."}
+    server_entry = next(( s for s in SERVER_REGISTRY if s["name"]== owner_name),None)
+    if server_entry is None:
+        return {"error": f"Server '{owner_name}' not found in registry."}
+    try:
+        return await _call_tool_on_server(server_entry, tool_name, arguments)
 
-    =========================================================================
-    TODO STEP 2: Implement this function.
-
-    1. If _tool_cache is empty, populate it:
-       if not _tool_cache:
-           await list_mcp_tools()
-
-    2. Find which server owns this tool:
-       owner_name = None
-       for server_name, tools in _tool_cache.items():
-           if any(t["name"] == tool_name for t in tools):
-               owner_name = server_name
-               break
-
-    3. If owner_name is None:
-       return {"error": f"Tool '{tool_name}' not found in any connected MCP server."}
-
-    4. Find the server_entry in SERVER_REGISTRY:
-       server_entry = next((s for s in SERVER_REGISTRY if s["name"] == owner_name), None)
-       if server_entry is None:
-           return {"error": f"Server '{owner_name}' not found in registry."}
-
-    5. Call and return:
-       try:
-           return await _call_tool_on_server(server_entry, tool_name, arguments)
-       except Exception as exc:
-           return {"error": str(exc)}
-    =========================================================================
-    """
-    raise NotImplementedError(
-        "TODO STEP 2: Implement call_mcp_tool(). See the comments above."
-    )
+    except Exception as exc:
+        return {"error":f"Failed to call tool '{tool_name}': {exc}"}
 
 
 async def get_mcp_tool_schemas() -> list[dict]:

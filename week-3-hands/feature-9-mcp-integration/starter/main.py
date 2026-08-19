@@ -139,7 +139,7 @@ class McpExecuteRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Features 1–8: Carry-forward (complete, no TODOs)
+# Trigger uvicorn reload 2
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])

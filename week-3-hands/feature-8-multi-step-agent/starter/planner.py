@@ -27,7 +27,6 @@ Test messages:
    with the result and look up our business hours"   → 3-step plan
   "What is the weather today?"                       → probably 1-step plan
 """
-from cohere.finetuning.finetuning.types import status
 import json
 
 from shared.agent import run_agent
@@ -42,9 +41,15 @@ Each step should:
 - Be specific enough that an AI agent knows exactly what to do
 - Build on the results of previous steps where needed
 
-Respond ONLY with a JSON array of strings — no preamble, no markdown fences.
+Respond ONLY with a JSON object containing a "steps" array of strings — no preamble, no markdown fences.
 Example:
-["Check availability for Friday at 3 PM", "Create a support ticket for the user", "Look up business hours"]
+{
+  "steps": [
+    "Check availability for Friday at 3 PM",
+    "Create a support ticket for the user",
+    "Look up business hours"
+  ]
+}
 """
 
 _SYNTHESIZER_SYSTEM_PROMPT = """You are a helpful AI assistant. You have just completed
