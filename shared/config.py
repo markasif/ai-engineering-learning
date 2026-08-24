@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Valid values: "groq" | "openai" | "anthropic" | "cohere" | "ollama"
     #               "azure" | "bedrock" | "vertex" | "custom"
     # groq is recommended for beginners — free tier, no credit card, very fast.
-    llm_provider: str = "groq"
+    llm_provider: str = ""
 
     # Optional: use a different provider for voice (STT/TTS) in Feature 10.
     # Defaults to llm_provider if not set.
@@ -161,9 +161,9 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Feature 10: Voice + Vision models
     # -------------------------------------------------------------------------
-    stt_model: str = "whisper-large-v3"   # speech-to-text (Groq default)
+    stt_model: str = "whisper-large-v3-turbo"   # speech-to-text (Groq default)
     tts_model: str = ""                    # text-to-speech (OpenAI default when set)
-    vlm_model: str = "llava"              # vision-language model (Ollama default)
+    vlm_model: str = ""              # vision-language model (Ollama default)
 
     # -------------------------------------------------------------------------
     # Session management (Feature 3+)

@@ -17,8 +17,8 @@ _VALID_PROVIDERS = {
 }
 
 
-def _build_provider(provider_name: str) -> LLMProvider:
-    """Instantiate the provider class for the given provider name."""
+def _build_provider(provider_name: str, role: str = "llm") -> LLMProvider:
+    """Instantiate the provider class for the given provider name and role."""
     # Lazy imports so students who don't have a package installed (e.g. cohere)
     # don't hit an ImportError until they actually try to USE that provider.
     if provider_name == "openai":
@@ -76,11 +76,12 @@ def _build_provider(provider_name: str) -> LLMProvider:
     if provider_name == "custom":
         from shared.providers.openai_provider import OpenAIProvider
 
-        _validate_fields(provider_name, ["custom_base_url", "custom_model"])
+        _validate_fields(provider_name, ["custom_base_url"])
+        model_name = settings.vlm_model if role == "vlm" and settings.vlm_model else settings.custom_model
         return OpenAIProvider(
             api_key=settings.custom_api_key or "custom",
             base_url=settings.custom_base_url,
-            model=settings.custom_model,
+            model=model_name,
         )
 
     raise ValueError(
@@ -140,7 +141,7 @@ def get_provider(role: str = "llm") -> LLMProvider:
 
     cache_key = (role, provider_name)
     if cache_key not in _provider_cache:
-        _provider_cache[cache_key] = _build_provider(provider_name)
+        _provider_cache[cache_key] = _build_provider(provider_name, role)
     return _provider_cache[cache_key]
 
 
