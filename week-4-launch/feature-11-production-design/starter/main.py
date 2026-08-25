@@ -24,6 +24,9 @@ Hints:
 Run with:
     uvicorn main:app --reload --port 8000
 """
+from shared.middleware import TimingMiddleware
+from shared.middleware import RequestIDMiddleware
+from shared.logging_config import setup_logging
 import base64
 import json
 import sys
@@ -65,10 +68,19 @@ from shared.tenant_context import get_tenant_id
 from shared.vector_store import (
     add_chunks, delete_document_chunks, get_stats as vector_get_stats, search as vector_search,
 )
-
+import logging
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
+    _limiter: Limiter | None = Limiter(key_func=get_remote_address)
+    _RATE_LIMITING = True
+except ImportError:
+    _limiter = None
+    _RATE_LIMITING = False
 CONTEXT_WINDOW_SIZE = 20
 _EVAL_CASES_PATH = Path(__file__).parent.parent / "tests" / "eval_cases_example.json"
-
+_log = logging.getLogger(__name__)
 OPENAPI_TAGS = [
     {"name": "F1 · Hello AI",        "description": "**Week 1 · Feature 1** — Basic text chat."},
     {"name": "F2 · Prompt Mastery",   "description": "**Week 1 · Feature 2** — Structured JSON-mode responses."},
@@ -87,18 +99,9 @@ OPENAPI_TAGS = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # =========================================================================
-    # TODO 1: Initialize structured JSON logging.
-    #
-    # Import setup_logging from shared.logging_config and call it here.
-    # This replaces the default plain-text log format with machine-readable
-    # JSON lines — each log line becomes a searchable JSON object in your
-    # log aggregator (Datadog, Loki, CloudWatch).
-    #
-    # from shared.logging_config import setup_logging
-    # setup_logging()
-    # =========================================================================
+    setup_logging()
     await check_provider_config()
+    _log.info("Feature 11 server started", extra={"event": "startup"})
     yield
 
 
@@ -109,47 +112,13 @@ app = FastAPI(
     openapi_tags=OPENAPI_TAGS,
 )
 
-# =============================================================================
-# TODO 2: Add request tracing and latency middleware.
-#
-# Import RequestIDMiddleware and TimingMiddleware from shared.middleware.
-# Add them both to `app` using app.add_middleware().
-#
-# Order matters: RequestIDMiddleware should be added first (outermost) so the
-# request_id is set before TimingMiddleware records the request.
-#
-# from shared.middleware import RequestIDMiddleware, TimingMiddleware
-# app.add_middleware(RequestIDMiddleware)
-# app.add_middleware(TimingMiddleware)
-# =============================================================================
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(TimingMiddleware)
 
 
-# =============================================================================
-# TODO 3: Enable rate limiting with slowapi.
-#
-# Install: pip install slowapi
-# Then uncomment the block below.
-#
-# from slowapi import Limiter, _rate_limit_exceeded_handler
-# from slowapi.errors import RateLimitExceeded
-# from slowapi.util import get_remote_address
-#
-# limiter = Limiter(key_func=get_remote_address)
-# app.state.limiter = limiter
-# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-#
-# Then add `http_request: Request` as the first parameter of the endpoints
-# you want to rate-limit and decorate them:
-#
-#   @app.post("/api/chat")
-#   @limiter.limit("60/minute")
-#   async def chat(http_request: Request, request: ChatRequest) -> ChatResponse:
-# =============================================================================
-
-
-# ---------------------------------------------------------------------------
-# Request / Response models
-# ---------------------------------------------------------------------------
+if _RATE_LIMITING and _limiter is not None:
+    app.state.limiter = _limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 class ChatRequest(BaseModel):
     message: str
@@ -598,19 +567,14 @@ async def get_metrics_endpoint() -> dict:
 
 @app.post("/api/eval/run", tags=["F11 · Production Design"])
 async def eval_run() -> EvalReport:
-    # =========================================================================
-    # TODO 4: Implement the eval run logic.
-    #
-    # Steps:
-    #   1. Check that _EVAL_CASES_PATH exists (raise 404 if not).
-    #   2. Load and parse the JSON file into a list of EvalCase objects.
-    #   3. Call run_eval(cases) — it's async, so await it.
-    #   4. Store the report with metrics.set_eval_result(report.model_dump()).
-    #   5. Return the report.
-    #
-    # Hint: json.loads(_EVAL_CASES_PATH.read_text()) gives you a list of dicts.
-    # =========================================================================
-    raise HTTPException(status_code=501, detail="TODO 4: implement eval_run()")
+    if not _EVAL_CASES_PATH.exists():
+        raise HTTPException(status_code=404, detail="_EVAL_CASES_PATH does not exist. Please create it.")
+
+    raw = json.loads(_EVAL_CASES_PATH.read_text())
+    cases = [EvalCase(**c) for c in raw]
+    report = await run_eval(cases)
+    metrics.set_eval_result(report.model_dump())
+    return report
 
 
 @app.get("/api/eval/last", tags=["F11 · Production Design"])
