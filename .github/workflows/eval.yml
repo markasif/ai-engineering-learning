@@ -79,7 +79,7 @@ jobs:
           # Provider config — needed for the app to load without erroring.
           LLM_PROVIDER: groq
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GROQ_MODEL: llama-3.3-70b-versatile
+          GROQ_MODEL: openai/gpt-oss-20b
           VECTOR_DB_PATH: /tmp/ci-chroma
 
       # ── 5. Eval quality gate ───────────────────────────────────────────────
@@ -95,5 +95,5 @@ jobs:
         env:
           LLM_PROVIDER: groq
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GROQ_MODEL: llama-3.3-70b-versatile
+          GROQ_MODEL: openai/gpt-oss-20b
           VECTOR_DB_PATH: /tmp/ci-chroma
