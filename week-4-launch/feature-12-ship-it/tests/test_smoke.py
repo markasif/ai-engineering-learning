@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 # Add repo root so shared/ is importable.
-sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 # Import the solution app.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "solution"))

@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 # Add repo root so shared/ is importable.
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 CASES_PATH = Path(__file__).parent / "eval_cases_example.json"
