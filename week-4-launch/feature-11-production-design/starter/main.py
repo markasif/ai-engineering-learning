@@ -24,9 +24,7 @@ Hints:
 Run with:
     uvicorn main:app --reload --port 8000
 """
-from shared.middleware import TimingMiddleware
-from shared.middleware import RequestIDMiddleware
-from shared.logging_config import setup_logging
+
 import base64
 import json
 import sys
@@ -41,6 +39,8 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+from shared.middleware import RequestIDMiddleware, TimingMiddleware
+from shared.logging_config import setup_logging
 from shared import metrics
 from shared.agent import run_agent_with_mcp
 from shared.document_store import (
@@ -78,6 +78,12 @@ try:
 except ImportError:
     _limiter = None
     _RATE_LIMITING = False
+
+def _rl(rate: str):
+    """Apply @_limiter.limit(rate) if slowapi is installed, else pass through."""
+    def deco(func):
+        return _limiter.limit(rate)(func) if _limiter else func  # type: ignore[union-attr]
+    return deco
 CONTEXT_WINDOW_SIZE = 20
 _EVAL_CASES_PATH = Path(__file__).parent.parent / "tests" / "eval_cases_example.json"
 _log = logging.getLogger(__name__)
@@ -178,7 +184,8 @@ class MultimodalChatResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
-async def chat(request: ChatRequest) -> ChatResponse:
+@_rl("10/minute")
+async def chat(http_request: Request, request: ChatRequest) -> ChatResponse:
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely."},
         {"role": "user", "content": request.message},
@@ -199,7 +206,8 @@ def _parse_structured(raw_text: str) -> StructuredResponse:
 
 
 @app.post("/api/chat/structured", response_model=StructuredResponse, tags=["F2 · Prompt Mastery"])
-async def chat_structured(request: ChatRequest) -> StructuredResponse:
+@_rl("10/minute")
+async def chat_structured(http_request: Request, request: ChatRequest) -> StructuredResponse:
     result = await call_llm(
         [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": request.message}],
         temperature=0.3, response_format={"type": "json_object"},
@@ -223,7 +231,8 @@ async def sessions_list() -> list[SessionSummary]:
 
 
 @app.post("/api/sessions/{session_id}/chat", response_model=StructuredResponse, tags=["F3 · AI Memory"])
-async def session_chat(session_id: str, request: ChatRequest, tenant_id: str = Depends(get_tenant_id)) -> StructuredResponse:
+@_rl("10/minute")
+async def session_chat(session_id: str, http_request: Request, request: ChatRequest, tenant_id: str = Depends(get_tenant_id)) -> StructuredResponse:
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")

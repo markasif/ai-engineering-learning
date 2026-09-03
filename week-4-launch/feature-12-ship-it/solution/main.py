@@ -52,7 +52,10 @@ from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+except IndexError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from shared import metrics
 from shared.agent import run_agent_with_mcp
@@ -274,11 +277,11 @@ class MultimodalChatResponse(BaseModel):
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
 @_rl("60/minute")
-async def chat(http_request: Request, request: ChatRequest) -> ChatResponse:
+async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     """Basic chat endpoint — rate limited to 60 requests per minute per IP."""
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely."},
-        {"role": "user", "content": request.message},
+        {"role": "user", "content": body.message},
     ]
     result = await call_llm(messages)
     return ChatResponse(response=result.content or "")
@@ -297,10 +300,10 @@ def _parse_structured(raw_text: str) -> StructuredResponse:
 
 @app.post("/api/chat/structured", response_model=StructuredResponse, tags=["F2 · Prompt Mastery"])
 @_rl("60/minute")
-async def chat_structured(http_request: Request, request: ChatRequest) -> StructuredResponse:
+async def chat_structured(request: Request, body: ChatRequest) -> StructuredResponse:
     """Structured JSON-mode chat — rate limited to 60 requests per minute per IP."""
     result = await call_llm(
-        [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": request.message}],
+        [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": body.message}],
         temperature=0.3, response_format={"type": "json_object"},
     )
     return _parse_structured(result.content or "")
@@ -504,12 +507,12 @@ async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_
 
 @app.post("/api/sessions/{session_id}/agent/run", tags=["F7 · First Agent"])
 @_rl("30/minute")
-async def agent_run(http_request: Request, session_id: str, request: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
+async def agent_run(request: Request, session_id: str, body: AgentRequest, tenant_id: str = Depends(get_tenant_id)) -> dict:
     """Agent endpoint — rate limited to 30 requests per minute per IP."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
-    return await run_agent_with_mcp(message=request.message, session_id=session_id, tenant_id=tenant_id)
+    return await run_agent_with_mcp(message=body.message, session_id=session_id, tenant_id=tenant_id)
 
 
 # ---------------------------------------------------------------------------
@@ -825,6 +828,9 @@ async def provider_info() -> dict:
     }
 
 
-_ui_path = Path(__file__).resolve().parents[3] / "ui"
+try:
+    _ui_path = Path(__file__).resolve().parents[3] / "ui"
+except IndexError:
+    _ui_path = Path(__file__).resolve().parent / "ui"
 if _ui_path.exists():
     app.mount("/", StaticFiles(directory=str(_ui_path), html=True), name="ui")

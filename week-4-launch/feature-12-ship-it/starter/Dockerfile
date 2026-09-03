@@ -14,7 +14,7 @@
 # TODO 1: Replace ??? with the correct base image.
 #   Hint: we want Python 3.12, slim variant, as the builder stage.
 #   Pattern: python:<version>-<variant> AS <stage-name>
-FROM ??? AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -42,23 +42,9 @@ COPY week-4-launch/feature-12-ship-it/starter/app/ .
 
 RUN mkdir -p /data/chroma /data/uploads
 
-# TODO 2: Add a non-root user for security.
-#   a) Create a user named "appuser" with a home directory.
-#      Hint: useradd --create-home <username>
-#   b) Give appuser ownership of /app and /data.
-#      Hint: chown -R <username> /app /data
-#   c) Switch to that user.
-#      Hint: USER <username>
-#
-# Why? If your app is exploited, an attacker running as appuser cannot
-# modify system files or escape to other containers.
-#
-# YOUR CODE HERE
+RUN useradd --create-home appuser && chown -R appuser /app /data
+USER appuser
 
 EXPOSE 8000
 
-# TODO 3: Write the CMD that starts the server.
-#   Use uvicorn to serve main:app on host 0.0.0.0, port 8000, with 1 worker.
-#   Hint: CMD ["uvicorn", "main:app", ...]
-#
-# YOUR CODE HERE
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
