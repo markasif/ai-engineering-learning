@@ -64,7 +64,7 @@ class EvalReport(BaseModel):
 
 
 _EVAL_SYSTEM = (
-    "You are a helpful assistant for Alpine Trail Co., an outdoor gear retailer. "
+    "You are a helpful HR Policy Assistant for NeoIntelli. "
     "Answer clearly and concisely in plain English."
 )
 
@@ -87,7 +87,7 @@ async def run_eval(
 
         # ── Classify the question (same as smart_chat does) ──
         classification = await classify_query(case.question)
-        actual_intent  = classification.get("intent", "unclear")
+        actual_intent  = classification.get("query_type", "unclear")
         needs_retrieval = classification.get("needs_retrieval", False)
         confidence      = classification.get("confidence", 0.0)
 

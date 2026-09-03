@@ -1,63 +1,63 @@
 [
   {
     "id": "gen-001",
-    "question": "What is down fill power and why does it matter for sleeping bags?",
-    "expected_intent": "general_question",
+    "question": "What is the capital of France?",
+    "expected_intent": "general",
     "expected_source": "llm",
-    "expected_answer_contains": ["warmth", "insulation"]
+    "expected_answer_contains": ["Paris"]
   },
   {
     "id": "gen-002",
-    "question": "How should I break in new hiking boots before a long trail?",
-    "expected_intent": "general_question",
+    "question": "How do you bake a cake?",
+    "expected_intent": "general",
     "expected_source": "llm",
-    "expected_answer_contains": ["wear", "blister"]
+    "expected_answer_contains": ["bake", "oven"]
   },
   {
     "id": "gen-003",
-    "question": "What is the difference between DWR coating and a waterproof membrane?",
-    "expected_intent": "general_question",
+    "question": "What is the square root of 144?",
+    "expected_intent": "general",
     "expected_source": "llm",
-    "expected_answer_contains": ["water", "membrane"]
+    "expected_answer_contains": ["12"]
   },
   {
     "id": "dom-001",
-    "question": "What hiking boots do you carry for wide feet?",
-    "expected_intent": "domain_question",
+    "question": "What is NeoIntelli's remote work policy?",
+    "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-002",
-    "question": "What is Alpine Trail Co.'s return policy on worn gear?",
-    "expected_intent": "domain_question",
+    "question": "How many vacation days do I get at NeoIntelli?",
+    "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-003",
-    "question": "Do you stock technical climbing harnesses?",
-    "expected_intent": "domain_question",
+    "question": "What are the core values of NeoIntelli?",
+    "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-004",
-    "question": "Which backpacks do you recommend for a 5-day backcountry trip?",
-    "expected_intent": "domain_question",
+    "question": "Who is the CEO of NeoIntelli?",
+    "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "act-001",
-    "question": "I need to exchange my hiking jacket for a different size.",
+    "question": "I need to file an expense report for my recent travel.",
     "expected_intent": "action_request",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "act-002",
-    "question": "Please create a support ticket for my broken trekking pole tip.",
+    "question": "Please update my direct deposit information.",
     "expected_intent": "action_request",
     "expected_source": null,
     "expected_answer_contains": []

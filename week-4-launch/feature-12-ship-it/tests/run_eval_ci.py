@@ -48,11 +48,11 @@ async def main() -> int:
 
     print(f"[eval-ci] Results: {report.passed}/{report.total} passed  (pass_rate={report.pass_rate:.2f})", flush=True)
 
-    for result in report.results:
+    for result in report.cases:
         status = "PASS" if result.passed else "FAIL"
         print(f"  [{status}] {result.case_id}", flush=True)
-        if not result.passed and result.failure_reasons:
-            for reason in result.failure_reasons:
+        if not result.passed and result.checks_failed:
+            for reason in result.checks_failed:
                 print(f"         - {reason}", flush=True)
 
     if report.pass_rate < PASS_RATE_THRESHOLD:
