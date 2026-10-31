@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=2.1.0" />
+  <link rel="stylesheet" href="style.css?v=2.2.0" />
 </head>
 <body>
 
@@ -86,15 +86,7 @@
               data-tab="documents"
               aria-selected="false"
               aria-controls="documents-panel"
-            >Documents</button>
-            <button
-              class="tab-btn"
-              role="tab"
-              id="tab-search"
-              data-tab="search"
-              aria-selected="false"
-              aria-controls="search-panel"
-            >Ask My Documents</button>
+            >Documents &amp; Q&amp;A</button>
             <button
               class="tab-btn"
               role="tab"
@@ -199,128 +191,133 @@
       </section>
 
       <!-- ===================================================
-           FEATURE 4: Documents panel
-           Upload files, view status + chunk counts, inspect chunks.
+           FEATURE 4 & 5: Unified Document Intelligence & Q&A
+           Upload documents, inspect index, and chat with verified citations.
            =================================================== -->
       <section class="panel tab-panel" id="documents-panel" role="tabpanel" aria-labelledby="tab-documents" hidden>
         <div class="panel-header-row">
-          <h2 class="panel-title">Documents</h2>
-        </div>
-
-        <!-- Upload options row (strategy selector + CAG info) -->
-        <div class="upload-options">
-          <div class="strategy-selector-group">
-            <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
-            <select id="strategy-select" class="strategy-select">
-              <option value="sentence">Sentence-aware (recommended)</option>
-              <option value="paragraph">Paragraph-based</option>
-            </select>
+          <div class="panel-title-group">
+            <h2 class="panel-title">Document Intelligence &amp; Q&amp;A</h2>
+            <span class="panel-subtitle">Upload knowledge documents and ask questions with verified source citations</span>
           </div>
-          <span class="cag-trigger" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-            <span class="cag-icon" aria-hidden="true">💡</span> What is CAG?
-            <span class="cag-popover" role="tooltip">
-              <strong>CAG (Cache-Augmented Generation)</strong> skips chunking entirely — all documents
-              are loaded into one big context window and the model reads everything.
-              No vector DB, no retrieval step, zero missed chunks.
-              Works best for &lt;50 pages of stable documents.
-              RAG (what we build here) scales to many documents but requires retrieval to work correctly.
-            </span>
-          </span>
+          <button id="btn-toggle-upload" class="btn btn-secondary btn-sm" type="button" style="display: none;">
+            + Upload Another Document
+          </button>
         </div>
 
-        <!-- Upload area -->
-        <div class="upload-area" id="upload-area">
-          <input
-            type="file"
-            id="file-input"
-            accept=".txt,.pdf,.docx"
-            class="sr-only"
-          />
-          <label for="file-input" class="upload-label" id="upload-label">
-            <div class="upload-icon-badge" aria-hidden="true">
-              <svg class="upload-svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="12" y1="18" x2="12" y2="12"></line>
-                <polyline points="9 15 12 12 15 15"></polyline>
-              </svg>
+        <!-- Dynamic Active Document Status Notice -->
+        <div id="active-doc-banner" class="active-doc-banner" style="display: none;">
+          <span class="active-doc-dot" aria-hidden="true"></span>
+          <div class="active-doc-text">
+            <strong id="active-doc-title">Document Context Active</strong>
+            <span id="active-doc-desc">Answering questions strictly based on your uploaded document(s).</span>
+          </div>
+        </div>
+
+        <!-- Upload container: visible initially when empty, or toggled via "+ Upload Another Document" -->
+        <div id="upload-container" class="upload-container">
+          <!-- Upload options row (strategy selector + fixed CAG info) -->
+          <div class="upload-options">
+            <div class="strategy-selector-group">
+              <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
+              <select id="strategy-select" class="strategy-select">
+                <option value="sentence">Sentence-aware (recommended)</option>
+                <option value="paragraph">Paragraph-based</option>
+              </select>
             </div>
-            <div class="upload-text-group">
-              <span class="upload-main-text">Drag &amp; drop your documents here, or <span class="upload-action-highlight">browse files</span></span>
-              <span class="upload-sub-text">Automated text extraction, sentence chunking, and ChromaDB vector indexing</span>
-              <div class="upload-formats-row">
-                <span class="upload-format-tag">PDF</span>
-                <span class="upload-format-tag">DOCX</span>
-                <span class="upload-format-tag">TXT</span>
-                <span class="upload-max-size">Up to 25 MB</span>
+            <div class="cag-trigger" id="cag-trigger" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
+              <span class="cag-icon" aria-hidden="true">💡</span> What is CAG?
+              <div class="cag-popover" id="cag-popover" role="tooltip">
+                <div class="cag-popover-header">
+                  <strong>CAG (Cache-Augmented Generation)</strong>
+                </div>
+                <p>Skips chunking entirely — all documents are loaded into one long context window and the model reads everything in full.</p>
+                <ul class="cag-features">
+                  <li>No vector database needed</li>
+                  <li>Zero missed chunks or retrieval loss</li>
+                  <li>Best for &lt;50 pages of stable documents</li>
+                </ul>
+                <div class="cag-footer">RAG (what we run here) scales to thousands of documents with semantic indexing.</div>
               </div>
             </div>
-          </label>
-          <div class="upload-progress" id="upload-progress" hidden style="display: none;">
-            <span class="upload-spinner" aria-hidden="true"></span>
-            <span id="upload-progress-text" class="upload-progress-text">Uploading and indexing document…</span>
+          </div>
+
+          <!-- Upload drop area -->
+          <div class="upload-area" id="upload-area">
+            <input
+              type="file"
+              id="file-input"
+              accept=".txt,.pdf,.docx"
+              class="sr-only"
+            />
+            <label for="file-input" class="upload-label" id="upload-label">
+              <div class="upload-icon-badge" aria-hidden="true">
+                <svg class="upload-svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <polyline points="9 15 12 12 15 15"></polyline>
+                </svg>
+              </div>
+              <div class="upload-text-group">
+                <span class="upload-main-text">Drag &amp; drop your documents here, or <span class="upload-action-highlight">browse files</span></span>
+                <span class="upload-sub-text">Automated text extraction, sentence chunking, and ChromaDB vector indexing</span>
+                <div class="upload-formats-row">
+                  <span class="upload-format-tag">PDF</span>
+                  <span class="upload-format-tag">DOCX</span>
+                  <span class="upload-format-tag">TXT</span>
+                  <span class="upload-max-size">Up to 25 MB</span>
+                </div>
+              </div>
+            </label>
+            <div class="upload-progress" id="upload-progress" hidden style="display: none;">
+              <span class="upload-spinner" aria-hidden="true"></span>
+              <span id="upload-progress-text" class="upload-progress-text">Uploading and indexing document…</span>
+            </div>
           </div>
         </div>
 
-        <!-- Document list -->
+        <!-- Indexed Document list -->
         <div class="document-list-header">
-          <h3 class="document-section-subtitle">Indexed Documents</h3>
+          <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
         </div>
         <div id="document-list" class="document-list">
           <p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>
         </div>
 
-        <!-- Alternative architectures callout -->
-        <div class="alt-arch-callout">
-          <span class="alt-arch-icon" aria-hidden="true">🏗️</span>
-          <div class="alt-arch-body">
-            <strong>Working with long financial, legal, or technical documents?</strong>
-            Consider <a href="https://github.com/VectifyAI/PageIndex" target="_blank" rel="noopener">PageIndex</a>
-            — vectorless, reasoning-based RAG that achieved 98.7% on FinanceBench.
-            No chunking, no embeddings. See Resource 4 for when to use it.
+        <!-- ===================================================
+             DOCUMENT Q&A / SEARCH SECTION (Same Panel!)
+             =================================================== -->
+        <div id="document-qa-section" class="document-qa-section" style="display: none;">
+          <div class="document-list-header" style="margin-top: 1.5rem;">
+            <h3 class="document-section-subtitle">Ask Your Document</h3>
           </div>
-        </div>
-      </section>
 
-      <!-- ===================================================
-           FEATURE 5: Ask My Documents (semantic search panel)
-           Embeds the user's question, finds nearest chunks, shows scored results.
-           =================================================== -->
-      <section class="panel tab-panel" id="search-panel" role="tabpanel" aria-labelledby="tab-search" hidden>
-        <div class="panel-header-row">
-          <h2 class="panel-title">Ask My Documents</h2>
-        </div>
+          <!-- Question Input Controls -->
+          <div class="search-controls">
+            <div class="search-input-row">
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Ask anything about your document (e.g. 'What is my career experience?')..."
+                autocomplete="off"
+              />
+              <select id="search-doc-filter" class="search-doc-filter">
+                <option value="">All documents</option>
+              </select>
+              <button id="search-btn" class="btn btn-primary" type="button">Ask Document</button>
+            </div>
+          </div>
 
-        <!-- Search controls -->
-        <div class="search-controls">
-          <div class="search-input-row">
-            <input
-              type="text"
-              id="search-input"
-              class="search-input"
-              placeholder="Ask a question about your uploaded documents…"
-              autocomplete="off"
-            />
-            <select id="search-doc-filter" class="search-doc-filter">
-              <option value="">All documents</option>
-            </select>
-            <button id="search-btn" class="btn btn-primary" type="button">Search</button>
+          <!-- Results area (Human-readable answer + Top 3 Evidence Citations) -->
+          <div id="search-results" class="search-results">
+            <p class="sidebar-empty">Enter a question above and click <strong>Ask Document</strong>.</p>
           </div>
         </div>
 
-        <!-- Results area -->
-        <div id="search-results" class="search-results">
-          <p class="sidebar-empty">Enter a question above and click Search.</p>
-        </div>
-
-        <!-- Honest limitations note -->
-        <div class="search-retrieval-note">
-          <strong>These are raw retrieval results — matching passages from your documents.</strong>
-          The score is a <em>similarity</em> score, not a <em>relevance</em> score.
-          A passage can be semantically close to your question without actually answering it.
-          Coming in Feature 6: the Smart Router combines these passages with LLM generation
-          to produce a synthesised answer, and decides when to skip retrieval entirely.
-        </div>
+        <!-- Hidden search-panel container for backward compatibility -->
+        <div id="search-panel" hidden style="display: none;"></div>
       </section>
 
       <!-- ===================================================
@@ -547,6 +544,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=2.1.0"></script>
+<script src="app.js?v=2.2.0"></script>
 </body>
 </html>

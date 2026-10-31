@@ -55,6 +55,15 @@ from pathlib import Path
 # =============================================================================
 
 
+def _clean_extracted_text(text: str) -> str:
+    """Clean unmapped glyph symbols (like □ or \uf0b7) commonly found in PDF text extraction."""
+    if not text:
+        return ""
+    cleaned = re.sub(r"[\u25a0-\u25ff\uf000-\uf0ff\ufffd\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    return cleaned.strip()
+
+
 def extract_text(file_bytes: bytes, filename: str) -> str:
     """
     Extract plain text from uploaded file bytes.
@@ -73,19 +82,22 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
     ext = Path(filename).suffix.lower()
 
     if ext == ".txt":
-        return file_bytes.decode("utf-8", errors="replace")
+        raw = file_bytes.decode("utf-8", errors="replace")
+        return _clean_extracted_text(raw)
 
     if ext == ".pdf":
         from pypdf import PdfReader
 
         reader = PdfReader(io.BytesIO(file_bytes))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        raw = "\n".join(page.extract_text() or "" for page in reader.pages)
+        return _clean_extracted_text(raw)
 
     if ext == ".docx":
         from docx import Document
 
         doc = Document(io.BytesIO(file_bytes))
-        return "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        raw = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        return _clean_extracted_text(raw)
 
     raise ValueError(
         f"Unsupported file type: '{ext}'. "
@@ -113,7 +125,7 @@ def extract_pages(file_bytes: bytes, filename: str) -> list[dict]:
 
         reader = PdfReader(io.BytesIO(file_bytes))
         return [
-            {"page_number": i + 1, "text": page.extract_text() or ""}
+            {"page_number": i + 1, "text": _clean_extracted_text(page.extract_text() or "")}
             for i, page in enumerate(reader.pages)
         ]
 

@@ -529,6 +529,7 @@ const tabPanels  = document.querySelectorAll(".tab-panel");
  * @param {string} tabName - the data-tab value: "chat" or "documents"
  */
 function switchTab(tabName) {
+  if (tabName === "search") tabName = "documents";
   tabButtons.forEach((btn) => {
     const active = btn.dataset.tab === tabName;
     btn.classList.toggle("active", active);
@@ -629,9 +630,16 @@ async function uploadFile(file) {
   }
 }
 
-/** Fetch /api/documents and render the document list. */
+/** Fetch /api/documents and render the document list, dynamically syncing upload and Q&A state. */
 async function loadDocuments() {
   if (!documentList) return;
+
+  const uploadContainer = document.getElementById("upload-container");
+  const btnToggleUpload = document.getElementById("btn-toggle-upload");
+  const activeDocBanner = document.getElementById("active-doc-banner");
+  const activeDocTitle  = document.getElementById("active-doc-title");
+  const activeDocDesc   = document.getElementById("active-doc-desc");
+  const documentQaSection = document.getElementById("document-qa-section");
 
   const headers = {};
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
@@ -643,14 +651,45 @@ async function loadDocuments() {
     const docs = await res.json();
 
     if (!docs.length) {
+      // 0 documents: automatically show upload dropzone, hide toggle and Q&A
+      if (uploadContainer) {
+        uploadContainer.style.display = "block";
+        uploadContainer.dataset.userOpened = "false";
+      }
+      if (btnToggleUpload) btnToggleUpload.style.display = "none";
+      if (activeDocBanner) activeDocBanner.style.display = "none";
+      if (documentQaSection) documentQaSection.style.display = "none";
+
       documentList.innerHTML = `<p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>`;
+      loadSearchDocumentFilter([]);
       return;
+    }
+
+    // 1+ documents: show active status banner, toggle button, and Q&A chat
+    if (btnToggleUpload) {
+      btnToggleUpload.style.display = "inline-flex";
+      btnToggleUpload.textContent = "+ Upload Another Document";
+    }
+    if (uploadContainer && uploadContainer.dataset.userOpened !== "true") {
+      uploadContainer.style.display = "none";
+    }
+    if (activeDocBanner) {
+      activeDocBanner.style.display = "flex";
+      const readyDocs = docs.filter((d) => d.status === "ready");
+      const names = readyDocs.map((d) => d.filename).join(", ") || docs[0].filename;
+      if (activeDocTitle) activeDocTitle.textContent = `Active Knowledge Document: ${names}`;
+      if (activeDocDesc) activeDocDesc.textContent = "Answering questions strictly based on your uploaded document(s).";
+    }
+    if (documentQaSection) {
+      documentQaSection.style.display = "block";
     }
 
     documentList.innerHTML = "";
     docs.forEach((doc) => {
       documentList.appendChild(buildDocumentCard(doc));
     });
+
+    loadSearchDocumentFilter(docs);
   } catch (err) {
     documentList.innerHTML = `<p class="sidebar-empty" style="color:var(--color-pistache);font-size:0.82rem">
       Document list requires the Feature 4 server.<br>${escapeHtml(err.message)}
@@ -808,17 +847,14 @@ const searchBtn       = document.getElementById("search-btn");
 const searchDocFilter = document.getElementById("search-doc-filter");
 const searchResults   = document.getElementById("search-results");
 
-/** Populate the document filter dropdown from GET /api/documents. */
-async function loadSearchDocumentFilter() {
+/** Populate the document filter dropdown from GET /api/documents or passed docs array. */
+async function loadSearchDocumentFilter(preloadedDocs = null) {
   if (!searchDocFilter) return;
 
-  // Keep "All documents" option and rebuild the rest.
   searchDocFilter.innerHTML = `<option value="">All documents</option>`;
 
   try {
-    const res = await fetch(`${API_BASE}/api/documents`);
-    if (!res.ok) return;
-    const docs = await res.json();
+    const docs = Array.isArray(preloadedDocs) ? preloadedDocs : await (await fetch(`${API_BASE}/api/documents`)).json();
     docs.filter((d) => d.status === "ready").forEach((d) => {
       const opt = document.createElement("option");
       opt.value = d.id;
@@ -830,9 +866,15 @@ async function loadSearchDocumentFilter() {
   }
 }
 
+/** Format text removing unprintable boxes or weird glyphs. */
+function sanitizeDocText(str) {
+  if (!str) return "";
+  return str.replace(/[\u25a0-\u25ff\uf000-\uf0ff\ufffd]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 /**
- * Run a semantic search and render results.
- * Scores >= 0.6 get a Matcha (high) border, >= 0.35 get Chai (medium), else gray (low).
+ * Ask Document: synthesizes a direct, human-readable answer first,
+ * with top 3 verified evidence excerpts displayed below.
  */
 async function runSearch() {
   const query = searchInput?.value.trim();
@@ -842,17 +884,33 @@ async function runSearch() {
     searchResults.innerHTML = `
       <div class="search-thinking">
         <span class="upload-spinner" aria-hidden="true"></span>
-        <span>Searching…</span>
+        <span>Reading document &amp; synthesizing answer…</span>
       </div>`;
   }
   if (searchBtn) searchBtn.disabled = true;
 
   const documentId = searchDocFilter?.value || null;
+  const headers = { "Content-Type": "application/json" };
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
 
   try {
-    const res = await fetch(`${API_BASE}/api/search`, {
+    // Try the synthesized Q&A endpoint first
+    let res = await fetch(`${API_BASE}/api/documents/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
+      body: JSON.stringify({ query, top_k: 4, document_id: documentId }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      renderDocumentAnswer(data);
+      return;
+    }
+
+    // Fallback to /api/search if /documents/ask is unavailable
+    res = await fetch(`${API_BASE}/api/search`, {
+      method: "POST",
+      headers,
       body: JSON.stringify({ query, top_k: 5, document_id: documentId }),
     });
 
@@ -862,24 +920,71 @@ async function runSearch() {
     }
 
     const results = await res.json();
-
     if (!results.length) {
-      searchResults.innerHTML = `<p class="sidebar-empty">No matching chunks found. Upload a document first, or try a different question.</p>`;
+      searchResults.innerHTML = `<p class="sidebar-empty">No matching information found in your document. Try rephrasing your question.</p>`;
       return;
     }
 
-    searchResults.innerHTML = "";
-    results.forEach((r) => {
-      searchResults.appendChild(buildResultCard(r));
+    renderDocumentAnswer({
+      answer: "Retrieved matching passages from your document:",
+      evidence: results.slice(0, 3),
+      total_matches: results.length,
     });
   } catch (err) {
     if (searchResults) {
-      searchResults.innerHTML = `<p class="sidebar-empty" style="color:var(--color-pistache)">
-        Search failed: ${escapeHtml(err.message)}
+      searchResults.innerHTML = `<p class="sidebar-empty" style="color:#ef4444">
+        Failed to process query: ${escapeHtml(err.message)}
       </p>`;
     }
   } finally {
     if (searchBtn) searchBtn.disabled = false;
+  }
+}
+
+/** Render a synthesized human-readable answer first + Top 3 evidence citations below. */
+function renderDocumentAnswer(data) {
+  if (!searchResults) return;
+  searchResults.innerHTML = "";
+
+  // 1. Synthesized Human Answer Card
+  const answerCard = document.createElement("div");
+  answerCard.className = "doc-answer-card";
+  answerCard.innerHTML = `
+    <div class="doc-answer-header">
+      <span class="doc-answer-badge">✨ Synthesized Answer (from your document)</span>
+    </div>
+    <div class="doc-answer-body">
+      ${escapeHtml(data.answer || "No direct answer synthesized.")}
+    </div>
+  `;
+  searchResults.appendChild(answerCard);
+
+  // 2. Top 3 Evidence Citations
+  const evidence = data.evidence || [];
+  if (evidence.length > 0) {
+    const evidenceSection = document.createElement("div");
+    evidenceSection.className = "evidence-section";
+
+    const header = document.createElement("div");
+    header.className = "evidence-header";
+    header.innerHTML = `
+      <span class="evidence-title">📚 Top ${evidence.length} Verified Document Sources</span>
+    `;
+    evidenceSection.appendChild(header);
+
+    const list = document.createElement("div");
+    list.className = "evidence-list";
+
+    evidence.forEach((r, idx) => {
+      const card = buildResultCard({
+        ...r,
+        text: sanitizeDocText(r.text),
+      });
+      list.appendChild(card);
+    });
+
+    evidenceSection.appendChild(list);
+    searchResults.appendChild(evidenceSection);
   }
 }
 
@@ -2107,6 +2212,33 @@ retrievalsLoadBtn?.addEventListener("click", async () => {
       Failed: ${escapeHtml(err.message)} (requires Feature 6 server)
     </p>`;
     retrievalsList.removeAttribute("hidden");
+  }
+});
+
+// Wire "+ Upload Another Document" toggle button
+const btnToggleUpload = document.getElementById("btn-toggle-upload");
+const uploadContainer = document.getElementById("upload-container");
+btnToggleUpload?.addEventListener("click", () => {
+  if (!uploadContainer) return;
+  const isHidden = uploadContainer.style.display === "none";
+  uploadContainer.style.display = isHidden ? "block" : "none";
+  uploadContainer.dataset.userOpened = isHidden ? "true" : "false";
+  btnToggleUpload.textContent = isHidden ? "✕ Close Upload" : "+ Upload Another Document";
+});
+
+// Wire CAG trigger for hover and mobile touch/click
+const cagTrigger = document.getElementById("cag-trigger");
+cagTrigger?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const expanded = cagTrigger.getAttribute("aria-expanded") === "true";
+  cagTrigger.setAttribute("aria-expanded", String(!expanded));
+  cagTrigger.classList.toggle("active", !expanded);
+});
+
+document.addEventListener("click", (e) => {
+  if (cagTrigger && !cagTrigger.contains(e.target)) {
+    cagTrigger.setAttribute("aria-expanded", "false");
+    cagTrigger.classList.remove("active");
   }
 });
 

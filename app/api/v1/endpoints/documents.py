@@ -124,3 +124,62 @@ async def search_documents(
 async def search_stats() -> dict[str, Any]:
     """Fetch vector database collection stats."""
     return vector_get_stats()
+
+
+@router.post("/documents/ask", tags=["F5 · Find the Answer"])
+@router.post("/search/ask", tags=["F5 · Find the Answer"])
+async def ask_documents(
+    req: SearchRequest, tenant_id: str = Depends(get_tenant_id)
+) -> dict[str, Any]:
+    """
+    Retrieve relevant chunks and synthesize a clear, human-readable answer
+    based strictly on the document context, followed by the top 3 evidence citations.
+    """
+    from shared.llm_client import call_llm
+
+    filters = {"document_id": req.document_id} if req.document_id else None
+    chunks = vector_search(req.query, top_k=req.top_k or 5, filters=filters, tenant_id=tenant_id)
+
+    if not chunks:
+        return {
+            "answer": "No relevant passages found in the uploaded documents to answer your question.",
+            "evidence": [],
+            "total_matches": 0,
+        }
+
+    # Format the top chunks as grounding context
+    context_blocks = []
+    for i, c in enumerate(chunks[:4], 1):
+        context_blocks.append(
+            f"[{i}] File: {c.get('filename', 'document')} (chunk {c.get('chunk_index', 0)}):\n{c.get('text', '')}"
+        )
+    context_str = "\n\n".join(context_blocks)
+
+    system_prompt = (
+        "You are an expert Document Intelligence Assistant. "
+        "Your task is to answer the user's question clearly, directly, and thoroughly based ONLY on the provided document excerpts.\n"
+        "Rules:\n"
+        "1. Provide a direct, conversational, human-readable answer first (e.g., 'Based on your uploaded document, you have...').\n"
+        "2. If the user asks about career experience, roles, or dates, clearly state the total duration (calculate years/months from dates) and list the positions with companies.\n"
+        "3. Highlight key information concisely using clean markdown bullets where helpful.\n"
+        "4. Do not speculate or introduce facts outside the provided document excerpts."
+    )
+    user_prompt = f"Document Excerpts:\n{context_str}\n\nUser Question: {req.query}"
+
+    try:
+        res = await call_llm(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,
+        )
+        answer = res.content or "Could not generate an answer from the document excerpts."
+    except Exception as exc:
+        answer = f"Found {len(chunks)} relevant passages, but model synthesis encountered an error: {exc}"
+
+    return {
+        "answer": answer,
+        "evidence": chunks[:3],
+        "total_matches": len(chunks),
+    }

@@ -827,53 +827,104 @@ html, body {
   border-color: var(--color-matcha);
 }
 
-/* CAG info trigger + popover */
+/* Fixed CAG info trigger + popover (works flawlessly on hover, touch, and all devices) */
 .cag-trigger {
   position: relative;
-  font-size: 0.8rem;
-  color: var(--color-pistache);
+  font-size: 0.82rem;
+  color: var(--color-matcha);
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px dotted var(--color-pistache);
-  padding-bottom: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  transition: all 0.15s ease;
 }
 
 .cag-trigger:hover,
-.cag-trigger:focus {
-  color: var(--color-carob);
+.cag-trigger:focus,
+.cag-trigger.active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: var(--color-matcha);
+  color: var(--color-matcha-hover);
   outline: none;
 }
 
 .cag-popover {
   display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 280px;
-  background: var(--color-carob);
-  color: white;
+  bottom: calc(100% + 10px);
+  right: 0;
+  left: auto;
+  width: 310px;
+  max-width: min(310px, 85vw);
+  background: #1c1917;
+  color: #fdfbf7;
   font-size: 0.8rem;
-  line-height: 1.5;
-  padding: 0.75rem 0.875rem;
+  line-height: 1.55;
+  padding: 0.85rem 1rem;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  z-index: 100;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  border: 1px solid #38332e;
+  z-index: 1000;
   font-weight: 400;
+  pointer-events: auto;
+}
+
+/* Invisible bridge so mouse hover doesn't break when moving into popover */
+.cag-popover::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 14px;
 }
 
 .cag-popover::after {
   content: "";
   position: absolute;
   top: 100%;
-  left: 12px;
-  border: 6px solid transparent;
-  border-top-color: var(--color-carob);
+  right: 20px;
+  border: 7px solid transparent;
+  border-top-color: #1c1917;
 }
 
 .cag-trigger:hover .cag-popover,
 .cag-trigger:focus .cag-popover,
+.cag-trigger.active .cag-popover,
 .cag-trigger[aria-expanded="true"] .cag-popover {
   display: block;
+}
+
+.cag-popover-header strong {
+  color: var(--color-matcha);
+  font-size: 0.86rem;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.cag-features {
+  margin: 0.45rem 0 0.55rem 1.1rem;
+  padding: 0;
+  color: #d6d3d1;
+  font-size: 0.78rem;
+}
+
+.cag-features li {
+  margin-bottom: 0.2rem;
+}
+
+.cag-footer {
+  font-size: 0.74rem;
+  color: #a8a29e;
+  border-top: 1px solid #292524;
+  padding-top: 0.45rem;
+  margin-top: 0.45rem;
 }
 
 /* Alternative architectures callout */
@@ -2881,5 +2932,114 @@ textarea:focus,
     flex: 1;
     max-width: 180px;
   }
+}
+
+/* Unified Document Intelligence & Q&A Styles */
+.active-doc-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+}
+
+.active-doc-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-matcha);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  flex-shrink: 0;
+}
+
+.active-doc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.active-doc-text strong {
+  font-size: 0.88rem;
+  color: var(--color-carob);
+}
+
+.active-doc-text span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.8rem !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.document-qa-section {
+  border-top: 1.5px solid var(--color-pistache);
+  padding-top: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* Synthesized Human Answer Card */
+.doc-answer-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+}
+
+.doc-answer-header {
+  margin-bottom: 0.75rem;
+}
+
+.doc-answer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-matcha-hover);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.doc-answer-body {
+  font-size: 0.95rem;
+  color: var(--color-carob);
+  line-height: 1.68;
+  white-space: pre-line;
+}
+
+/* Evidence section below answer */
+.evidence-section {
+  margin-top: 1rem;
+}
+
+.evidence-header {
+  margin-bottom: 0.65rem;
+}
+
+.evidence-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-carob);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
