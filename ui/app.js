@@ -447,6 +447,7 @@ async function createNewSession() {
     currentSessionId = data.session_id;
     clearChat();
     setActiveSession(currentSessionId);
+    if (window.innerWidth <= 768) toggleMobileSidebar(true);
     await loadSessions();
     chatInput.focus();
   } catch (err) {
@@ -476,6 +477,7 @@ async function switchToSession(sessionId) {
     });
 
     setActiveSession(sessionId);
+    if (window.innerWidth <= 768) toggleMobileSidebar(true);
     chatInput.focus();
   } catch (err) {
     appendMessage("ai", `Could not load session: ${err.message}`);
@@ -492,6 +494,25 @@ function escapeHtml(str) {
 }
 
 newChatBtn?.addEventListener("click", createNewSession);
+
+// Mobile drawer toggle
+const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+const sessionSidebar = document.getElementById("session-sidebar");
+
+function toggleMobileSidebar(forceClose = false) {
+  if (!sessionSidebar) return;
+  if (forceClose) {
+    sessionSidebar.classList.remove("sidebar-open");
+    if (sidebarBackdrop) sidebarBackdrop.hidden = true;
+    return;
+  }
+  const isOpen = sessionSidebar.classList.toggle("sidebar-open");
+  if (sidebarBackdrop) sidebarBackdrop.hidden = !isOpen;
+}
+
+mobileSidebarToggle?.addEventListener("click", () => toggleMobileSidebar());
+sidebarBackdrop?.addEventListener("click", () => toggleMobileSidebar(true));
 
 // Load session list on page load so the sidebar populates immediately.
 loadSessions();

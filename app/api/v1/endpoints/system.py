@@ -130,6 +130,15 @@ async def get_models() -> dict[str, Any]:
             "parent": None,
         },
         {
+            "id": "askraggy",
+            "object": "model",
+            "created": 1700000000,
+            "owned_by": "system",
+            "permission": [],
+            "root": "askraggy",
+            "parent": None,
+        },
+        {
             "id": "cortex-ai",
             "object": "model",
             "created": 1700000000,

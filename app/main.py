@@ -91,7 +91,7 @@ async def lifespan(app: FastAPI):
 def create_application() -> FastAPI:
     """Application factory building configured FastAPI instance."""
     app = FastAPI(
-        title="Enterprise AI Assistant API",
+        title="AskRaggy Enterprise AI Platform API",
         description=(
             "Industry-grade domain-specific AI assistant microservice architecture.\n\n"
             "Features full RAG pipeline, ReAct agent execution, Model Context Protocol (MCP), "
