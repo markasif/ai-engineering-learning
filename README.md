@@ -1,207 +1,130 @@
-# AI Engineering Bootcamp
+# Enterprise AI Assistant & AI Engineering Platform
 
-
-> Build a production-ready, domain-specific AI assistant — one feature per week, twelve weeks from zero to shipped.
-
----
-
-## What You'll Build
-
-By the end of this bootcamp, you will have a running web application that:
-
-- Chats intelligently about **your chosen domain** (healthcare, HR, education, e-commerce, and more)
-- Answers questions from **your own documents** — not just what the model was trained on
-- Executes **real actions** on your behalf: looks things up, calls APIs, schedules tasks
-- Accepts **voice input** and speaks answers back
-- Runs in **Docker** and is ready to share with the world
-
-This is not a series of isolated demos. Every feature you build in Week 1 is still running — and improved — in Week 12.
+> Production-grade, domain-specific AI assistant microservice architecture featuring RAG, Autonomous ReAct Agents, Model Context Protocol (MCP), Multimodal Audio/Vision, and Continuous Evaluation Gates.
 
 ---
 
-## The 4-Phase Story
+## ⚡ Quickstart
 
-| Phase | Week | Theme | What happens |
-|-------|------|-------|--------------|
-| 🧠 **Brain** | 1 | Talk to an LLM | You give the model a voice, a name, and a mission |
-| 📚 **Knowledge** | 2 | Feed it your data | The model learns from documents you provide |
-| 🤝 **Hands** | 3 | Give it abilities | The model can take actions, not just answer |
-| 🚀 **Launch** | 4 | Ship it | Package, harden, and deploy your finished product |
-
----
-
-## The 12-Feature Map
-
-| # | Phase | Feature Title | What You Build | Cumulative Capability After This Feature |
-|---|-------|---------------|----------------|------------------------------------------|
-| 1 | 🧠 Brain | Basic Chat | `POST /chat` endpoint | User sends a message, gets a reply |
-| 2 | 🧠 Brain | System Prompt | Domain persona config | Assistant has a name, role, and domain focus |
-| 3 | 🧠 Brain | Conversation Memory | Session-based history | Assistant remembers what was said earlier |
-| 4 | 📚 Knowledge | Document Upload | `POST /documents/upload` | User uploads a PDF or `.txt` file |
-| 5 | 📚 Knowledge | Chunking & Embeddings | Background indexing pipeline | Uploaded docs are split into searchable pieces |
-| 6 | 📚 Knowledge | RAG | Retrieval-augmented `/chat` | Assistant answers from your documents |
-| 7 | 🤝 Hands | Structured Outputs | JSON response schemas | Assistant returns parseable data, not just prose |
-| 8 | 🤝 Hands | Tool Calling | Function registry | Assistant calls Python functions you define |
-| 9 | 🤝 Hands | Agent Loop | Autonomous task runner | Assistant plans and executes multi-step tasks |
-| 10 | 🚀 Launch | Voice (STT + TTS) | `/voice` endpoints | Speak to and hear from your assistant |
-| 11 | 🚀 Launch | Docker & Health Checks | `Dockerfile` + `/health` | App runs in a container, ready to deploy |
-| 12 | 🚀 Launch | Production Polish | Rate limiting, logging | Enterprise-grade reliability and observability |
-
----
-
-## Repo Layout
-
-```
-ai-engineering-bootcamp/
-├── README.md              ← you are here
-├── SETUP.md               ← start here if you're setting up for the first time
-├── GLOSSARY.md            ← plain-English definitions for every term used in the videos
-├── .env.example           ← copy this to .env and fill in your API key
-├── requirements.txt       ← Python packages for the whole course
-│
-├── shared/                ← code every feature reuses (LLM client, config, models)
-├── ui/                    ← the single-page web interface (grows each week)
-│
-├── week-1-brain/          ← Features 1–3
-├── week-2-knowledge/      ← Features 4–6
-├── week-3-hands/          ← Features 7–9
-├── week-4-launch/         ← Features 10–12
-│
-└── docs/                  ← guides, architecture diagrams, student project gallery
-```
-
-Each week folder contains one subfolder per feature, and each feature has two sub-folders:
-
-```
-feature-N-title/
-├── solution/   ← complete, runnable code you can reference at any time
-└── starter/    ← same files, but this week's new logic is stubbed with TODO comments
-```
-
-**Following along with a video?** Open `starter/` and fill in the TODOs.  
-**Stuck?** Peek at `solution/`.  
-**Starting mid-course?** Every feature's `solution/` is fully runnable standalone — you can jump in at any week.
-
----
-
-## Getting Started
-
-1. **Read [SETUP.md](SETUP.md)** — covers Python installation all the way through running the server.
-2. **Pick your domain** — see the callout below and [docs/domain-picker.md](docs/domain-picker.md).
-3. Open `week-1-brain/feature-1-basic-chat/starter/` and watch Video 1.
-
----
-
-> ### Pick Your Domain
->
-> This bootcamp uses **Alpine Trail Co.** — a fictional outdoor gear retailer — as its running example.  
-> But the real goal is for you to build *your* assistant for *your* domain.
->
-> Before you start Week 1, spend 10 minutes choosing your domain.  
-> It will make every exercise more meaningful and your final project more impressive.
->
-> **→ [Choose your domain](docs/domain-picker.md)** — eight ready-to-go examples with starter documents and agent actions included.
-
----
-
-## 🔐 Secrets Management (Bonus Module 0.5.1 — Part A)
-
-> **Not required for any feature.** For students building toward real deployment
-> or working with sensitive data.
-
-Storing API keys in `.env` is the minimum viable approach — fine for learning,
-risky for anything real. In 2025, millions of credentials were leaked from GitHub;
-every one started with a key in a file that got committed.
-
-This bootcamp includes an optional secrets vault integration in `shared/secrets.py`.
-Set `SECRETS_PROVIDER` in your `.env` to switch:
-
-| Provider | How it works |
-|----------|-------------|
-| `env` | Default — reads from `.env` file, no changes needed |
-| `infisical` | Reads from [Infisical](https://app.infisical.com) vault (free individual plan). Keys stored in encrypted vault, never in files. |
-| `doppler` | Reads via Doppler CLI injection — run `doppler run -- uvicorn main:app` |
-
-**Machine identity ≠ API keys:** Infisical's `INFISICAL_CLIENT_ID` and
-`INFISICAL_CLIENT_SECRET` are scoped machine credentials, not your actual API keys.
-They can be rotated independently and are safe to store in `.env`.
-
-**Verify your setup:**
-```bash
-python -c "from shared.secrets import get_secret; print(get_secret('OPENAI_API_KEY')[:4] + '...')"
-```
-
----
-
-## Reference
-
-| Document | Purpose |
-|----------|---------|
-| [SETUP.md](SETUP.md) | Install Python, create a virtual environment, run the server |
-| [GLOSSARY.md](GLOSSARY.md) | Plain-English definitions for LLM, RAG, token, agent, and 20+ more terms |
-| [docs/domain-picker.md](docs/domain-picker.md) | Choose and customize your project domain |
-| [docs/student-projects.md](docs/student-projects.md) | See what other students built |
-| [docs/architecture/](docs/architecture/) | System diagrams added week by week |
-| [docs/ollama-privacy-guide.md](docs/ollama-privacy-guide.md) | Verify local inference, disable history, air-gapped deployment |
-| [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md) | Platform comparison: Railway, Render, AWS App Runner, GCP Cloud Run, Azure |
-
----
-
-## 🎓 Course Complete
-
-You've finished all 12 features. Here's what you built:
-
-```
-                     ┌─────────────────────────────────┐
-                     │      Your AI Assistant          │
-                     │    running in Docker · CI/CD    │
-                     └──────────────┬──────────────────┘
-                                    │
-              ┌─────────────────────┼─────────────────────┐
-              │                     │                     │
-     ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐
-     │  Week 4: Launch │  │  Week 3: Hands  │  │  Week 2: Know.  │
-     │ F10 Voice+Vision│  │ F7  ReAct Agent │  │ F4  Doc Upload  │
-     │ F11 Observ+Eval │  │ F8  Plan+Execute│  │ F5  Embeddings  │
-     │ F12 Docker+CI   │  │ F9  MCP Tools   │  │ F6  Smart Router│
-     └─────────────────┘  └─────────────────┘  └────────┬────────┘
-                                                         │
-                                               ┌────────▼────────┐
-                                               │  Week 1: Brain  │
-                                               │ F1  Basic Chat  │
-                                               │ F2  Struct. Out │
-                                               │ F3  Sessions    │
-                                               └─────────────────┘
-```
-
-### What You Built → Framework Equivalent
-
-| What you built | Framework / production equivalent |
-|---|---|
-| `shared/llm_client.py` | LangChain `ChatOpenAI` / LlamaIndex `LLM` |
-| `shared/vector_store.py` | LangChain `Chroma` vectorstore |
-| `shared/router.py` `classify_query()` | LangChain routing chains / semantic router |
-| `shared/agent.py` `run_agent()` | LangGraph ReAct agent |
-| `shared/planner.py` | LangGraph Plan-and-Execute |
-| `shared/mcp_client.py` | LangChain MCP adapter |
-| `shared/eval_harness.py` `run_eval()` | LangSmith `evaluate()` / RAGAS |
-| `shared/logging_config.py` `JSONFormatter` | `structlog` / `python-json-logger` |
-| `shared/middleware.py` `RequestIDMiddleware` | OpenTelemetry trace context propagation |
-| `shared/metrics.py` | Prometheus in-process registry |
-| `@_rl("60/minute")` slowapi decorator | nginx / Caddy rate limiting / AWS WAF |
-| `Dockerfile` multi-stage build | Standard production Python container pattern |
-| `docker-compose.yml` named volumes | AWS EFS / GCP Persistent Disk |
-| `.github/workflows/eval.yml` | CircleCI / GitLab CI eval quality step |
-
-### Deploy Your App
+### 1. Local Development (Single-Command Setup)
 
 ```bash
-# Run locally in Docker
-cd week-4-launch/feature-12-ship-it/
-docker compose up --build
+# 1. Clone & copy environment template
+cp .env.example .env
 
-# Open in browser
-open http://localhost:8000
+# 2. Install editable package with dev dependencies
+make install
+# or: pip install -e ".[dev]"
+
+# 3. Launch FastAPI development server with auto-reload
+make dev
+# or: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+Open **[http://localhost:8000](http://localhost:8000)** in your browser for the web application, or **[http://localhost:8000/docs](http://localhost:8000/docs)** for interactive OpenAPI documentation.
+
+### 2. Run in Production Docker Container
+
+```bash
+# Build and run with named volumes for ChromaDB and Uploads
+docker compose up --build -d
+
+# Verify container health
+curl http://localhost:8000/api/health
 ```
 
-For cloud deployment: [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md)
+---
+
+## 🏗️ Repository & Architecture Layout
+
+The codebase is structured following **Clean Architecture** patterns separating API interfaces, business services, core libraries, and deterministic tests:
+
+```
+ai-engineering-learning/
+├── app/                         # Production Application Layer (FastAPI)
+│   ├── main.py                  # App factory, lifespan, CORS, middleware assembly
+│   ├── core/                    # Config, rate limiting, logging
+│   ├── schemas/                 # Pydantic v2 validation contracts
+│   ├── api/                     # Modular API routers & dependency injection
+│   │   ├── router.py            # Aggregates /api and /api/v1 endpoints
+│   │   └── v1/endpoints/        # Chat, documents, agents, multimodal, system
+│   └── services/                # Business logic separation
+│
+├── shared/                      # Core AI primitives & multi-provider engine
+│   ├── providers/               # Multi-LLM provider abstraction (Groq, OpenAI, Anthropic, Cohere, Ollama...)
+│   ├── agent.py                 # ReAct agent loop
+│   ├── planner.py               # Multi-step task planner
+│   ├── vector_store.py          # ChromaDB vector embedding engine
+│   ├── mcp_client.py            # Model Context Protocol (MCP) tool client
+│   ├── ingestion.py             # PDF, DOCX, TXT parsing & semantic chunking
+│   └── tenant_context.py        # Multi-tenant isolation logic
+│
+├── tests/                       # Testing Pyramid
+│   ├── conftest.py              # Pytest fixtures & mock environment setup
+│   ├── unit/                    # Fast deterministic tests (zero API token cost)
+│   ├── integration/             # FastAPI TestClient endpoint & UI smoke tests
+│   └── eval/                    # Golden benchmark dataset & CI eval gate
+│
+├── ui/                          # Static Frontend SPA (HTML5, Modern CSS, JS)
+├── docs/                        # Architecture diagrams, ADRs, and deployment guides
+├── .github/workflows/
+│   ├── ci.yml                   # Linting, formatting, type checking & test suite
+│   └── eval.yml                 # Golden eval quality gate on push/PR
+├── pyproject.toml               # Standards-based PEP 517/621 packaging & tooling config
+├── Dockerfile                   # Multi-stage, non-root user, healthcheck CMD
+├── docker-compose.yml           # Stateful container setup with persistent volumes
+└── Makefile                     # Developer command shortcuts
+```
+
+---
+
+## 🛠️ Developer CLI (`Makefile`)
+
+| Command | Action |
+|:---|:---|
+| `make install` | Installs the project in editable mode (`pip install -e .[dev]`) and installs pre-commit hooks |
+| `make dev` | Starts local FastAPI dev server with auto-reload at `localhost:8000` |
+| `make test` | Runs the full test suite (`pytest tests -v`) |
+| `make test-unit` | Runs fast unit tests without network calls (`pytest tests/unit -v`) |
+| `make test-integration` | Runs API endpoint & middleware smoke tests (`pytest tests/integration -v`) |
+| `make lint` | Runs Ruff linter and MyPy type checker |
+| `make format` | Automatically formats all code using Ruff |
+| `make docker-build` | Builds production multi-stage Docker container |
+| `make docker-up` | Starts production container in background (`docker compose up -d`) |
+| `make clean` | Removes bytecode, cache directories, and test artifacts |
+
+---
+
+## 🧪 Testing & Evaluation Strategy
+
+1. **Deterministic Unit Tests**: Located in `tests/unit/`. These validate translation schemas, provider format conversions, and tenant isolation in-memory without making external network calls.
+2. **Integration & Smoke Tests**: Located in `tests/integration/`. Uses FastAPI's `TestClient` to verify router behavior, rate-limiting, headers, and UI mounting.
+3. **AI Quality Gate (Evaluation Harness)**: Located in `tests/eval/`. Runs golden test cases through the inference pipeline (`tests/eval/run_eval_ci.py`), enforcing a minimum 70% quality bar before deployment.
+
+---
+
+## 📚 12-Feature Curriculum Map
+
+If you are following or referencing the progressive learning curriculum, features 1 through 12 are available in the weekly folders:
+
+| Phase | Feature | Description | Production Module |
+|:---|:---|:---|:---|
+| **🧠 Brain** | **F1** Basic Chat | Single-turn LLM completions | `app/api/v1/endpoints/chat.py` |
+| | **F2** Structured Outputs | JSON-mode schema validation | `app/schemas/chat.py` |
+| | **F3** Conversation Memory | Session state & sliding-window context | `shared/session_store.py` |
+| **📚 Knowledge** | **F4** Document Ingestion | PDF/DOCX/TXT upload & chunking | `shared/ingestion.py` |
+| | **F5** Semantic Search | ChromaDB vector indexing | `shared/vector_store.py` |
+| | **F6** Smart Router | Dynamic RAG vs LLM query routing | `shared/router.py` |
+| **🤝 Hands** | **F7** ReAct Agent | Autonomous tool calling | `shared/agent.py` |
+| | **F8** Multi-Step Agent | Plan-and-execute task runner | `shared/planner.py` |
+| | **F9** MCP Integration | Model Context Protocol tools | `shared/mcp_client.py` |
+| **🚀 Launch** | **F10** Multimodal AI | Speech-to-Text, TTS, Vision VLM | `app/api/v1/endpoints/multimodal.py` |
+| | **F11** Observability | RequestID, JSON logs, Metrics, Evals | `app/core/`, `tests/eval/` |
+| | **F12** Containerization | Multi-stage Docker, Compose, CI/CD | `Dockerfile`, `docker-compose.yml` |
+
+---
+
+## 🔒 Security & Deployment
+
+* **Principle of Least Privilege**: The production Docker container executes under an unprivileged `appuser` (UID 1001).
+* **Multi-Tenant Protection**: Strict tenant partitioning prevents data cross-contamination.
+* **Secrets Management**: Read [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md) for Infisical and Doppler vault integrations.

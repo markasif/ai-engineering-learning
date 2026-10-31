@@ -1,0 +1,30 @@
+services:
+  assistant-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai_assistant_service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - VECTOR_DB_PATH=/data/chroma
+      - UPLOADS_PATH=/data/uploads
+    volumes:
+      - chroma_data:/data/chroma
+      - uploads_data:/data/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; exit(0 if urllib.request.urlopen(\"http://localhost:8000/api/health\").getcode() == 200 else 1)'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  chroma_data:
+    name: ai_assistant_chroma_data
+  uploads_data:
+    name: ai_assistant_uploads_data
+

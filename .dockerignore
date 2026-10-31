@@ -1,0 +1,37 @@
+# Version control
+.git
+.gitignore
+
+# Environment and sensitive keys
+.env
+*.pem
+*.key
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Testing & linting caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Course curriculum folders (for minimal production image)
+week-1-brain/
+week-2-knowledge/
+week-3-hands/
+week-4-launch/
+scratch/
+docs/
+

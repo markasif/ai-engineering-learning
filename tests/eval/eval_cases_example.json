@@ -1,0 +1,73 @@
+[
+  {
+    "id": "gen-001",
+    "question": "What is the capital of France?",
+    "expected_intent": "general",
+    "expected_source": "llm",
+    "expected_answer_contains": ["Paris"]
+  },
+  {
+    "id": "gen-002",
+    "question": "How do you bake a cake?",
+    "expected_intent": "general",
+    "expected_source": "llm",
+    "expected_answer_contains": ["bake", "oven"]
+  },
+  {
+    "id": "gen-003",
+    "question": "What is the square root of 144?",
+    "expected_intent": "general",
+    "expected_source": "llm",
+    "expected_answer_contains": ["12"]
+  },
+  {
+    "id": "dom-001",
+    "question": "What is NeoIntelli's remote work policy?",
+    "expected_intent": "domain",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "dom-002",
+    "question": "How many vacation days do I get at NeoIntelli?",
+    "expected_intent": "domain",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "dom-003",
+    "question": "What are the core values of NeoIntelli?",
+    "expected_intent": "domain",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "dom-004",
+    "question": "Who is the CEO of NeoIntelli?",
+    "expected_intent": "domain",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "act-001",
+    "question": "I need to file an expense report for my recent travel.",
+    "expected_intent": "action_request",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "act-002",
+    "question": "Please update my direct deposit information.",
+    "expected_intent": "action_request",
+    "expected_source": null,
+    "expected_answer_contains": []
+  },
+  {
+    "id": "unc-001",
+    "question": "hmm",
+    "expected_intent": "unclear",
+    "expected_source": null,
+    "expected_answer_contains": []
+  }
+]
+
