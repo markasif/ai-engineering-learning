@@ -59,6 +59,7 @@ async def provider_info() -> dict[str, Any]:
         "azure": settings.azure_openai_deployment_name,
         "bedrock": settings.bedrock_model_id,
         "vertex": settings.vertex_model,
+        "custom": settings.custom_model,
     }
     voice_name = settings.effective_voice_provider().lower().strip()
     vlm_name = settings.effective_vlm_provider().lower().strip()
