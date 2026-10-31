@@ -1,9 +1,11 @@
 """
 Live smoke test for the Groq provider.
 """
-import asyncio
+
 import os
+
 import pytest
+
 from shared.config import settings
 from shared.providers.groq_provider import GroqProvider
 
@@ -30,4 +32,3 @@ async def test_live_groq_basic_chat():
     assert result.content is not None
     assert len(result.content) > 0
     assert result.provider == "groq"
-

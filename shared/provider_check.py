@@ -5,7 +5,7 @@ Call check_provider_config() once when the FastAPI app starts to surface
 configuration problems immediately — before the first chat message hits a
 cryptic 500 error.
 """
-import asyncio
+
 import logging
 
 import httpx
@@ -42,9 +42,7 @@ async def check_provider_config() -> None:
         try:
             get_provider("voice")
         except ValueError as exc:
-            raise RuntimeError(
-                f"VOICE_PROVIDER is configured but has a problem: {exc}"
-            ) from exc
+            raise RuntimeError(f"VOICE_PROVIDER is configured but has a problem: {exc}") from exc
         if voice_name == "ollama":
             await _check_ollama_reachable(settings.ollama_base_url)
 

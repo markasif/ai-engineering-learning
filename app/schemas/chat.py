@@ -1,5 +1,7 @@
 """Chat-related request and response models."""
+
 from pydantic import BaseModel, Field
+
 from shared.models import SmartChatResponse, StructuredResponse
 
 
@@ -30,4 +32,3 @@ __all__ = [
     "SmartChatResponse",
     "StructuredResponse",
 ]
-

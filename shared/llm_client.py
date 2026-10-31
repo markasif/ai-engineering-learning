@@ -8,8 +8,8 @@ Quick reference:
     from shared.llm_client import call_llm, transcribe_audio, synthesize_speech, analyze_image
     from shared.providers.base import LLMResponse
 """
+
 import logging
-from typing import Optional, List
 
 from shared.providers.base import LLMResponse
 from shared.providers.factory import get_provider
@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 async def call_llm(
-    messages: List[dict],
+    messages: list[dict],
     temperature: float = 0.7,
     max_tokens: int = 1000,
-    tools: Optional[List[dict]] = None,
-    response_format: Optional[dict] = None,
+    tools: list[dict] | None = None,
+    response_format: dict | None = None,
     **kwargs,
 ) -> LLMResponse:
     """

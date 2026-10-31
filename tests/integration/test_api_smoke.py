@@ -2,7 +2,7 @@
 Smoke and integration tests for the enterprise FastAPI application.
 Ensures routers, middlewares, health checks, and static UI mounts function correctly.
 """
-import pytest
+
 from fastapi.testclient import TestClient
 
 
@@ -63,7 +63,9 @@ def test_sessions_lifecycle(client: TestClient):
 
 
 def test_document_upload_lifecycle(client: TestClient):
-    file_content = b"This is a test document. It contains sentences for semantic indexing and vector storage."
+    file_content = (
+        b"This is a test document. It contains sentences for semantic indexing and vector storage."
+    )
     upload_resp = client.post(
         "/api/documents/upload",
         files={"file": ("test_doc.txt", file_content, "text/plain")},
@@ -97,6 +99,3 @@ def test_v1_models_endpoint(client: TestClient):
     assert "data" in body
     assert len(body["data"]) >= 1
     assert any(m["id"] == "cortex-ai" for m in body["data"])
-
-
-

@@ -2,11 +2,15 @@
 Tests for the multi-provider abstraction layer.
 Validates pure translation logic (no network calls) and error handling in the factory.
 """
+
 import pytest
+
 import shared.config as cfg
 from shared.providers import factory
-from shared.providers.anthropic_provider import _extract_system_message, _translate_tools as anthropic_translate_tools
-from shared.providers.cohere_provider import _split_messages, _translate_tools as cohere_translate_tools
+from shared.providers.anthropic_provider import _extract_system_message
+from shared.providers.anthropic_provider import _translate_tools as anthropic_translate_tools
+from shared.providers.cohere_provider import _split_messages
+from shared.providers.cohere_provider import _translate_tools as cohere_translate_tools
 
 
 def test_get_provider_raises_for_invalid_provider(monkeypatch):
@@ -70,9 +74,7 @@ class TestAnthropicTranslation:
                     "description": "Returns current weather for a city.",
                     "parameters": {
                         "type": "object",
-                        "properties": {
-                            "city": {"type": "string", "description": "City name"}
-                        },
+                        "properties": {"city": {"type": "string", "description": "City name"}},
                         "required": ["city"],
                     },
                 },
@@ -123,9 +125,7 @@ class TestCohereTranslation:
                     "description": "Search the web.",
                     "parameters": {
                         "type": "object",
-                        "properties": {
-                            "query": {"type": "string", "description": "Search query"}
-                        },
+                        "properties": {"query": {"type": "string", "description": "Search query"}},
                         "required": ["query"],
                     },
                 },
@@ -138,4 +138,3 @@ class TestCohereTranslation:
         assert "parameter_definitions" in tool
         assert "parameters" not in tool
         assert tool["parameter_definitions"]["query"]["required"] is True
-

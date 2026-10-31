@@ -19,8 +19,9 @@ MULTI-TENANCY (Feature 6, Part B):
   When ENABLE_MULTI_TENANT=true, list_documents() and get_document() filter
   by tenant_id — one tenant cannot see another's documents.
 """
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from shared.models import Chunk, Document
 
@@ -39,7 +40,7 @@ def save_document(filename: str, tenant_id: str = "default") -> Document:
     doc = Document(
         id=str(uuid.uuid4()),
         filename=filename,
-        uploaded_at=datetime.now(tz=timezone.utc),
+        uploaded_at=datetime.now(tz=UTC),
         status="processing",
         chunk_count=0,
         chunking_strategy="sentence",  # placeholder; updated by update_document
@@ -60,11 +61,13 @@ def update_document(
     doc = _documents.get(doc_id)
     if doc is None:
         return
-    _documents[doc_id] = doc.model_copy(update={
-        "status": status,
-        "chunk_count": chunk_count,
-        "chunking_strategy": chunking_strategy,
-    })
+    _documents[doc_id] = doc.model_copy(
+        update={
+            "status": status,
+            "chunk_count": chunk_count,
+            "chunking_strategy": chunking_strategy,
+        }
+    )
 
 
 def get_document(doc_id: str, tenant_id: str = "default") -> Document | None:

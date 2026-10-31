@@ -24,8 +24,9 @@ HOW THE CHECKS WORK:
 
 A case PASSES when all active checks pass (none fail).
 """
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -38,9 +39,11 @@ from shared.vector_store import search as vector_search
 class EvalCase(BaseModel):
     id: str = Field(default="")
     question: str
-    expected_intent: str | None = None       # general_question | domain_question | action_request | unclear
-    expected_source: str | None = None       # llm | rag | hybrid — None = skip check
-    expected_answer_contains: list[str] = [] # substrings that must appear in the answer
+    expected_intent: str | None = (
+        None  # general_question | domain_question | action_request | unclear
+    )
+    expected_source: str | None = None  # llm | rag | hybrid — None = skip check
+    expected_answer_contains: list[str] = []  # substrings that must appear in the answer
 
 
 class EvalResult(BaseModel):
@@ -87,9 +90,9 @@ async def run_eval(
 
         # ── Classify the question (same as smart_chat does) ──
         classification = await classify_query(case.question)
-        actual_intent  = classification.get("query_type", "unclear")
+        actual_intent = classification.get("query_type", "unclear")
         needs_retrieval = classification.get("needs_retrieval", False)
-        confidence      = classification.get("confidence", 0.0)
+        confidence = classification.get("confidence", 0.0)
 
         # ── Route to source (mirrors smart_chat routing logic) ──
         chunks: list[dict[str, Any]] = []
@@ -111,7 +114,7 @@ async def run_eval(
             messages.append({"role": "system", "content": f"Retrieved context:\n{ctx}"})
         messages.append({"role": "user", "content": case.question})
 
-        llm_result   = await call_llm(messages)
+        llm_result = await call_llm(messages)
         actual_answer = llm_result.content or ""
 
         # ── Run checks ──
@@ -139,18 +142,20 @@ async def run_eval(
             else:
                 checks_failed.append(f"missing:{phrase!r}")
 
-        results.append(EvalResult(
-            case_id=case_id,
-            question=case.question,
-            passed=len(checks_failed) == 0,
-            actual_intent=actual_intent,
-            actual_source=actual_source,
-            actual_answer=actual_answer,
-            checks_passed=checks_passed,
-            checks_failed=checks_failed,
-        ))
+        results.append(
+            EvalResult(
+                case_id=case_id,
+                question=case.question,
+                passed=len(checks_failed) == 0,
+                actual_intent=actual_intent,
+                actual_source=actual_source,
+                actual_answer=actual_answer,
+                checks_passed=checks_passed,
+                checks_failed=checks_failed,
+            )
+        )
 
-    total        = len(results)
+    total = len(results)
     passed_count = sum(1 for r in results if r.passed)
 
     return EvalReport(
@@ -159,5 +164,5 @@ async def run_eval(
         failed=total - passed_count,
         pass_rate=round(passed_count / total, 3) if total > 0 else 0.0,
         cases=results,
-        ran_at=datetime.now(tz=timezone.utc).isoformat(),
+        ran_at=datetime.now(tz=UTC).isoformat(),
     )

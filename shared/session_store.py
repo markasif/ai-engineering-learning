@@ -17,9 +17,9 @@ FRAMEWORK EQUIVALENTS (for students exploring LangChain after this course):
   LangChain calls ConversationBufferWindowMemory.
   See Resource 3 for the full "What You Built vs What Frameworks Call It" table.
 """
+
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from shared.models import Message, Session
 
@@ -41,14 +41,14 @@ def create_session(tenant_id: str = "default") -> str:
     session_id = str(uuid.uuid4())
     _store[session_id] = Session(
         id=session_id,
-        created_at=datetime.now(tz=timezone.utc),
+        created_at=datetime.now(tz=UTC),
         messages=[],
         tenant_id=tenant_id,
     )
     return session_id
 
 
-def get_session(session_id: str, tenant_id: str = "default") -> Optional[Session]:
+def get_session(session_id: str, tenant_id: str = "default") -> Session | None:
     """
     Return the session with the given ID, or None if it doesn't exist.
 
@@ -88,7 +88,7 @@ def add_message(session_id: str, role: str, content: str) -> None:
         Message(
             role=role,  # type: ignore[arg-type]  # Literal checked by caller
             content=content,
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=datetime.now(tz=UTC),
         )
     )
 

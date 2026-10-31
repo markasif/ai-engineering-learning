@@ -24,6 +24,7 @@ ANTI-RAG PHILOSOPHY:
   "Anti-RAG" is the name for this pattern — RAG with a pre-retrieval
   intelligence step that decides if retrieval is worth doing at all.
 """
+
 import json
 
 from shared.llm_client import call_llm

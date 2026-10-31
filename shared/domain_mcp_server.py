@@ -40,13 +40,15 @@ the Feature 7 local tools and the Feature 9 demo tools — all in the same
 TOOLS_REGISTRY, all available to the LLM without it knowing which are "local"
 vs "MCP".
 """
+
 import asyncio
 import json
 
 try:
+    from mcp import types as mcp_types
     from mcp.server import Server
     from mcp.server.stdio import stdio_server
-    from mcp import types as mcp_types
+
     _MCP_AVAILABLE = True
 except ImportError:
     _MCP_AVAILABLE = False
@@ -56,6 +58,7 @@ except ImportError:
 # Replace these stubs with real logic for your domain.
 # =============================================================================
 
+
 def _search_domain_records(query: str, limit: int = 5) -> dict:
     # TODO: Replace with a real database query, API call, or file search.
     # Example for e-commerce: look up orders matching the query string.
@@ -63,7 +66,11 @@ def _search_domain_records(query: str, limit: int = 5) -> dict:
     return {
         "query": query,
         "results": [
-            {"id": f"record-{i+1}", "title": f"[YOUR_DOMAIN] record matching '{query}' #{i+1}", "summary": "Replace this with real data from your domain."}
+            {
+                "id": f"record-{i + 1}",
+                "title": f"[YOUR_DOMAIN] record matching '{query}' #{i + 1}",
+                "summary": "Replace this with real data from your domain.",
+            }
             for i in range(min(limit, 3))
         ],
         "total": min(limit, 3),
@@ -156,6 +163,7 @@ if _MCP_AVAILABLE:
             await server.run(read_stream, write_stream, server.create_initialization_options())
 
 else:
+
     async def main():
         raise RuntimeError(
             "The 'mcp' package is not installed. Run: pip install mcp\n"

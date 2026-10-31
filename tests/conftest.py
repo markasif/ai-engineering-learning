@@ -1,6 +1,7 @@
 """
 Pytest global fixtures and test setup.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 

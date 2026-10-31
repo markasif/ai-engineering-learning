@@ -15,11 +15,11 @@ IMPORTANT: Many local models do not reliably support tool calling or JSON mode.
   - Tool calling (Features 7-9): works well with llama3.1, mistral-nemo, qwen2.5
   - For voice (Feature 10): set VOICE_PROVIDER=openai — Ollama doesn't do speech
 """
+
 import logging
-from typing import Optional, List
 
 from shared.config import settings
-from shared.providers.base import LLMProvider, LLMResponse
+from shared.providers.base import LLMResponse
 from shared.providers.openai_provider import OpenAIProvider
 
 logger = logging.getLogger(__name__)
@@ -104,11 +104,11 @@ class OllamaProvider(OpenAIProvider):
 
     async def chat(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
         max_tokens: int = 1000,
-        tools: Optional[List[dict]] = None,
-        response_format: Optional[dict] = None,
+        tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> LLMResponse:
         """Send messages to a locally running model via Ollama.
 
@@ -163,7 +163,9 @@ class OllamaProvider(OpenAIProvider):
             "See docs/provider-setup-guide.md for details."
         )
 
-    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+    async def analyze_image(
+        self, image_bytes: bytes, prompt: str, detail: str = "auto"
+    ) -> LLMResponse:
         """
         Analyze an image using a local Ollama VLM (LLaVA, Phi-3 Vision, LLaVA-Phi, etc.).
 
@@ -178,6 +180,7 @@ class OllamaProvider(OpenAIProvider):
                 then run: ollama pull llava
         """
         import base64
+
         from openai import AsyncOpenAI
 
         from shared.config import settings
@@ -194,23 +197,26 @@ class OllamaProvider(OpenAIProvider):
         )
         completion = await client.chat.completions.create(
             model=vlm_model,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{b64}",
-                            "detail": detail,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{b64}",
+                                "detail": detail,
+                            },
                         },
-                    },
-                ],
-            }],
+                    ],
+                }
+            ],
             max_tokens=1500,
         )
         message = completion.choices[0].message
         from shared.providers.base import LLMResponse
+
         return LLMResponse(
             content=message.content,
             provider="ollama",

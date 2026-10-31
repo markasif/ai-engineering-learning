@@ -56,6 +56,16 @@ include = ["app*", "shared*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [
+    "week-*",
+    "week-1-brain",
+    "week-2-knowledge",
+    "week-3-hands",
+    "week-4-launch",
+    "data",
+    "ui",
+    "scratch",
+]
 
 [tool.ruff.lint]
 select = [
@@ -67,7 +77,11 @@ select = [
     "UP",  # pyupgrade
     "SIM", # flake8-simplify
 ]
-ignore = ["E501"]  # line length handled by formatter
+ignore = [
+    "E501", # line length handled by formatter
+    "B008", # standard in FastAPI route dependencies (Depends, File, Form, Query)
+    "B904", # within except clause, raise from err (optional for user-facing HTTPExceptions)
+]
 
 [tool.mypy]
 python_version = "3.12"

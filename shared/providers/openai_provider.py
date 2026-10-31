@@ -4,8 +4,8 @@ Provider implementation that wraps an OpenAI-compatible chat completions endpoin
 Used for LLM_PROVIDER=openai. Can also target any other OpenAI-compatible host
 (e.g. Azure OpenAI, Together AI) by setting OPENAI_BASE_URL in .env.
 """
+
 import json
-from typing import Optional, List
 
 from openai import AsyncOpenAI
 
@@ -18,9 +18,9 @@ class OpenAIProvider(LLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        model: str | None = None,
     ) -> None:
         # Use `is not None` so subclasses (Groq, Ollama, Azure) that explicitly
         # pass api_key="" don't accidentally inherit the OpenAI key via `or`.
@@ -39,11 +39,11 @@ class OpenAIProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
         max_tokens: int = 1000,
-        tools: Optional[List[dict]] = None,
-        response_format: Optional[dict] = None,
+        tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> LLMResponse:
         """Send messages to the model and return a normalized response."""
         client = self._get_client()
@@ -108,7 +108,9 @@ class OpenAIProvider(LLMProvider):
         )
         return response.content
 
-    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+    async def analyze_image(
+        self, image_bytes: bytes, prompt: str, detail: str = "auto"
+    ) -> LLMResponse:
         """Analyze an image using the OpenAI vision API (gpt-4o, gpt-4o-mini, etc.)."""
         import base64
 
@@ -117,18 +119,20 @@ class OpenAIProvider(LLMProvider):
         # OpenAI vision message format: content is an array of typed blocks.
         # The image_url block embeds the image as a data URI so no external
         # hosting is required — the model receives the image directly.
-        messages: list[dict] = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{b64}",
-                        "detail": detail,
+        messages: list[dict] = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{b64}",
+                            "detail": detail,
+                        },
                     },
-                },
-            ],
-        }]
+                ],
+            }
+        ]
 
         return await self.chat(messages, max_tokens=1500)

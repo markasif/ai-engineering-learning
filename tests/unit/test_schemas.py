@@ -1,17 +1,15 @@
 """
 Unit tests validating Pydantic schemas and serialization.
 """
+
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.agents import McpExecuteRequest
 from app.schemas.chat import (
     ChatRequest,
-    ChatResponse,
-    SessionSummary,
-    SmartChatRequest,
 )
 from app.schemas.documents import SearchRequest
-from app.schemas.agents import AgentRequest, PlanRequest, McpExecuteRequest
 
 
 def test_chat_request_valid():
@@ -43,4 +41,3 @@ def test_mcp_execute_request_defaults():
     req = McpExecuteRequest(tool_name="calculate")
     assert req.tool_name == "calculate"
     assert req.arguments == {}
-

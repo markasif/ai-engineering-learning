@@ -22,10 +22,8 @@ Then authenticate:
 
 Requires google-auth package: pip install google-auth
 """
-from typing import Optional, List
 
 from shared.config import settings
-from shared.providers.base import LLMProvider, LLMResponse
 from shared.providers.openai_provider import OpenAIProvider
 
 
@@ -41,13 +39,10 @@ def _get_vertex_token() -> str:
         import google.auth.transport.requests
     except ImportError:
         raise ImportError(
-            "google-auth is required for LLM_PROVIDER=vertex. "
-            "Install it: pip install google-auth"
+            "google-auth is required for LLM_PROVIDER=vertex. Install it: pip install google-auth"
         )
 
-    credentials, _ = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/cloud-platform"]
-    )
+    credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     request = google.auth.transport.requests.Request()
     credentials.refresh(request)
     return credentials.token

@@ -39,11 +39,10 @@ PUBLIC API:
   call_mcp_tool(tool_name, args)    → invoke one tool and return its result
   get_mcp_tool_schemas()            → return OpenAI-format schemas for LLM tool calling
 """
-import asyncio
+
 import json
 import os
 import sys
-from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
 # MCP SDK import — graceful fallback if not installed
@@ -51,6 +50,7 @@ from typing import Any, Optional
 try:
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     _MCP_AVAILABLE = True
 except ImportError:
     _MCP_AVAILABLE = False
@@ -72,27 +72,31 @@ except ImportError:
 # To add your own server, append an entry here (or set ENABLE_DOMAIN_MCP_SERVER=true).
 # =============================================================================
 
+
 def _build_server_registry() -> list[dict]:
     demo_server_cmd = [sys.executable, "-m", "shared.mcp_demo_server"]
     registry = [
         {
-            "name":      "demo",
-            "command":   demo_server_cmd,
-            "enabled":   True,
+            "name": "demo",
+            "command": demo_server_cmd,
+            "enabled": True,
             "transport": "stdio",
             "description": "Course demo server — weather, news, exchange rate (all mock data)",
         }
     ]
     # Domain server is opt-in via ENABLE_DOMAIN_MCP_SERVER=true in .env
     if os.getenv("ENABLE_DOMAIN_MCP_SERVER", "false").lower() == "true":
-        registry.append({
-            "name":      "domain",
-            "command":   [sys.executable, "-m", "shared.domain_mcp_server"],
-            "enabled":   True,
-            "transport": "stdio",
-            "description": "Your domain MCP server — replace placeholder tools with real ones",
-        })
+        registry.append(
+            {
+                "name": "domain",
+                "command": [sys.executable, "-m", "shared.domain_mcp_server"],
+                "enabled": True,
+                "transport": "stdio",
+                "description": "Your domain MCP server — replace placeholder tools with real ones",
+            }
+        )
     return registry
+
 
 SERVER_REGISTRY: list[dict] = _build_server_registry()
 
@@ -107,6 +111,7 @@ _tool_cache: dict[str, list[dict]] = {}  # server_name → list of tool dicts
 # Core client functions
 # =============================================================================
 
+
 async def _list_tools_from_server(server_entry: dict) -> list[dict]:
     """Connect to a server subprocess, list its tools, and disconnect."""
     if not _MCP_AVAILABLE:
@@ -117,17 +122,18 @@ async def _list_tools_from_server(server_entry: dict) -> list[dict]:
         args=server_entry["command"][1:],
     )
     tools: list[dict] = []
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.list_tools()
-            for tool in result.tools:
-                tools.append({
-                    "name":        tool.name,
+    async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
+        result = await session.list_tools()
+        for tool in result.tools:
+            tools.append(
+                {
+                    "name": tool.name,
                     "description": tool.description or "",
                     "inputSchema": tool.inputSchema or {},
-                    "server":      server_entry["name"],
-                })
+                    "server": server_entry["name"],
+                }
+            )
     return tools
 
 
@@ -169,7 +175,9 @@ async def list_mcp_tools(use_cache: bool = True) -> list[dict]:
             _tool_cache[name] = tools
             all_tools.extend(tools)
         except Exception as exc:
-            print(f"[mcp_client] Warning: could not list tools from '{name}': {exc}", file=sys.stderr)
+            print(
+                f"[mcp_client] Warning: could not list tools from '{name}': {exc}", file=sys.stderr
+            )
     return all_tools
 
 
@@ -182,18 +190,17 @@ async def _call_tool_on_server(server_entry: dict, tool_name: str, arguments: di
         command=server_entry["command"][0],
         args=server_entry["command"][1:],
     )
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool(tool_name, arguments)
-            # MCP returns a list of content items; extract text from the first.
-            if result.content:
-                raw = result.content[0].text
-                try:
-                    return json.loads(raw)
-                except (json.JSONDecodeError, AttributeError):
-                    return {"result": str(raw)}
-            return {"result": None}
+    async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
+        result = await session.call_tool(tool_name, arguments)
+        # MCP returns a list of content items; extract text from the first.
+        if result.content:
+            raw = result.content[0].text
+            try:
+                return json.loads(raw)
+            except (json.JSONDecodeError, AttributeError):
+                return {"result": str(raw)}
+        return {"result": None}
 
 
 async def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
@@ -220,7 +227,7 @@ async def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
         await list_mcp_tools()
 
     # Find which server owns this tool.
-    owner_name: Optional[str] = None
+    owner_name: str | None = None
     for server_name, tools in _tool_cache.items():
         if any(t["name"] == tool_name for t in tools):
             owner_name = server_name
@@ -249,12 +256,14 @@ async def get_mcp_tool_schemas() -> list[dict]:
     tools = await list_mcp_tools()
     schemas = []
     for tool in tools:
-        schemas.append({
-            "type": "function",
-            "function": {
-                "name":        tool["name"],
-                "description": f"[MCP:{tool['server']}] {tool['description']}",
-                "parameters":  tool.get("inputSchema", {"type": "object", "properties": {}}),
-            },
-        })
+        schemas.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": f"[MCP:{tool['server']}] {tool['description']}",
+                    "parameters": tool.get("inputSchema", {"type": "object", "properties": {}}),
+                },
+            }
+        )
     return schemas

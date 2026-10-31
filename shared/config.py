@@ -4,7 +4,9 @@ Centralized configuration for the AI Engineering Bootcamp.
 All environment variables are read here. No other file in this project should
 call os.getenv() directly — import `settings` from this module instead.
 """
+
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -161,9 +163,9 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Feature 10: Voice + Vision models
     # -------------------------------------------------------------------------
-    stt_model: str = "whisper-large-v3-turbo"   # speech-to-text (Groq default)
-    tts_model: str = ""                    # text-to-speech (OpenAI default when set)
-    vlm_model: str = ""              # vision-language model (Ollama default)
+    stt_model: str = "whisper-large-v3-turbo"  # speech-to-text (Groq default)
+    tts_model: str = ""  # text-to-speech (OpenAI default when set)
+    vlm_model: str = ""  # vision-language model (Ollama default)
 
     # -------------------------------------------------------------------------
     # Session management (Feature 3+)

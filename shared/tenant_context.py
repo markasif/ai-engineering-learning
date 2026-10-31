@@ -39,6 +39,7 @@ This module is ONLY active when ENABLE_MULTI_TENANT=true in .env.
 When disabled, get_tenant_id() always returns "default" and all existing
 Feature 1-5 behavior is unchanged.
 """
+
 from fastapi import Request
 
 DEFAULT_TENANT = "default"

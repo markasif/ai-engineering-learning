@@ -1,6 +1,7 @@
 """
 Chat, memory, session, and smart-router endpoints.
 """
+
 import json
 import logging
 from typing import Any
@@ -52,13 +53,17 @@ def _parse_structured(raw_text: str) -> StructuredResponse:
     try:
         return StructuredResponse(**json.loads(raw_text))
     except Exception:
-        return StructuredResponse(intent="unclear", answer=raw_text or "", confidence=0.0, sources_needed=False)
+        return StructuredResponse(
+            intent="unclear", answer=raw_text or "", confidence=0.0, sources_needed=False
+        )
 
 
 def _build_context_block(chunks: list[dict[str, Any]]) -> str:
     lines = ["--- RETRIEVED CONTEXT ---"]
     for i, chunk in enumerate(chunks, 1):
-        lines.append(f"\n[{i}] From: {chunk.get('filename', 'unknown')} (chunk {chunk.get('chunk_index', 0)})")
+        lines.append(
+            f"\n[{i}] From: {chunk.get('filename', 'unknown')} (chunk {chunk.get('chunk_index', 0)})"
+        )
         lines.append(str(chunk.get("text", "")))
     lines.append("--- END CONTEXT ---")
     return "\n".join(lines)
@@ -69,7 +74,10 @@ def _build_context_block(chunks: list[dict[str, Any]]) -> str:
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     """Basic chat endpoint — rate limited to 60 requests per minute per IP."""
     messages = [
-        {"role": "system", "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely."},
+        {
+            "role": "system",
+            "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely.",
+        },
         {"role": "user", "content": body.message},
     ]
     result = await call_llm(messages)
@@ -81,7 +89,10 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
 async def chat_structured(request: Request, body: ChatRequest) -> StructuredResponse:
     """Structured JSON-mode chat — rate limited to 60 requests per minute per IP."""
     result = await call_llm(
-        [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}, {"role": "user", "content": body.message}],
+        [
+            {"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT},
+            {"role": "user", "content": body.message},
+        ],
         temperature=0.3,
         response_format={"type": "json_object"},
     )
@@ -100,7 +111,11 @@ async def sessions_list() -> list[SessionSummary]:
     summaries = []
     for s in list_sessions():
         first_user_msg = next((m.content for m in s.messages if m.role == "user"), "")
-        title = (first_user_msg[:60] + "…") if len(first_user_msg) > 60 else (first_user_msg or "New conversation")
+        title = (
+            (first_user_msg[:60] + "…")
+            if len(first_user_msg) > 60
+            else (first_user_msg or "New conversation")
+        )
         summaries.append(
             SessionSummary(
                 id=s.id,
@@ -112,7 +127,9 @@ async def sessions_list() -> list[SessionSummary]:
     return summaries
 
 
-@router.post("/sessions/{session_id}/chat", response_model=StructuredResponse, tags=["F3 · AI Memory"])
+@router.post(
+    "/sessions/{session_id}/chat", response_model=StructuredResponse, tags=["F3 · AI Memory"]
+)
 async def session_chat(
     session_id: str,
     request: ChatRequest,
@@ -136,7 +153,9 @@ async def session_chat(
 
 
 @router.get("/sessions/{session_id}/history", response_model=list[Message], tags=["F3 · AI Memory"])
-async def session_history(session_id: str, tenant_id: str = Depends(get_tenant_id)) -> list[Message]:
+async def session_history(
+    session_id: str, tenant_id: str = Depends(get_tenant_id)
+) -> list[Message]:
     """Fetch message history for a given session."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
@@ -144,7 +163,11 @@ async def session_history(session_id: str, tenant_id: str = Depends(get_tenant_i
     return session.messages
 
 
-@router.post("/sessions/{session_id}/chat/smart", response_model=SmartChatResponse, tags=["F6 · Smart Router"])
+@router.post(
+    "/sessions/{session_id}/chat/smart",
+    response_model=SmartChatResponse,
+    tags=["F6 · Smart Router"],
+)
 async def smart_chat(
     session_id: str,
     request: SmartChatRequest,
@@ -213,6 +236,7 @@ async def smart_chat(
 async def tenant_info(tenant_id: str = Depends(get_tenant_id)) -> dict[str, Any]:
     """Retrieve tenant context and metadata."""
     from shared.document_store import list_documents
+
     return {
         "tenant_id": tenant_id,
         "multi_tenant_enabled": settings.enable_multi_tenant,
@@ -249,7 +273,9 @@ async def retrieval_memory_digest(tenant_id: str = Depends(get_tenant_id)) -> di
 
 
 @router.get("/retrieval-memory/recent", tags=["F6 · Smart Router"])
-async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_tenant_id)) -> list[dict[str, Any]]:
+async def retrieval_memory_recent(
+    limit: int = 20, tenant_id: str = Depends(get_tenant_id)
+) -> list[dict[str, Any]]:
     """Fetch recent retrieval queries logged for this tenant."""
     return [
         {
@@ -260,4 +286,3 @@ async def retrieval_memory_recent(limit: int = 20, tenant_id: str = Depends(get_
         }
         for e in get_recent_retrievals(tenant_id=tenant_id, limit=limit)
     ]
-

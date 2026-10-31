@@ -1,6 +1,7 @@
 """
 System infrastructure, health checks, provider status, metrics, and eval harness endpoints.
 """
+
 import json
 import logging
 from pathlib import Path
@@ -105,7 +106,9 @@ async def eval_last() -> dict[str, Any]:
     """Retrieve the most recent evaluation report."""
     data = metrics.get_metrics().get("eval_last_run")
     if data is None:
-        raise HTTPException(status_code=404, detail="No eval has been run yet. POST /api/eval/run first.")
+        raise HTTPException(
+            status_code=404, detail="No eval has been run yet. POST /api/eval/run first."
+        )
     return data
 
 
@@ -149,5 +152,3 @@ async def get_models() -> dict[str, Any]:
         },
     ]
     return {"object": "list", "data": models_data}
-
-

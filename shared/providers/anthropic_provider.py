@@ -8,22 +8,22 @@ Key differences from the OpenAI API that this class handles transparently:
   4. JSON mode is not a native API feature — we approximate it via prompting.
   5. Anthropic does not provide speech (STT/TTS) APIs.
 """
+
 import anthropic
-from typing import Optional, List
 
 from shared.config import settings
 from shared.providers.base import LLMProvider, LLMResponse
 
 
-def _extract_system_message(messages: List[dict]) -> tuple[str, List[dict]]:
+def _extract_system_message(messages: list[dict]) -> tuple[str, list[dict]]:
     """
     Split an OpenAI-style messages list into (system_content, remaining_messages).
 
     Anthropic requires the system instruction to be passed as a separate parameter,
     not mixed into the messages array. This helper does that extraction.
     """
-    system_parts: List[str] = []
-    other_messages: List[dict] = []
+    system_parts: list[str] = []
+    other_messages: list[dict] = []
 
     for msg in messages:
         if msg.get("role") == "system":
@@ -34,7 +34,7 @@ def _extract_system_message(messages: List[dict]) -> tuple[str, List[dict]]:
     return "\n\n".join(system_parts), other_messages
 
 
-def _translate_tools(openai_tools: List[dict]) -> List[dict]:
+def _translate_tools(openai_tools: list[dict]) -> list[dict]:
     """
     Convert OpenAI-style tool schemas to Anthropic's format.
 
@@ -66,11 +66,11 @@ class AnthropicProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
         max_tokens: int = 1000,
-        tools: Optional[List[dict]] = None,
-        response_format: Optional[dict] = None,
+        tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> LLMResponse:
         """Send messages to the Anthropic API and return a normalized response."""
         system_content, remaining_messages = _extract_system_message(messages)
@@ -136,7 +136,9 @@ class AnthropicProvider(LLMProvider):
             "See docs/provider-setup-guide.md for details."
         )
 
-    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> LLMResponse:
+    async def analyze_image(
+        self, image_bytes: bytes, prompt: str, detail: str = "auto"
+    ) -> LLMResponse:
         """Analyze an image using Claude's native vision capabilities (Claude 3+ all support vision)."""
         import base64
 
@@ -148,20 +150,22 @@ class AnthropicProvider(LLMProvider):
         response = await self._client.messages.create(
             model=self._model,
             max_tokens=1500,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": b64,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": b64,
+                            },
                         },
-                    },
-                    {"type": "text", "text": prompt},
-                ],
-            }],
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            ],
         )
 
         text_parts = [block.text for block in response.content if block.type == "text"]

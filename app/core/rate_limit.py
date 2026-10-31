@@ -1,7 +1,9 @@
 """
 Rate limiting module utilizing slowapi with graceful fallback.
 """
-from typing import Callable, Any
+
+from collections.abc import Callable
+from typing import Any
 
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -19,10 +21,12 @@ except ImportError:
 
 def rate_limit(rate: str) -> Callable[[Any], Any]:
     """Decorator to apply rate limiting if slowapi is available, otherwise no-op."""
+
     def decorator(func: Any) -> Any:
         if limiter is not None:
             return limiter.limit(rate)(func)
         return func
+
     return decorator
 
 
@@ -33,4 +37,3 @@ __all__ = [
     "_rate_limit_exceeded_handler",
     "RATE_LIMITING_ENABLED",
 ]
-

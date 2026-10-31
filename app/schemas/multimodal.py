@@ -1,5 +1,7 @@
 """Multimodal audio, vision, and routing schemas."""
+
 from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -33,4 +35,3 @@ __all__ = [
     "VisionAnalyzeResponse",
     "MultimodalChatResponse",
 ]
-

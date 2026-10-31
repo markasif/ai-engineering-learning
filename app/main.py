@@ -2,6 +2,7 @@
 Main FastAPI Application Entrypoint.
 Orchestrates lifespan, middleware, routers, and static UI assets.
 """
+
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -81,7 +82,10 @@ async def lifespan(app: FastAPI):
     setup_logging()
     try:
         await check_provider_config()
-        _log.info("Production AI Assistant Application initialized successfully", extra={"event": "startup"})
+        _log.info(
+            "Production AI Assistant Application initialized successfully",
+            extra={"event": "startup"},
+        )
     except RuntimeError as exc:
         _log.warning("Provider configuration check note: %s", exc)
     yield
@@ -128,6 +132,7 @@ def create_application() -> FastAPI:
     @app.get("/health", tags=["Infrastructure"], include_in_schema=False)
     async def root_health():
         from app.api.v1.endpoints.system import health
+
         return await health()
 
     # OpenAI Compatibility aliases (e.g. GET /v1/models called by external clients)
@@ -135,6 +140,7 @@ def create_application() -> FastAPI:
     @app.get("/models", tags=["OpenAI Compatibility"], include_in_schema=False)
     async def root_models():
         from app.api.v1.endpoints.system import get_models
+
         return await get_models()
 
     # 5. Mount Static Frontend UI if present

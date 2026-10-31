@@ -21,6 +21,7 @@ Usage in main.py:
 The middleware order matters: RequestIDMiddleware should be added first (outermost)
 so the request_id is available when TimingMiddleware records the request.
 """
+
 import time
 import uuid
 from contextvars import ContextVar

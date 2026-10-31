@@ -1,6 +1,7 @@
 """
 Autonomous tool-calling agents, multi-step planner, and MCP endpoints.
 """
+
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -29,7 +30,9 @@ async def agent_run(
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
-    return await run_agent_with_mcp(message=body.message, session_id=session_id, tenant_id=tenant_id)
+    return await run_agent_with_mcp(
+        message=body.message, session_id=session_id, tenant_id=tenant_id
+    )
 
 
 @router.post("/agent/plan", tags=["F8 · Multi-Step Agent"])
@@ -87,4 +90,3 @@ async def mcp_execute(request: McpExecuteRequest) -> dict[str, Any]:
         return {"tool_name": request.tool_name, "result": result}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-

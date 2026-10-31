@@ -23,6 +23,7 @@ PUBLIC API:
   make_plan(message)               → list[str]
   execute_plan(task_id)            → None  (updates task in-place via task_store)
 """
+
 import json
 
 from shared.agent import run_agent
@@ -127,12 +128,14 @@ async def execute_plan(task_id: str) -> None:
 
         # Synthesize a final answer from all step results.
         step_summary = "\n".join(
-            f"Step {r['step_index'] + 1} ({r['step']}): {r['result']}"
-            for r in steps_completed
+            f"Step {r['step_index'] + 1} ({r['step']}): {r['result']}" for r in steps_completed
         )
         synth_messages = [
             {"role": "system", "content": _SYNTHESIZER_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Original request: {task.message}\n\nStep results:\n{step_summary}"},
+            {
+                "role": "user",
+                "content": f"Original request: {task.message}\n\nStep results:\n{step_summary}",
+            },
         ]
         synth_response = await call_llm(synth_messages, temperature=0.7, max_tokens=800)
         final_result = synth_response.content or "Task completed."

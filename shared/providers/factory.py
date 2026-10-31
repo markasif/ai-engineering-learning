@@ -8,12 +8,20 @@ Usage:
     provider = get_provider()           # LLM provider (chat/agents/RAG)
     voice    = get_provider("voice")    # Voice provider (STT/TTS, Feature 10)
 """
+
 from shared.config import settings
 from shared.providers.base import LLMProvider
 
 _VALID_PROVIDERS = {
-    "openai", "anthropic", "cohere", "ollama", "groq",
-    "azure", "bedrock", "vertex", "custom",
+    "openai",
+    "anthropic",
+    "cohere",
+    "ollama",
+    "groq",
+    "azure",
+    "bedrock",
+    "vertex",
+    "custom",
 }
 
 
@@ -64,7 +72,9 @@ def _build_provider(provider_name: str, role: str = "llm") -> LLMProvider:
     if provider_name == "bedrock":
         from shared.providers.bedrock_provider import BedrockProvider
 
-        _validate_fields(provider_name, ["aws_access_key_id", "aws_secret_access_key", "bedrock_model_id"])
+        _validate_fields(
+            provider_name, ["aws_access_key_id", "aws_secret_access_key", "bedrock_model_id"]
+        )
         return BedrockProvider()
 
     if provider_name == "vertex":
@@ -77,7 +87,9 @@ def _build_provider(provider_name: str, role: str = "llm") -> LLMProvider:
         from shared.providers.openai_provider import OpenAIProvider
 
         _validate_fields(provider_name, ["custom_base_url"])
-        model_name = settings.vlm_model if role == "vlm" and settings.vlm_model else settings.custom_model
+        model_name = (
+            settings.vlm_model if role == "vlm" and settings.vlm_model else settings.custom_model
+        )
         return OpenAIProvider(
             api_key=settings.custom_api_key or "custom",
             base_url=settings.custom_base_url,
@@ -93,9 +105,7 @@ def _build_provider(provider_name: str, role: str = "llm") -> LLMProvider:
 
 def _validate_fields(provider: str, required_settings: list[str]) -> None:
     """Raise a clear error if a required .env variable is missing for the chosen provider."""
-    missing = [
-        field for field in required_settings if not getattr(settings, field, "")
-    ]
+    missing = [field for field in required_settings if not getattr(settings, field, "")]
     if missing:
         env_var_names = [f.upper() for f in missing]
         raise ValueError(

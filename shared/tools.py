@@ -28,13 +28,14 @@ DEEPAGENT NOTE (WWW 2026):
   rather than using only pre-registered ones. If you're curious where tool-calling
   agents are heading, start there.
 """
+
 import random
 import uuid
-
 
 # =============================================================================
 # Tool 1: Availability check
 # =============================================================================
+
 
 def check_availability(date: str, time: str) -> dict:
     """
@@ -91,6 +92,7 @@ CHECK_AVAILABILITY_SCHEMA = {
 # =============================================================================
 # Tool 2: Support ticket creation
 # =============================================================================
+
 
 def create_ticket(subject: str, description: str, priority: str = "normal") -> dict:
     """
@@ -212,7 +214,9 @@ def lookup_info(topic: str) -> dict:
         {"topic": str, "answer": str, "found": bool}
     """
     # Normalize the topic — strip whitespace, lowercase, handle plurals.
-    normalized = topic.lower().strip().rstrip("s")  # "policies" -> "polic" won't match, handled below
+    normalized = (
+        topic.lower().strip().rstrip("s")
+    )  # "policies" -> "polic" won't match, handled below
     # Try direct match first, then check if any key starts with the normalized topic.
     result = _INFO_KNOWLEDGE_BASE.get(normalized)
     if result is None:

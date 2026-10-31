@@ -1,6 +1,7 @@
 """
 Document ingestion, indexing, chunking, and semantic search endpoints.
 """
+
 import asyncio
 import uuid
 from typing import Any
@@ -23,7 +24,11 @@ from shared.models import Chunk, Document
 from shared.vector_store import (
     add_chunks,
     delete_document_chunks,
+)
+from shared.vector_store import (
     get_stats as vector_get_stats,
+)
+from shared.vector_store import (
     search as vector_search,
 )
 
@@ -107,7 +112,9 @@ async def document_chunks(doc_id: str, tenant_id: str = Depends(get_tenant_id)) 
 
 
 @router.post("/search", tags=["F5 · Find the Answer"])
-async def search_documents(req: SearchRequest, tenant_id: str = Depends(get_tenant_id)) -> list[dict[str, Any]]:
+async def search_documents(
+    req: SearchRequest, tenant_id: str = Depends(get_tenant_id)
+) -> list[dict[str, Any]]:
     """Direct semantic similarity search over document chunks."""
     filters = {"document_id": req.document_id} if req.document_id else None
     return vector_search(req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
@@ -117,4 +124,3 @@ async def search_documents(req: SearchRequest, tenant_id: str = Depends(get_tena
 async def search_stats() -> dict[str, Any]:
     """Fetch vector database collection stats."""
     return vector_get_stats()
-

@@ -17,12 +17,10 @@ Note on DEPLOYMENT_NAME: in Azure AI Studio you create a "deployment" of a
 model (e.g., deploy gpt-4o as "my-gpt4o-deployment"). The deployment name
 is what you set here, not the underlying model name.
 """
-from typing import Optional, List
 
 import openai
 
 from shared.config import settings
-from shared.providers.base import LLMProvider, LLMResponse
 from shared.providers.openai_provider import OpenAIProvider
 
 

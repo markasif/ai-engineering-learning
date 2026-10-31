@@ -1,4 +1,5 @@
 """Document and search-related schemas."""
+
 from pydantic import BaseModel, Field
 
 
@@ -9,4 +10,3 @@ class SearchRequest(BaseModel):
 
 
 __all__ = ["SearchRequest"]
-

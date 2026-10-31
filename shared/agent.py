@@ -38,6 +38,7 @@ PUBLIC API:
   run_agent(message, session_id, tenant_id) → dict
   run_agent_with_mcp(message, session_id, tenant_id) → dict  [Feature 9]
 """
+
 import json
 from typing import Any
 
@@ -66,8 +67,8 @@ from shared.tools import (
 
 TOOLS_REGISTRY: dict[str, tuple[Any, dict]] = {
     "check_availability": (check_availability, CHECK_AVAILABILITY_SCHEMA),
-    "create_ticket":      (create_ticket, CREATE_TICKET_SCHEMA),
-    "lookup_info":        (lookup_info, LOOKUP_INFO_SCHEMA),
+    "create_ticket": (create_ticket, CREATE_TICKET_SCHEMA),
+    "lookup_info": (lookup_info, LOOKUP_INFO_SCHEMA),
 }
 
 # Extract just the schemas for the LLM call (TOOLS_REGISTRY holds both fn + schema).
@@ -174,7 +175,9 @@ async def run_agent(
 
         fn, _ = TOOLS_REGISTRY.get(tool_name, (None, None))
         if fn is None:
-            tool_result = {"error": f"Unknown tool '{tool_name}'. Available: {list(TOOLS_REGISTRY)}"}
+            tool_result = {
+                "error": f"Unknown tool '{tool_name}'. Available: {list(TOOLS_REGISTRY)}"
+            }
         else:
             try:
                 tool_result = fn(**tool_args)
@@ -185,11 +188,13 @@ async def run_agent(
         tools_used.append(tool_name)
 
         # Append the tool result as a "tool" role message for the second LLM call.
-        messages.append({
-            "role": "tool",
-            "tool_call_id": tool_call_id,
-            "content": json.dumps(tool_result),
-        })
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "content": json.dumps(tool_result),
+            }
+        )
 
     # =========================================================================
     # CALL 2: LLM again with tool results — synthesize the final answer
@@ -236,6 +241,7 @@ async def run_agent_with_mcp(
     # Import here to avoid circular imports and to make MCP optional.
     try:
         from shared.mcp_client import call_mcp_tool, get_mcp_tool_schemas, list_mcp_tools
+
         mcp_schemas = await get_mcp_tool_schemas()
         mcp_tool_names: set[str] = {t["name"] for t in await list_mcp_tools()}
     except Exception:
@@ -275,14 +281,20 @@ async def run_agent_with_mcp(
         return {"result": answer, "steps": [], "tools_used": []}
 
     # Append the assistant's tool-call decision message.
-    messages.append({
-        "role": "assistant",
-        "content": first_response.content,
-        "tool_calls": [
-            {"id": tc["id"], "type": "function", "function": {"name": tc["name"], "arguments": json.dumps(tc["arguments"])}}
-            for tc in first_response.tool_calls
-        ],
-    })
+    messages.append(
+        {
+            "role": "assistant",
+            "content": first_response.content,
+            "tool_calls": [
+                {
+                    "id": tc["id"],
+                    "type": "function",
+                    "function": {"name": tc["name"], "arguments": json.dumps(tc["arguments"])},
+                }
+                for tc in first_response.tool_calls
+            ],
+        }
+    )
 
     # Execute each tool — local or MCP.
     for tc in first_response.tool_calls:
@@ -308,9 +320,13 @@ async def run_agent_with_mcp(
                     tool_result = {"error": str(exc)}
             source = "LOCAL"
 
-        steps.append({"tool": tool_name, "args": tool_args, "result": tool_result, "source": source})
+        steps.append(
+            {"tool": tool_name, "args": tool_args, "result": tool_result, "source": source}
+        )
         tools_used.append(tool_name)
-        messages.append({"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(tool_result)})
+        messages.append(
+            {"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(tool_result)}
+        )
 
     # Call 2: synthesize final answer.
     second_response = await call_llm(messages=messages, temperature=0.7, max_tokens=1000)
@@ -329,6 +345,7 @@ def _get_mcp_server_for_tool(tool_name: str) -> str:
     """Look up which MCP server owns a given tool (for source tagging)."""
     try:
         from shared.mcp_client import _tool_cache
+
         for server_name, tools in _tool_cache.items():
             if any(t["name"] == tool_name for t in tools):
                 return server_name

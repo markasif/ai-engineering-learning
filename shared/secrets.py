@@ -46,8 +46,9 @@ QUICK START — Doppler:
 Verify your vault integration is working:
   python -c "from shared.secrets import get_secret; print(get_secret('OPENAI_API_KEY')[:4] + '...')"
 """
+
 import os
-from functools import lru_cache
+from functools import cache
 
 
 def _load_from_infisical(secret_name: str) -> str:
@@ -55,10 +56,7 @@ def _load_from_infisical(secret_name: str) -> str:
     try:
         from infisical_sdk import InfisicalSDKClient
     except ImportError:
-        raise ImportError(
-            "infisical-sdk is not installed. "
-            "Run: pip install infisical-sdk"
-        )
+        raise ImportError("infisical-sdk is not installed. Run: pip install infisical-sdk")
 
     client_id = os.environ.get("INFISICAL_CLIENT_ID", "")
     client_secret = os.environ.get("INFISICAL_CLIENT_SECRET", "")
@@ -124,7 +122,7 @@ def get_secret(name: str) -> str:
         return value
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_secret_cached(name: str) -> str:
     """
     Cached version — use for secrets that don't rotate during a single

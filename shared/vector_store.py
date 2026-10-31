@@ -16,6 +16,7 @@ Public API:
   delete_document_chunks(document_id)           → None
   get_stats()                                   → dict
 """
+
 from pathlib import Path
 from typing import Any
 
@@ -87,8 +88,11 @@ def add_chunks(
     # Inject document_id and tenant_id into every metadata entry.
     # Strip None values — Chroma rejects them.
     cleaned_metadatas = [
-        {k: v for k, v in {**m, "document_id": document_id, "tenant_id": tenant_id}.items()
-         if v is not None}
+        {
+            k: v
+            for k, v in {**m, "document_id": document_id, "tenant_id": tenant_id}.items()
+            if v is not None
+        }
         for m in metadatas
     ]
 
@@ -168,15 +172,18 @@ def search(
         results["documents"][0],
         results["metadatas"][0],
         results["distances"][0],
+        strict=False,
     ):
         score = max(0.0, 1.0 - (distance / 2.0))
-        output.append({
-            "text": doc_text,
-            "filename": meta.get("filename", ""),
-            "chunk_index": meta.get("chunk_index", 0),
-            "score": round(score, 4),
-            "document_id": meta.get("document_id", ""),
-        })
+        output.append(
+            {
+                "text": doc_text,
+                "filename": meta.get("filename", ""),
+                "chunk_index": meta.get("chunk_index", 0),
+                "score": round(score, 4),
+                "document_id": meta.get("document_id", ""),
+            }
+        )
 
     return output
 
@@ -216,11 +223,7 @@ def get_stats() -> dict:
         }
 
     all_items = collection.get(include=["metadatas"])
-    unique_doc_ids = {
-        m.get("document_id")
-        for m in all_items["metadatas"]
-        if m.get("document_id")
-    }
+    unique_doc_ids = {m.get("document_id") for m in all_items["metadatas"] if m.get("document_id")}
 
     return {
         "total_vectors": total,

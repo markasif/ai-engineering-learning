@@ -30,8 +30,9 @@ Public API:
   build_knowledge_digest(tenant_id)       → KnowledgeDigest | None
   get_current_digest(tenant_id)           → KnowledgeDigest | None
 """
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from shared.llm_client import call_llm
 from shared.models import KnowledgeDigest, RetrievalLogEntry
@@ -56,14 +57,16 @@ def log_retrieval(
     Over many sessions these entries accumulate into a picture of
     what the tenant cares about — the raw material for build_knowledge_digest().
     """
-    _retrieval_log.append(RetrievalLogEntry(
-        session_id=session_id,
-        tenant_id=tenant_id,
-        query=query,
-        chunks_retrieved=chunk_ids,
-        timestamp=datetime.now(tz=timezone.utc),
-        retrieval_method=retrieval_method,
-    ))
+    _retrieval_log.append(
+        RetrievalLogEntry(
+            session_id=session_id,
+            tenant_id=tenant_id,
+            query=query,
+            chunks_retrieved=chunk_ids,
+            timestamp=datetime.now(tz=UTC),
+            retrieval_method=retrieval_method,
+        )
+    )
 
 
 def get_recent_retrievals(tenant_id: str, limit: int = 50) -> list[RetrievalLogEntry]:
@@ -126,7 +129,7 @@ async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
             tenant_id=tenant_id,
             summary=data.get("summary", ""),
             topics_covered=data.get("topics", []),
-            last_updated=datetime.now(tz=timezone.utc),
+            last_updated=datetime.now(tz=UTC),
             source_session_count=sessions_covered,
         )
         _digests[tenant_id] = digest

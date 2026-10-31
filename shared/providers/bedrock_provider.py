@@ -23,8 +23,6 @@ Example BEDROCK_MODEL_IDs:
 
 Requires boto3 package: pip install boto3
 """
-import json
-from typing import Optional, List
 
 from shared.config import settings
 from shared.providers.base import LLMProvider, LLMResponse
@@ -44,8 +42,7 @@ class BedrockProvider(LLMProvider):
             import boto3
         except ImportError:
             raise ImportError(
-                "boto3 is required for LLM_PROVIDER=bedrock. "
-                "Install it: pip install boto3"
+                "boto3 is required for LLM_PROVIDER=bedrock. Install it: pip install boto3"
             )
 
         self._client = boto3.client(
@@ -59,11 +56,11 @@ class BedrockProvider(LLMProvider):
 
     async def chat(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
         max_tokens: int = 1000,
-        tools: Optional[List[dict]] = None,
-        response_format: Optional[dict] = None,
+        tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> LLMResponse:
         """
         Send a chat request via Bedrock's converse API.
@@ -101,16 +98,19 @@ class BedrockProvider(LLMProvider):
             tool_specs = []
             for tool in tools:
                 fn = tool.get("function", {})
-                tool_specs.append({
-                    "toolSpec": {
-                        "name": fn.get("name", ""),
-                        "description": fn.get("description", ""),
-                        "inputSchema": {"json": fn.get("parameters", {})},
+                tool_specs.append(
+                    {
+                        "toolSpec": {
+                            "name": fn.get("name", ""),
+                            "description": fn.get("description", ""),
+                            "inputSchema": {"json": fn.get("parameters", {})},
+                        }
                     }
-                })
+                )
             request["toolConfig"] = {"tools": tool_specs}
 
         import asyncio
+
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self._client.converse(**request))
 
@@ -126,11 +126,13 @@ class BedrockProvider(LLMProvider):
                 text_parts.append(block["text"])
             elif "toolUse" in block:
                 tool_use = block["toolUse"]
-                normalized_tool_calls.append({
-                    "id": tool_use.get("toolUseId", ""),
-                    "name": tool_use.get("name", ""),
-                    "arguments": tool_use.get("input", {}),
-                })
+                normalized_tool_calls.append(
+                    {
+                        "id": tool_use.get("toolUseId", ""),
+                        "name": tool_use.get("name", ""),
+                        "arguments": tool_use.get("input", {}),
+                    }
+                )
 
         return LLMResponse(
             content="\n".join(text_parts) if text_parts else None,

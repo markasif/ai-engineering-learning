@@ -2,7 +2,9 @@
 Tests for multi-tenant isolation.
 Verifies that tenant data is completely invisible across tenant boundaries.
 """
+
 import pytest
+
 import shared.config as cfg
 from shared.document_store import (
     delete_document,
@@ -13,7 +15,6 @@ from shared.document_store import (
 from shared.session_store import (
     create_session,
     get_session,
-    list_sessions,
 )
 
 
@@ -101,4 +102,3 @@ class TestMultiTenantDisabled:
         doc = save_document("open.pdf", tenant_id="tenant-a")
         # In disabled mode, any tenant query returns the document
         assert get_document(doc.id, tenant_id="tenant-b") is not None
-

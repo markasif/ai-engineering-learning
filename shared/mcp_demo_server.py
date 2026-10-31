@@ -34,14 +34,16 @@ MCP SDK NOTE:
     - LangChain MCP adapters
   This is the entire point of the MCP standard.
 """
+
 import asyncio
 import json
 import random
 
 try:
+    from mcp import types as mcp_types
     from mcp.server import Server
     from mcp.server.stdio import stdio_server
-    from mcp import types as mcp_types
+
     _MCP_AVAILABLE = True
 except ImportError:
     _MCP_AVAILABLE = False
@@ -49,6 +51,7 @@ except ImportError:
 # =============================================================================
 # Tool implementations — replace mock data with real API calls in production
 # =============================================================================
+
 
 def _get_weather(location: str) -> dict:
     conditions = ["sunny", "partly cloudy", "overcast", "light rain", "clear"]
@@ -73,7 +76,7 @@ def _search_news(query: str, max_results: int = 3) -> dict:
         "query": query,
         "results": [
             {"headline": h, "source": "Mock News Agency", "published_at": "2026-07-01T12:00:00Z"}
-            for h in headlines[:max(1, min(max_results, len(headlines)))]
+            for h in headlines[: max(1, min(max_results, len(headlines)))]
         ],
         "source": "mock — replace with NewsAPI or similar in production",
     }
@@ -81,10 +84,14 @@ def _search_news(query: str, max_results: int = 3) -> dict:
 
 def _get_exchange_rate(from_currency: str, to_currency: str) -> dict:
     base_rates = {
-        ("USD", "EUR"): 0.92, ("EUR", "USD"): 1.09,
-        ("USD", "GBP"): 0.79, ("GBP", "USD"): 1.27,
-        ("USD", "JPY"): 157.2, ("JPY", "USD"): 0.0064,
-        ("USD", "INR"): 83.5, ("INR", "USD"): 0.012,
+        ("USD", "EUR"): 0.92,
+        ("EUR", "USD"): 1.09,
+        ("USD", "GBP"): 0.79,
+        ("GBP", "USD"): 1.27,
+        ("USD", "JPY"): 157.2,
+        ("JPY", "USD"): 0.0064,
+        ("USD", "INR"): 83.5,
+        ("INR", "USD"): 0.012,
     }
     rate = base_rates.get((from_currency.upper(), to_currency.upper()))
     if rate is None:
@@ -114,7 +121,10 @@ if _MCP_AVAILABLE:
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "location": {"type": "string", "description": "City name or location (e.g. 'London', 'New York')"},
+                        "location": {
+                            "type": "string",
+                            "description": "City name or location (e.g. 'London', 'New York')",
+                        },
                     },
                     "required": ["location"],
                 },
@@ -125,8 +135,15 @@ if _MCP_AVAILABLE:
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "Search query (e.g. 'AI regulation', 'climate change')"},
-                        "max_results": {"type": "integer", "description": "Maximum number of results (1-5, default 3)", "default": 3},
+                        "query": {
+                            "type": "string",
+                            "description": "Search query (e.g. 'AI regulation', 'climate change')",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum number of results (1-5, default 3)",
+                            "default": 3,
+                        },
                     },
                     "required": ["query"],
                 },
@@ -137,8 +154,14 @@ if _MCP_AVAILABLE:
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "from_currency": {"type": "string", "description": "Source currency code (e.g. 'USD', 'EUR', 'GBP')"},
-                        "to_currency":   {"type": "string", "description": "Target currency code (e.g. 'USD', 'EUR', 'GBP')"},
+                        "from_currency": {
+                            "type": "string",
+                            "description": "Source currency code (e.g. 'USD', 'EUR', 'GBP')",
+                        },
+                        "to_currency": {
+                            "type": "string",
+                            "description": "Target currency code (e.g. 'USD', 'EUR', 'GBP')",
+                        },
                     },
                     "required": ["from_currency", "to_currency"],
                 },
@@ -162,6 +185,7 @@ if _MCP_AVAILABLE:
             await server.run(read_stream, write_stream, server.create_initialization_options())
 
 else:
+
     async def main():
         raise RuntimeError(
             "The 'mcp' package is not installed. Run: pip install mcp\n"

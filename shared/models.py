@@ -11,15 +11,16 @@ New models are added here as they are introduced in the course:
   - Feature 6 adds: SmartChatResponse, RetrievalLogEntry, KnowledgeDigest
   - Feature 8 adds: AgentTask
 """
+
 from datetime import datetime
-from typing import Any, Dict, List, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-
 
 # =============================================================================
 # Feature 2: Structured output
 # =============================================================================
+
 
 class StructuredResponse(BaseModel):
     intent: Literal["general_question", "domain_question", "action_request", "unclear"] = Field(
@@ -64,6 +65,7 @@ class StructuredResponse(BaseModel):
 # Feature 3: Conversation memory
 # =============================================================================
 
+
 class Message(BaseModel):
     """
     A single message in a conversation — either from the user or the assistant.
@@ -74,18 +76,13 @@ class Message(BaseModel):
 
     role: Literal["user", "assistant"] = Field(
         description=(
-            "Who sent this message. 'user' is the person typing; "
-            "'assistant' is the AI's reply."
+            "Who sent this message. 'user' is the person typing; 'assistant' is the AI's reply."
         )
     )
 
-    content: str = Field(
-        description="The text of the message."
-    )
+    content: str = Field(description="The text of the message.")
 
-    timestamp: datetime = Field(
-        description="When this message was recorded, in UTC."
-    )
+    timestamp: datetime = Field(description="When this message was recorded, in UTC.")
 
 
 class Session(BaseModel):
@@ -97,15 +94,11 @@ class Session(BaseModel):
     empty history — previous sessions remain accessible in the sidebar.
     """
 
-    id: str = Field(
-        description="Unique identifier for this session (a UUID)."
-    )
+    id: str = Field(description="Unique identifier for this session (a UUID).")
 
-    created_at: datetime = Field(
-        description="When this session was started, in UTC."
-    )
+    created_at: datetime = Field(description="When this session was started, in UTC.")
 
-    messages: List[Message] = Field(
+    messages: list[Message] = Field(
         default_factory=list,
         description=(
             "All messages in this conversation, oldest first. "
@@ -126,6 +119,7 @@ class Session(BaseModel):
 # Feature 4: Document ingestion
 # =============================================================================
 
+
 class Document(BaseModel):
     """
     Metadata record for an uploaded document.
@@ -138,17 +132,13 @@ class Document(BaseModel):
     in Chunk objects. This keeps the metadata record lightweight.
     """
 
-    id: str = Field(
-        description="Unique identifier for this document (a UUID)."
-    )
+    id: str = Field(description="Unique identifier for this document (a UUID).")
 
     filename: str = Field(
         description="Original filename as uploaded by the user (e.g. 'report.pdf')."
     )
 
-    uploaded_at: datetime = Field(
-        description="When this document was uploaded, in UTC."
-    )
+    uploaded_at: datetime = Field(description="When this document was uploaded, in UTC.")
 
     status: Literal["processing", "ready", "error"] = Field(
         description=(
@@ -193,23 +183,17 @@ class Chunk(BaseModel):
     In Feature 5 these chunks are converted to vector embeddings for semantic search.
     """
 
-    id: str = Field(
-        description="Unique identifier for this chunk (a UUID)."
-    )
+    id: str = Field(description="Unique identifier for this chunk (a UUID).")
 
-    document_id: str = Field(
-        description="ID of the Document this chunk belongs to."
-    )
+    document_id: str = Field(description="ID of the Document this chunk belongs to.")
 
-    text: str = Field(
-        description="The raw text content of this chunk."
-    )
+    text: str = Field(description="The raw text content of this chunk.")
 
     chunk_index: int = Field(
         description="Zero-based position of this chunk within its document. Chunk 0 is the first."
     )
 
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description=(
             "Arbitrary key-value metadata. At minimum contains 'filename' and 'chunk_index'. "
@@ -221,6 +205,7 @@ class Chunk(BaseModel):
 # =============================================================================
 # Feature 6: Smart Router
 # =============================================================================
+
 
 class SmartChatResponse(BaseModel):
     """
@@ -234,9 +219,7 @@ class SmartChatResponse(BaseModel):
     pageindex) that teach students how the routing decision affected the answer.
     """
 
-    answer: str = Field(
-        description="The assistant's answer in plain text."
-    )
+    answer: str = Field(description="The assistant's answer in plain text.")
 
     source: Literal["llm", "rag", "hybrid", "pageindex"] = Field(
         description=(
@@ -247,7 +230,7 @@ class SmartChatResponse(BaseModel):
         )
     )
 
-    chunks_used: List[Dict[str, Any]] = Field(
+    chunks_used: list[dict[str, Any]] = Field(
         default_factory=list,
         description=(
             "The document chunks that were retrieved and included in the context. "
@@ -279,6 +262,7 @@ class SmartChatResponse(BaseModel):
 # Feature 6: Part C — Long-term retrieval memory
 # =============================================================================
 
+
 class RetrievalLogEntry(BaseModel):
     """
     A single retrieval event — logged whenever the Smart Router retrieves chunks.
@@ -292,7 +276,7 @@ class RetrievalLogEntry(BaseModel):
     session_id: str = Field(description="Which session triggered this retrieval.")
     tenant_id: str = Field(default="default", description="Which tenant this belongs to.")
     query: str = Field(description="The user's question that triggered retrieval.")
-    chunks_retrieved: List[str] = Field(
+    chunks_retrieved: list[str] = Field(
         description="IDs of the chunks that were retrieved (format: '{document_id}_{chunk_index}')."
     )
     timestamp: datetime = Field(description="When this retrieval happened, in UTC.")
@@ -317,7 +301,7 @@ class KnowledgeDigest(BaseModel):
 
     tenant_id: str
     summary: str = Field(description="2-3 sentence LLM-generated summary of retrieval history.")
-    topics_covered: List[str] = Field(
+    topics_covered: list[str] = Field(
         description="Key topics/themes extracted from recent queries."
     )
     last_updated: datetime
@@ -329,6 +313,7 @@ class KnowledgeDigest(BaseModel):
 # =============================================================================
 # Feature 8: Multi-step agent task
 # =============================================================================
+
 
 class AgentTask(BaseModel):
     """
@@ -351,11 +336,11 @@ class AgentTask(BaseModel):
         description="Current lifecycle state of the task."
     )
     message: str = Field(description="The original user request that started this task.")
-    plan: List[str] | None = Field(
+    plan: list[str] | None = Field(
         default=None,
         description="Ordered list of step instructions produced by make_plan(). None until planning is complete.",
     )
-    steps_completed: List[Dict[str, Any]] = Field(
+    steps_completed: list[dict[str, Any]] = Field(
         default_factory=list,
         description=(
             "Steps that have finished executing. Each entry: "

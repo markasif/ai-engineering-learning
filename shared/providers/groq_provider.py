@@ -29,12 +29,11 @@ To use this provider, set in .env:
   GROQ_API_KEY=your_key_here
   GROQ_MODEL=llama-3.3-70b-versatile   # or any model above
 """
-from typing import Optional, List
 
 import openai
 
 from shared.config import settings
-from shared.providers.base import LLMProvider, LLMResponse
+from shared.providers.base import LLMResponse
 from shared.providers.openai_provider import OpenAIProvider
 
 
@@ -90,7 +89,9 @@ class GroqProvider(OpenAIProvider):
             "for chat and STT. Both can be set simultaneously — see .env.example."
         )
 
-    async def analyze_image(self, image_bytes: bytes, prompt: str, detail: str = "auto") -> "LLMResponse":
+    async def analyze_image(
+        self, image_bytes: bytes, prompt: str, detail: str = "auto"
+    ) -> "LLMResponse":
         raise NotImplementedError(
             "Groq does not currently support vision/image input. "
             "Set VLM_PROVIDER=openai (gpt-4o) or VLM_PROVIDER=ollama (llava / phi3:vision) "

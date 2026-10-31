@@ -16,10 +16,11 @@ Why structured logs matter in production:
                "path":"/api/chat","duration_ms":234,"message":"Something went wrong"}
   The JSON version is searchable, filterable, and alertable in any log platform.
 """
+
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class JSONFormatter(logging.Formatter):
@@ -27,10 +28,10 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         payload: dict = {
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-            "level":     record.levelname,
-            "logger":    record.name,
-            "message":   record.getMessage(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
         }
         # Middleware injects these extras via LogRecord.
         for extra_key in ("request_id", "path", "method", "duration_ms", "status_code"):

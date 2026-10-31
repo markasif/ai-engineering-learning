@@ -8,12 +8,12 @@ a database.
 Same pattern as session_store.py — a plain dict at module level, lost on
 server restart. For production, swap with a Redis or Postgres-backed store.
 """
+
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from shared.models import AgentTask
-
 
 _tasks: dict[str, AgentTask] = {}
 
@@ -25,7 +25,7 @@ def create_task(
 ) -> AgentTask:
     """Create a new AgentTask in 'planning' status and return it."""
     task_id = str(uuid.uuid4())
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     task = AgentTask(
         id=task_id,
         status="planning",
@@ -39,7 +39,7 @@ def create_task(
     return task
 
 
-def get_task(task_id: str) -> Optional[AgentTask]:
+def get_task(task_id: str) -> AgentTask | None:
     """Return the task with the given ID, or None if not found."""
     return _tasks.get(task_id)
 
@@ -60,4 +60,4 @@ def update_task(task_id: str, **fields: Any) -> None:
     for field, value in fields.items():
         if hasattr(task, field):
             setattr(task, field, value)
-    task.updated_at = datetime.now(tz=timezone.utc)
+    task.updated_at = datetime.now(tz=UTC)

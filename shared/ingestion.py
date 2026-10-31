@@ -44,15 +44,16 @@ Public API:
   chunk_by_page(pages, ...)           → list[dict]  (one entry per page, with page_number)
   CHUNKING_STRATEGIES                 → dict mapping strategy name → callable
 """
+
 import io
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
-
 
 # =============================================================================
 # Extraction
 # =============================================================================
+
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
     """
@@ -76,11 +77,13 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
 
     if ext == ".pdf":
         from pypdf import PdfReader
+
         reader = PdfReader(io.BytesIO(file_bytes))
         return "\n".join(page.extract_text() or "" for page in reader.pages)
 
     if ext == ".docx":
         from docx import Document
+
         doc = Document(io.BytesIO(file_bytes))
         return "\n".join(para.text for para in doc.paragraphs if para.text.strip())
 
@@ -107,6 +110,7 @@ def extract_pages(file_bytes: bytes, filename: str) -> list[dict]:
 
     if ext == ".pdf":
         from pypdf import PdfReader
+
         reader = PdfReader(io.BytesIO(file_bytes))
         return [
             {"page_number": i + 1, "text": page.extract_text() or ""}
@@ -120,6 +124,7 @@ def extract_pages(file_bytes: bytes, filename: str) -> list[dict]:
 # =============================================================================
 # Chunking strategies
 # =============================================================================
+
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
     """
@@ -154,7 +159,6 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
 
         if current and current_len + slen > chunk_size:
             chunks.append(" ".join(current))
-            
 
             # Overlap tail: carry back sentences until we reach ~overlap chars.
             tail: list[str] = []
@@ -247,19 +251,23 @@ def chunk_by_page(pages: list[dict], max_page_size: int = 2000) -> list[dict]:
             continue
 
         if len(text) <= max_page_size:
-            result.append({
-                "text": text,
-                "page_number": page_num,
-                "chunk_index": chunk_index,
-            })
+            result.append(
+                {
+                    "text": text,
+                    "page_number": page_num,
+                    "chunk_index": chunk_index,
+                }
+            )
             chunk_index += 1
         else:
             for sub in chunk_text(text, chunk_size=max_page_size):
-                result.append({
-                    "text": sub,
-                    "page_number": page_num,
-                    "chunk_index": chunk_index,
-                })
+                result.append(
+                    {
+                        "text": sub,
+                        "page_number": page_num,
+                        "chunk_index": chunk_index,
+                    }
+                )
                 chunk_index += 1
 
     return result
@@ -344,10 +352,10 @@ def chunk_by_page(pages: list[dict], max_page_size: int = 2000) -> list[dict]:
 # chunk_by_page() is available as a reference implementation above.
 # =============================================================================
 
+
 def _sentence_strategy(text: str, pages: list[dict]) -> list[dict]:
     return [
-        {"text": c, "page_number": None, "chunk_index": i}
-        for i, c in enumerate(chunk_text(text))
+        {"text": c, "page_number": None, "chunk_index": i} for i, c in enumerate(chunk_text(text))
     ]
 
 
@@ -359,7 +367,7 @@ def _paragraph_strategy(text: str, pages: list[dict]) -> list[dict]:
 
 
 CHUNKING_STRATEGIES: dict[str, Callable[[str, list[dict]], list[dict]]] = {
-    "sentence":  _sentence_strategy,
+    "sentence": _sentence_strategy,
     "paragraph": _paragraph_strategy,
     # "page": chunk_by_page is available above as a reference implementation
     # but not wired here — see PAGEINDEX_NOTE for a more powerful page-based approach.

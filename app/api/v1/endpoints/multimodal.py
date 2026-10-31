@@ -1,6 +1,7 @@
 """
 Voice (STT + TTS), Vision (VLM), and Unified Modality Router endpoints.
 """
+
 import base64
 from typing import Any
 
@@ -51,19 +52,25 @@ async def voice_chat(
     if session_id:
         session = get_session(session_id, tenant_id=tenant_id)
         if session:
-            smart_resp = await smart_chat(session_id, SmartChatRequest(message=transcript), tenant_id)
+            smart_resp = await smart_chat(
+                session_id, SmartChatRequest(message=transcript), tenant_id
+            )
             answer = smart_resp.answer
         else:
-            result = await call_llm([
-                {"role": "system", "content": _SMART_SYSTEM_PROMPT},
-                {"role": "user", "content": transcript},
-            ])
+            result = await call_llm(
+                [
+                    {"role": "system", "content": _SMART_SYSTEM_PROMPT},
+                    {"role": "user", "content": transcript},
+                ]
+            )
             answer = result.content or ""
     else:
-        result = await call_llm([
-            {"role": "system", "content": _SMART_SYSTEM_PROMPT},
-            {"role": "user", "content": transcript},
-        ])
+        result = await call_llm(
+            [
+                {"role": "system", "content": _SMART_SYSTEM_PROMPT},
+                {"role": "user", "content": transcript},
+            ]
+        )
         answer = result.content or ""
 
     audio_base64 = ""
@@ -110,7 +117,9 @@ async def vision_chat(
     return VisionAnalyzeResponse(answer=answer, model_used=result.model)
 
 
-@router.post("/chat/multimodal", response_model=MultimodalChatResponse, tags=["F10 · Multimodal AI"])
+@router.post(
+    "/chat/multimodal", response_model=MultimodalChatResponse, tags=["F10 · Multimodal AI"]
+)
 async def multimodal_chat(
     session_id: str = Form(...),
     message: str = Form(""),
@@ -168,4 +177,3 @@ async def multimodal_chat(
         confidence=smart_resp.confidence,
         retrieval_method=smart_resp.retrieval_method,
     )
-

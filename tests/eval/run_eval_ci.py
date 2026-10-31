@@ -2,6 +2,7 @@
 Continuous Integration AI Evaluation Quality Gate.
 Runs the golden test set through the AI inference pipeline and enforces a minimum quality threshold.
 """
+
 import asyncio
 import json
 import sys
@@ -28,7 +29,10 @@ async def main() -> int:
     print(f"[eval-ci] Running {len(cases)} eval cases ...", flush=True)
     report = await run_eval(cases)
 
-    print(f"[eval-ci] Results: {report.passed}/{report.total} passed (pass_rate={report.pass_rate:.2f})", flush=True)
+    print(
+        f"[eval-ci] Results: {report.passed}/{report.total} passed (pass_rate={report.pass_rate:.2f})",
+        flush=True,
+    )
 
     for result in report.cases:
         status = "PASS" if result.passed else "FAIL"
@@ -53,4 +57,3 @@ async def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(asyncio.run(main()))
-

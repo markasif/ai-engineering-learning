@@ -1,6 +1,7 @@
 """
 Unified API Router integrating modular feature endpoints.
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
@@ -21,4 +22,3 @@ api_router.include_router(agents.router)
 api_router.include_router(multimodal.router)
 
 __all__ = ["api_router"]
-
