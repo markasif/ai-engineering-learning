@@ -27,11 +27,5 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-# Course curriculum folders (for minimal production image)
-week-1-brain/
-week-2-knowledge/
-week-3-hands/
-week-4-launch/
+# Scratch & local temporary files
 scratch/
-docs/
-
