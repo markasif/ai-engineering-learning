@@ -3,21 +3,26 @@
    Earthy palette — grows additively; each feature adds a new section.
    ============================================================================= */
 
-/* --- Design tokens (earthy BlockseBlock palette) --- */
+/* --- Design tokens (Modern Dark & Emerald Green Theme) --- */
 :root {
-  --color-matcha:    #809671; /* primary: buttons, active states */
-  --color-almond:    #E5E0D8; /* page background */
-  --color-pistache:  #B3B792; /* secondary: borders, icons, muted text */
-  --color-chai:      #D2AB80; /* accent / warm highlights */
-  --color-carob:     #725C3A; /* headings, strong text */
-  --color-vanilla:   #E5D2B8; /* card / surface backgrounds */
+  --color-matcha:        #10b981; /* primary green: buttons, active states, user bubble */
+  --color-matcha-hover:  #059669; /* darker green hover */
+  --color-almond:        #090b0e; /* main body background: deep black */
+  --color-pistache:      #222736; /* borders, dividers, subtle outlines */
+  --color-chai:          #38bdf8; /* accent / info highlight (sky blue) */
+  --color-carob:         #f8fafc; /* headings, primary text: crisp white */
+  --color-vanilla:       #12151f; /* card / surface backgrounds: dark slate */
+  --color-sidebar-bg:    #0d0f15; /* sidebar background */
+  --color-header-bg:     #1f232b; /* above navbar: sleek dark grey */
+  --color-header-border: #323847; /* header bottom border */
+  --color-text-muted:    #94a3b8; /* muted secondary text */
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
 
-  --shadow-sm: 0 1px 3px rgba(114,92,58,0.10);
-  --shadow-md: 0 4px 12px rgba(114,92,58,0.12);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.50);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.60);
 
   --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono: 'Cascadia Code', 'Fira Code', 'Menlo', monospace;
@@ -51,41 +56,38 @@ html, body {
   overflow: hidden;
 }
 
-/* --- Header --- */
+/* --- Header (Above navbar - Sleek Grey) --- */
 .site-header {
-  background: var(--color-matcha);
-  color: white;
-  padding: 0.875rem 1.5rem;
+  background: var(--color-header-bg);
+  border-bottom: 1px solid var(--color-header-border);
+  color: #ffffff;
+  padding: 0.875rem 1.75rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  box-shadow: var(--shadow-md);
-}
-
-.site-header .logo-mark {
-  font-size: 1.5rem;
-  line-height: 1;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .site-header .titles {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 2px;
 }
 
 .site-header .course-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: white;
+  color: #ffffff;
 }
 
 .site-header .org-name {
   font-size: 0.78rem;
-  color: rgba(255,255,255,0.80);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
 
 /* --- Main content area --- */
 .main-content {
@@ -571,39 +573,44 @@ html, body {
 
 /* Tab navigation bar */
 .tab-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(9, 11, 14, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   display: flex;
-  gap: 4px;
+  gap: 8px;
   border-bottom: 2px solid var(--color-pistache);
-  margin-bottom: 0;
-  padding: 0 0.25rem;
+  margin: -1.5rem -1rem 1.25rem -1rem;
+  padding: 0.85rem 1rem 0;
 }
 
 .tab-btn {
-  padding: 0.55rem 1.25rem;
+  padding: 0.65rem 1.35rem;
   border: none;
   background: transparent;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  color: var(--color-pistache);
+  color: var(--color-text-muted);
   cursor: pointer;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: all 0.15s ease;
 }
 
 .tab-btn:hover {
-  color: var(--color-carob);
-  background: rgba(128,150,113,0.08);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .tab-btn.active,
 .tab-btn[aria-selected="true"] {
   color: var(--color-matcha);
   border-bottom-color: var(--color-matcha);
-  background: transparent;
+  background: rgba(16, 185, 129, 0.08);
 }
-
 /* Tab panels — hidden by default; JS toggles `hidden` attribute */
 .tab-panel[hidden] { display: none !important; }
 
@@ -2257,4 +2264,105 @@ html, body {
   margin-top: 0.15rem;
   line-height: 1.3;
   word-break: break-word;
+}
+
+
+/* --- Custom Dark Mode & Green Button Theme Overrides --- */
+.panel {
+  border: 1px solid var(--color-pistache);
+}
+
+.sidebar {
+  background: var(--color-sidebar-bg) !important;
+  border-right: 1.5px solid var(--color-pistache);
+}
+
+.sidebar-header {
+  border-bottom: 1.5px solid var(--color-pistache);
+}
+
+.btn-primary {
+  background: var(--color-matcha) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28) !important;
+}
+
+.btn-primary:hover {
+  background: var(--color-matcha-hover) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.40) !important;
+}
+
+.btn-secondary {
+  background: #171b26 !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid var(--color-pistache) !important;
+}
+
+.btn-secondary:hover {
+  background: #1f2535 !important;
+  border-color: #384257 !important;
+}
+
+.message.user .bubble {
+  background: var(--color-matcha) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.22) !important;
+}
+
+.message.ai .bubble {
+  background: #171b26 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #273042 !important;
+}
+
+.message .role-label {
+  color: var(--color-text-muted) !important;
+}
+
+.session-item:hover {
+  background: rgba(16, 185, 129, 0.12) !important;
+}
+
+.session-item.active {
+  background: var(--color-matcha) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.session-item.active .session-item-title,
+.session-item.active .session-item-meta {
+  color: #ffffff !important;
+}
+
+.session-item-title {
+  color: #f1f5f9 !important;
+}
+
+.session-item-meta {
+  color: var(--color-text-muted) !important;
+}
+
+/* Dark mode inputs and dropdowns */
+input[type="text"],
+input[type="file"],
+select,
+textarea,
+.chat-input,
+.search-input,
+.strategy-select,
+.search-doc-filter {
+  background: #0d1017 !important;
+  color: #f8fafc !important;
+  border: 1.5px solid var(--color-pistache) !important;
+}
+
+input[type="text"]:focus,
+select:focus,
+textarea:focus,
+.chat-input:focus,
+.search-input:focus,
+.strategy-select:focus,
+.search-doc-filter:focus {
+  border-color: var(--color-matcha) !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
 }
