@@ -108,3 +108,37 @@ async def eval_last() -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="No eval has been run yet. POST /api/eval/run first.")
     return data
 
+
+@router.get("/models", tags=["OpenAI Compatibility"])
+async def get_models() -> dict[str, Any]:
+    """OpenAI-compatible models listing endpoint."""
+    provider = settings.llm_provider or "custom"
+    active_model = (
+        getattr(settings, f"{provider}_model", None)
+        or getattr(settings, "custom_model", None)
+        or getattr(settings, "groq_model", None)
+        or "cortex-ai-engine"
+    )
+    models_data = [
+        {
+            "id": str(active_model),
+            "object": "model",
+            "created": 1700000000,
+            "owned_by": str(provider),
+            "permission": [],
+            "root": str(active_model),
+            "parent": None,
+        },
+        {
+            "id": "cortex-ai",
+            "object": "model",
+            "created": 1700000000,
+            "owned_by": "system",
+            "permission": [],
+            "root": "cortex-ai",
+            "parent": None,
+        },
+    ]
+    return {"object": "list", "data": models_data}
+
+

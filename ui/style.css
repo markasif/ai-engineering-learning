@@ -60,38 +60,96 @@ html, body {
   overflow: hidden;
 }
 
-/* --- Header (Above navbar - Compact Sleek Grey) --- */
+/* --- Header (Above navbar - Premium Executive Charcoal with Warm Accents) --- */
 .site-header {
-  background: var(--color-header-bg);
-  border-bottom: 1px solid var(--color-header-border);
-  color: #ffffff;
-  padding: 0.45rem 1.35rem;
-  min-height: 44px;
+  background: #191716; /* warm obsidian matching carob palette */
+  border-bottom: 1px solid #2a2522;
+  color: #fdfbf7;
+  padding: 0.5rem 1.25rem;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(25, 23, 22, 0.18);
+  z-index: 30;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-matcha);
+  flex-shrink: 0;
 }
 
 .site-header .titles {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .site-header .course-title {
   font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #f8fafc;
+  letter-spacing: -0.02em;
+  color: #fdfbf7;
+}
+
+.site-header .brand-accent {
+  color: var(--color-matcha);
+  font-weight: 800;
+  margin-left: 1px;
+}
+
+.site-header .title-divider {
+  color: #57534e;
+  font-weight: 700;
+  font-size: 0.9rem;
+  user-select: none;
 }
 
 .site-header .org-name {
+  font-size: 0.78rem;
+  color: #a8a29e;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-matcha);
+  box-shadow: 0 0 8px var(--color-matcha);
+}
+
+.status-pulse-text {
   font-size: 0.72rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #d6d3cd;
+  letter-spacing: 0.03em;
 }
 
 
@@ -268,7 +326,7 @@ html, body {
    ============================================================================= */
 
 .sidebar {
-  width: 240px;
+  width: 250px;
   flex-shrink: 0;
   background: var(--color-vanilla);
   border-right: 1.5px solid var(--color-pistache);
@@ -278,8 +336,25 @@ html, body {
 }
 
 .sidebar-header {
-  padding: 0.875rem 0.75rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1.5px solid var(--color-pistache);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-carob);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-footer {
+  padding: 0.85rem 0.85rem;
+  border-top: 1.5px solid var(--color-pistache);
+  background: var(--color-vanilla);
 }
 
 .btn-full { width: 100%; }
@@ -560,12 +635,48 @@ html, body {
   font-weight: 600;
 }
 
-/* --- Empty state --- */
+/* --- Empty state inside chat container (Centered & Modern) --- */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  color: var(--color-pistache);
-  padding: 2rem;
-  font-size: 0.95rem;
+  margin: auto;
+  padding: 3rem 1.5rem;
+  max-width: 440px;
+  gap: 0.65rem;
+}
+
+.empty-state-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-matcha);
+  margin-bottom: 0.25rem;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.1);
+}
+
+.empty-state-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-carob);
+  letter-spacing: -0.01em;
+}
+
+.empty-state-text {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.empty-state-text strong {
+  color: var(--color-carob);
 }
 
 /* --- Scrollbar (subtle) --- */
@@ -2054,43 +2165,44 @@ html, body {
 /* ── Voice / Image buttons in the chat input row ── */
 .btn-multimodal {
   flex-shrink: 0;
-  padding: 0 0.6rem;
-  height: 2.25rem;
-  border: 1.5px solid var(--color-almond);
-  border-radius: var(--radius);
-  background: var(--color-almond);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1.5px solid var(--color-pistache);
+  border-radius: var(--radius-md);
+  background: var(--color-vanilla);
   color: var(--color-carob);
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-  display: flex;
+  transition: all 0.15s ease;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
 }
 
 .btn-multimodal:hover {
   background: var(--color-vanilla);
-  border-color: var(--color-chai);
+  border-color: var(--color-matcha);
+  color: var(--color-matcha);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
 }
 
-.btn-multimodal:active { transform: scale(0.95); }
-
-/* Active recording state — pulse red border */
-.btn-multimodal.recording {
-  border-color: #c0392b;
-  background: rgba(192, 57, 43, 0.08);
-  animation: pulse-border 1s ease-in-out infinite;
-}
-
-@keyframes pulse-border {
-  0%, 100% { border-color: #c0392b; }
-  50%       { border-color: rgba(192, 57, 43, 0.35); }
-}
+.btn-multimodal:active { transform: scale(0.96); }
 
 /* The image label acts as a file-input trigger */
 .btn-image-label {
   cursor: pointer;
   user-select: none;
+}
+
+.btn-image-svg {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.btn-image-label:hover .btn-image-svg {
+  transform: scale(1.08);
 }
 
 /* ── Voice status bar (shown while recording) ── */

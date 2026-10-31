@@ -130,6 +130,13 @@ def create_application() -> FastAPI:
         from app.api.v1.endpoints.system import health
         return await health()
 
+    # OpenAI Compatibility aliases (e.g. GET /v1/models called by external clients)
+    @app.get("/v1/models", tags=["OpenAI Compatibility"], include_in_schema=False)
+    @app.get("/models", tags=["OpenAI Compatibility"], include_in_schema=False)
+    async def root_models():
+        from app.api.v1.endpoints.system import get_models
+        return await get_models()
+
     # 5. Mount Static Frontend UI if present
     repo_root = Path(__file__).resolve().parent.parent
     ui_path = repo_root / "ui"

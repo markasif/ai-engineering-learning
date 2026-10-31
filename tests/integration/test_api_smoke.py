@@ -89,3 +89,14 @@ def test_document_upload_lifecycle(client: TestClient):
     assert del_resp.json().get("deleted") == doc_id
 
 
+def test_v1_models_endpoint(client: TestClient):
+    resp = client.get("/v1/models")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body.get("object") == "list"
+    assert "data" in body
+    assert len(body["data"]) >= 1
+    assert any(m["id"] == "cortex-ai" for m in body["data"])
+
+
+
