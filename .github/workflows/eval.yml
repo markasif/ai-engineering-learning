@@ -44,7 +44,7 @@ jobs:
 
       # ── 5. Eval quality gate ───────────────────────────────────────────────
       - name: Eval quality gate (pass rate ≥ 70%)
-        if: env.GROQ_API_KEY != ''
+        if: ${{ secrets.GROQ_API_KEY != '' }}
         run: python tests/eval/run_eval_ci.py
         env:
           LLM_PROVIDER: groq
