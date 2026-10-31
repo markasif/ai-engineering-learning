@@ -135,10 +135,13 @@ async def ask_documents(
     Retrieve relevant chunks and synthesize a clear, human-readable answer
     based strictly on the document context, followed by the top 3 evidence citations.
     """
+    import re
+
     from shared.llm_client import call_llm
 
     filters = {"document_id": req.document_id} if req.document_id else None
-    chunks = vector_search(req.query, top_k=req.top_k or 5, filters=filters, tenant_id=tenant_id)
+    top_k = req.top_k if req.top_k and req.top_k > 0 else 6
+    chunks = vector_search(req.query, top_k=top_k, filters=filters, tenant_id=tenant_id)
 
     if not chunks:
         return {
@@ -147,22 +150,30 @@ async def ask_documents(
             "total_matches": 0,
         }
 
+    def clean_text(s: str) -> str:
+        if not s:
+            return ""
+        # Strip private-use area and replacement characters
+        s = re.sub(r"[\uE000-\uF8FF\u25A0-\u25FF\uFFFD]", " ", s)
+        return re.sub(r"\s+", " ", s).strip()
+
     # Format the top chunks as grounding context
     context_blocks = []
-    for i, c in enumerate(chunks[:4], 1):
+    for i, c in enumerate(chunks[:5], 1):
+        cleaned_chunk = clean_text(c.get("text", ""))
         context_blocks.append(
-            f"[{i}] File: {c.get('filename', 'document')} (chunk {c.get('chunk_index', 0)}):\n{c.get('text', '')}"
+            f"[{i}] File: {c.get('filename', 'document')} (chunk {c.get('chunk_index', 0)}):\n{cleaned_chunk}"
         )
     context_str = "\n\n".join(context_blocks)
 
     system_prompt = (
         "You are an expert Document Intelligence Assistant. "
         "Your task is to answer the user's question clearly, directly, and thoroughly based ONLY on the provided document excerpts.\n"
-        "Rules:\n"
-        "1. Provide a direct, conversational, human-readable answer first (e.g., 'Based on your uploaded document, you have...').\n"
-        "2. If the user asks about career experience, roles, or dates, clearly state the total duration (calculate years/months from dates) and list the positions with companies.\n"
-        "3. Highlight key information concisely using clean markdown bullets where helpful.\n"
-        "4. Do not speculate or introduce facts outside the provided document excerpts."
+        "Guidelines:\n"
+        "1. Give a conversational, human-readable answer first (e.g., 'Based on your uploaded document, you have...').\n"
+        "2. If asked about career experience, calculate and clearly state the total duration (from summary statements or dated job entries) and list each role with company and dates in clean bullet points.\n"
+        "3. Highlight key information using clean markdown formatting.\n"
+        "4. Do not speculate or introduce outside facts. Rely strictly on the document excerpts."
     )
     user_prompt = f"Document Excerpts:\n{context_str}\n\nUser Question: {req.query}"
 
@@ -173,13 +184,20 @@ async def ask_documents(
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.2,
+            max_tokens=2500,
         )
         answer = res.content or "Could not generate an answer from the document excerpts."
     except Exception as exc:
         answer = f"Found {len(chunks)} relevant passages, but model synthesis encountered an error: {exc}"
 
+    sanitized_evidence = []
+    for c in chunks[:3]:
+        item = dict(c)
+        item["text"] = clean_text(c.get("text", ""))
+        sanitized_evidence.append(item)
+
     return {
         "answer": answer,
-        "evidence": chunks[:3],
+        "evidence": sanitized_evidence,
         "total_matches": len(chunks),
     }

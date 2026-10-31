@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=2.5.0" />
+  <link rel="stylesheet" href="style.css?v=2.7.0" />
 </head>
 <body>
 
@@ -195,31 +195,34 @@
 
       <!-- ===================================================
            FEATURE 4 & 5: Unified Document Intelligence & Q&A
-           Upload documents, inspect index, and chat with verified citations.
+           Upload documents, chat with document grounding, view files & citations
            =================================================== -->
       <section class="panel tab-panel" id="documents-panel" role="tabpanel" aria-labelledby="tab-documents" hidden>
         <div class="panel-header-row">
           <div class="panel-title-group">
             <h2 class="panel-title">Document Intelligence &amp; Q&amp;A</h2>
-            <span class="panel-subtitle">Upload knowledge documents and ask questions with verified source citations</span>
+            <span class="panel-subtitle">Chat with your uploaded documents grounded in verified source passages</span>
           </div>
           <button id="btn-toggle-upload" class="btn btn-secondary btn-sm" type="button" style="display: none;">
             + Upload Another Document
           </button>
         </div>
 
-        <!-- Dynamic Active Document Status Notice -->
-        <div id="active-doc-banner" class="active-doc-banner" style="display: none;">
-          <span class="active-doc-dot" aria-hidden="true"></span>
-          <div class="active-doc-text">
-            <strong id="active-doc-title">Document Context Active</strong>
-            <span id="active-doc-desc">Answering questions strictly based on your uploaded document(s).</span>
+        <!-- Dynamic Document Grounding Notice Banner -->
+        <div id="doc-grounding-banner" class="doc-grounding-banner" style="display: none;">
+          <div class="grounding-info-row">
+            <span class="grounding-dot" aria-hidden="true"></span>
+            <div class="grounding-text">
+              <strong id="grounding-title">Grounded in: Mohammed_Asif_Resume.pdf</strong>
+              <span id="grounding-subtitle">This chat answers strictly based on your uploaded document with verified citations.</span>
+            </div>
           </div>
+          <span class="grounding-pill">100% Document Grounded</span>
         </div>
 
-        <!-- Upload container: visible initially when empty, or toggled via "+ Upload Another Document" -->
+        <!-- Upload container: visible initially when 0 documents exist, or toggled via "+ Upload Another Document" -->
         <div id="upload-container" class="upload-container">
-          <!-- Upload options row (strategy selector + fixed CAG info) -->
+          <!-- Upload options row (strategy selector + bulletproof CAG info) -->
           <div class="upload-options">
             <div class="strategy-selector-group">
               <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
@@ -294,46 +297,74 @@
           </div>
         </div>
 
-        <!-- Indexed Document list -->
-        <div class="document-list-header">
-          <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
-        </div>
-        <div id="document-list" class="document-list">
-          <p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>
-        </div>
-
         <!-- ===================================================
-             DOCUMENT Q&A / SEARCH SECTION (Same Panel!)
+             DOCUMENT CHAT SECTION (Exact same design as Chat)
+             Appears when a document is uploaded!
              =================================================== -->
-        <div id="document-qa-section" class="document-qa-section" style="display: none;">
-          <div class="document-list-header" style="margin-top: 1.5rem;">
-            <h3 class="document-section-subtitle">Ask Your Document</h3>
-          </div>
-
-          <!-- Question Input Controls -->
-          <div class="search-controls">
-            <div class="search-input-row">
-              <input
-                type="text"
-                id="search-input"
-                class="search-input"
-                placeholder="Ask anything about your document (e.g. 'What is my career experience?')..."
-                autocomplete="off"
-              />
-              <select id="search-doc-filter" class="search-doc-filter">
-                <option value="">All documents</option>
-              </select>
-              <button id="search-btn" class="btn btn-primary" type="button">Ask Document</button>
+        <div id="document-chat-section" class="document-chat-section" style="display: none;">
+          <!-- Message history: uses .message-history so it gets identical warm dots, bubbles, & layout -->
+          <div class="message-history doc-message-history" id="doc-message-history" role="log" aria-live="polite" aria-label="Document Conversation">
+            <div class="empty-state" id="doc-empty-state">
+              <div class="empty-state-badge" aria-hidden="true">
+                <span class="empty-state-emoji">📄</span>
+              </div>
+              <h3 class="empty-state-heading" id="doc-empty-heading">Chat with your Document</h3>
+              <p class="empty-state-text" id="doc-empty-desc">
+                Your document is loaded and ready! Ask any question below to get a clear, human-readable answer grounded in verified citations.
+              </p>
+              <div class="doc-quick-prompts" id="doc-quick-prompts">
+                <button type="button" class="doc-prompt-chip" data-query="How much experience do I have in career?">
+                  💼 Career Experience
+                </button>
+                <button type="button" class="doc-prompt-chip" data-query="What are my top technical skills, frameworks, and tools?">
+                  ⚡ Technical Skills
+                </button>
+                <button type="button" class="doc-prompt-chip" data-query="What is my educational background and degrees?">
+                  🎓 Education
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Results area (Human-readable answer + Top 3 Evidence Citations) -->
-          <div id="search-results" class="search-results">
-            <p class="sidebar-empty">Enter a question above and click <strong>Ask Document</strong>.</p>
+          <!-- Document Chat Input Row (Exact same design as Chat) -->
+          <div class="chat-input-row doc-chat-input-row">
+            <label for="doc-chat-input" class="sr-only">Ask your document</label>
+            <input
+              type="text"
+              id="doc-chat-input"
+              class="chat-input"
+              placeholder="Ask anything about your document (press Enter)…"
+              autocomplete="off"
+            />
+            <select id="search-doc-filter" class="search-doc-filter" style="display: none;">
+              <option value="">All documents</option>
+            </select>
+            <button id="doc-send-btn" class="btn btn-primary" type="button">Send</button>
           </div>
         </div>
 
-        <!-- Hidden search-panel container for backward compatibility -->
+        <!-- ===================================================
+             UPLOADED DOCUMENT DETAILS (Shown Below the Chat)
+             =================================================== -->
+        <div class="document-details-section" id="document-details-section">
+          <div class="document-list-header">
+            <div class="document-header-left">
+              <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
+              <span class="doc-count-badge" id="doc-count-badge">0 files</span>
+            </div>
+            <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button" style="display: none;">
+              + Upload File
+            </button>
+          </div>
+          <div id="document-list" class="document-list">
+            <p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>
+          </div>
+        </div>
+
+        <!-- Backward compatibility anchors (hidden) -->
+        <input type="text" id="search-input" style="display: none;" />
+        <button id="search-btn" style="display: none;"></button>
+        <div id="search-results" style="display: none;"></div>
         <div id="search-panel" hidden style="display: none;"></div>
       </section>
 
@@ -535,6 +566,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=2.5.0"></script>
+<script src="app.js?v=2.7.0"></script>
 </body>
 </html>

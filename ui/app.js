@@ -721,10 +721,14 @@ async function loadDocuments() {
 
   const uploadContainer = document.getElementById("upload-container");
   const btnToggleUpload = document.getElementById("btn-toggle-upload");
-  const activeDocBanner = document.getElementById("active-doc-banner");
-  const activeDocTitle  = document.getElementById("active-doc-title");
-  const activeDocDesc   = document.getElementById("active-doc-desc");
-  const documentQaSection = document.getElementById("document-qa-section");
+  const btnUploadBottom = document.getElementById("btn-upload-bottom");
+  const docGroundingBanner = document.getElementById("doc-grounding-banner");
+  const groundingTitle = document.getElementById("grounding-title");
+  const groundingSubtitle = document.getElementById("grounding-subtitle");
+  const documentChatSection = document.getElementById("document-chat-section");
+  const docCountBadge = document.getElementById("doc-count-badge");
+  const docChatInput = document.getElementById("doc-chat-input");
+  const docEmptyHeading = document.getElementById("doc-empty-heading");
 
   const headers = {};
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
@@ -736,37 +740,58 @@ async function loadDocuments() {
     const docs = await res.json();
 
     if (!docs.length) {
-      // 0 documents: automatically show upload dropzone, hide toggle and Q&A
+      // 0 documents: automatically show upload dropzone, hide toggle and chat
       if (uploadContainer) {
         uploadContainer.style.display = "block";
         uploadContainer.dataset.userOpened = "false";
       }
       if (btnToggleUpload) btnToggleUpload.style.display = "none";
-      if (activeDocBanner) activeDocBanner.style.display = "none";
-      if (documentQaSection) documentQaSection.style.display = "none";
+      if (btnUploadBottom) btnUploadBottom.style.display = "none";
+      if (docGroundingBanner) docGroundingBanner.style.display = "none";
+      if (documentChatSection) documentChatSection.style.display = "none";
+      if (docCountBadge) docCountBadge.textContent = "0 files";
 
       documentList.innerHTML = `<p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>`;
       loadSearchDocumentFilter([]);
       return;
     }
 
-    // 1+ documents: show active status banner, toggle button, and Q&A chat
+    // 1+ documents: show active grounding banner, toggle button, and Chat interface!
     if (btnToggleUpload) {
       btnToggleUpload.style.display = "inline-flex";
-      btnToggleUpload.textContent = "+ Upload Another Document";
+      btnToggleUpload.textContent = uploadContainer?.style.display === "block" ? "✕ Close Upload" : "+ Upload Another Document";
+    }
+    if (btnUploadBottom) {
+      btnUploadBottom.style.display = "inline-flex";
     }
     if (uploadContainer && uploadContainer.dataset.userOpened !== "true") {
       uploadContainer.style.display = "none";
     }
-    if (activeDocBanner) {
-      activeDocBanner.style.display = "flex";
-      const readyDocs = docs.filter((d) => d.status === "ready");
-      const names = readyDocs.map((d) => d.filename).join(", ") || docs[0].filename;
-      if (activeDocTitle) activeDocTitle.textContent = `Active Knowledge Document: ${names}`;
-      if (activeDocDesc) activeDocDesc.textContent = "Answering questions strictly based on your uploaded document(s).";
+
+    const readyDocs = docs.filter((d) => d.status === "ready");
+    const docNames = (readyDocs.length ? readyDocs : docs).map((d) => d.filename).join(", ");
+    const primaryDocName = readyDocs.length ? readyDocs[0].filename : docs[0].filename;
+
+    if (docGroundingBanner) {
+      docGroundingBanner.style.display = "flex";
+      if (groundingTitle) groundingTitle.textContent = `Grounded in: ${docNames}`;
+      if (groundingSubtitle) groundingSubtitle.textContent = "This chat answers strictly based on your uploaded document with verified source citations.";
     }
-    if (documentQaSection) {
-      documentQaSection.style.display = "block";
+
+    if (documentChatSection) {
+      documentChatSection.style.display = "block";
+    }
+
+    if (docChatInput) {
+      docChatInput.placeholder = `Ask anything about ${primaryDocName} (press Enter)…`;
+    }
+
+    if (docEmptyHeading) {
+      docEmptyHeading.textContent = `Chat with ${primaryDocName}`;
+    }
+
+    if (docCountBadge) {
+      docCountBadge.textContent = `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
     }
 
     documentList.innerHTML = "";
@@ -924,13 +949,13 @@ uploadArea?.addEventListener("drop", (e) => {
 });
 
 // =============================================================================
-// Feature 5: Semantic search (Ask My Documents)
+// Feature 5: Document Chat & Grounded Q&A (Conversational Design)
 // =============================================================================
 
-const searchInput     = document.getElementById("search-input");
-const searchBtn       = document.getElementById("search-btn");
-const searchDocFilter = document.getElementById("search-doc-filter");
-const searchResults   = document.getElementById("search-results");
+const docChatInput      = document.getElementById("doc-chat-input");
+const docSendBtn        = document.getElementById("doc-send-btn");
+const docMessageHistory = document.getElementById("doc-message-history");
+const searchDocFilter   = document.getElementById("search-doc-filter");
 
 /** Populate the document filter dropdown from GET /api/documents or passed docs array. */
 async function loadSearchDocumentFilter(preloadedDocs = null) {
@@ -954,49 +979,184 @@ async function loadSearchDocumentFilter(preloadedDocs = null) {
 /** Format text removing unprintable boxes or weird glyphs. */
 function sanitizeDocText(str) {
   if (!str) return "";
-  return str.replace(/[\u25a0-\u25ff\uf000-\uf0ff\ufffd]/g, " ").replace(/\s+/g, " ").trim();
+  return str.replace(/[\u25a0-\u25ff\uf000-\uf0ff\ue000-\uf8ff\ufffd]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Format markdown into clean HTML with paragraphs, bold, lists, and code */
+function formatMarkdownToHtml(markdown) {
+  if (!markdown) return "";
+  let html = escapeHtml(markdown);
+
+  // Bold **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  // Italic *text*
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  // Inline code `text`
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // Format bullet lists and paragraphs
+  const lines = html.split("\n");
+  const output = [];
+  let inList = false;
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ") || trimmed.startsWith("• ") || trimmed.startsWith("* ")) {
+      if (!inList) {
+        output.push("<ul>");
+        inList = true;
+      }
+      output.push(`<li>${trimmed.replace(/^[-•*]\s*/, "")}</li>`);
+    } else {
+      if (inList) {
+        output.push("</ul>");
+        inList = false;
+      }
+      if (trimmed) {
+        output.push(`<p>${trimmed}</p>`);
+      }
+    }
+  }
+  if (inList) output.push("</ul>");
+  return output.join("");
 }
 
 /**
- * Ask Document: synthesizes a direct, human-readable answer first,
- * with top 3 verified evidence excerpts displayed below.
+ * Append message bubble to Document Chat (Exact same design as main chat)
  */
-async function runSearch() {
-  const query = searchInput?.value.trim();
+function appendDocChatMessage(role, text, isThinking = false) {
+  if (!docMessageHistory) return null;
+  const emptyState = document.getElementById("doc-empty-state");
+  if (emptyState) emptyState.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = `message ${role}${isThinking ? " thinking" : ""}`;
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = role === "user" ? "You" : "AskRaggy · Grounded in Document";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  if (isThinking) {
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      bubble.appendChild(dot);
+    }
+  } else {
+    bubble.innerHTML = formatMarkdownToHtml(text);
+  }
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+  docMessageHistory.appendChild(wrapper);
+  docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
+
+  return wrapper;
+}
+
+/**
+ * Append AI response bubble with human-readable answer first,
+ * followed by Top 3 verified citations cleanly attached below.
+ */
+function appendDocAiResponse(data) {
+  if (!docMessageHistory) return;
+  const emptyState = document.getElementById("doc-empty-state");
+  if (emptyState) emptyState.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "AskRaggy · Grounded in Document";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble doc-ai-bubble";
+
+  // 1. Synthesized human-readable answer
+  const answerBody = document.createElement("div");
+  answerBody.className = "doc-answer-body";
+  answerBody.innerHTML = formatMarkdownToHtml(data.answer || "No direct answer synthesized from document.");
+  bubble.appendChild(answerBody);
+
+  // 2. Top 3 Verified Evidence Citations
+  const evidence = data.evidence || [];
+  if (evidence.length > 0) {
+    const evidenceDrawer = document.createElement("div");
+    evidenceDrawer.className = "doc-evidence-drawer";
+
+    const drawerToggle = document.createElement("button");
+    drawerToggle.type = "button";
+    drawerToggle.className = "doc-evidence-toggle is-open";
+    drawerToggle.innerHTML = `
+      <span class="evidence-icon" aria-hidden="true">📚</span>
+      <span class="evidence-title">Top ${evidence.length} Verified Sources from Document</span>
+      <span class="evidence-chevron" aria-hidden="true">▾</span>
+    `;
+
+    const evidenceList = document.createElement("div");
+    evidenceList.className = "doc-evidence-list";
+
+    evidence.forEach((r) => {
+      const pct = Math.round((r.score || 0) * 100);
+      const card = document.createElement("div");
+      card.className = "doc-evidence-card";
+      card.innerHTML = `
+        <div class="evidence-card-header">
+          <span class="evidence-file-badge">${escapeHtml(r.filename || "Document")}</span>
+          <span class="evidence-chunk-meta">chunk ${r.chunk_index}</span>
+          <span class="evidence-score-pill">${pct}% Match</span>
+        </div>
+        <p class="evidence-excerpt">${escapeHtml(sanitizeDocText(r.text))}</p>
+      `;
+      evidenceList.appendChild(card);
+    });
+
+    drawerToggle.addEventListener("click", () => {
+      const isClosed = evidenceList.style.display === "none";
+      evidenceList.style.display = isClosed ? "flex" : "none";
+      drawerToggle.classList.toggle("is-open", isClosed);
+    });
+
+    evidenceDrawer.appendChild(drawerToggle);
+    evidenceDrawer.appendChild(evidenceList);
+    bubble.appendChild(evidenceDrawer);
+  }
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+  docMessageHistory.appendChild(wrapper);
+  docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
+
+  // Play audio chime notification
+  playNotificationSound();
+}
+
+/**
+ * Send query to Document Chat
+ */
+async function sendDocMessage(customQuery = null) {
+  const query = (typeof customQuery === "string" ? customQuery : (docChatInput?.value || "")).trim();
   if (!query) return;
 
-  if (searchResults) {
-    searchResults.innerHTML = `
-      <div class="search-thinking">
-        <span class="upload-spinner" aria-hidden="true"></span>
-        <span>Reading document &amp; synthesizing answer…</span>
-      </div>`;
-  }
-  if (searchBtn) searchBtn.disabled = true;
+  if (docChatInput) docChatInput.value = "";
+  if (docSendBtn) docSendBtn.disabled = true;
+
+  appendDocChatMessage("user", query);
+  const thinkingEl = appendDocChatMessage("ai", "", true);
 
   const documentId = searchDocFilter?.value || null;
   const headers = { "Content-Type": "application/json" };
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
 
   try {
-    // Try the synthesized Q&A endpoint first
-    let res = await fetch(`${API_BASE}/api/documents/ask`, {
+    const res = await fetch(`${API_BASE}/api/documents/ask`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ query, top_k: 4, document_id: documentId }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      renderDocumentAnswer(data);
-      return;
-    }
-
-    // Fallback to /api/search if /documents/ask is unavailable
-    res = await fetch(`${API_BASE}/api/search`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ query, top_k: 5, document_id: documentId }),
+      body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
     });
 
     if (!res.ok) {
@@ -1004,122 +1164,44 @@ async function runSearch() {
       throw new Error(err.detail || `Server error ${res.status}`);
     }
 
-    const results = await res.json();
-    if (!results.length) {
-      searchResults.innerHTML = `<p class="sidebar-empty">No matching information found in your document. Try rephrasing your question.</p>`;
-      return;
-    }
-
-    renderDocumentAnswer({
-      answer: "Retrieved matching passages from your document:",
-      evidence: results.slice(0, 3),
-      total_matches: results.length,
-    });
+    const data = await res.json();
+    thinkingEl.remove();
+    appendDocAiResponse(data);
   } catch (err) {
-    if (searchResults) {
-      searchResults.innerHTML = `<p class="sidebar-empty" style="color:#ef4444">
-        Failed to process query: ${escapeHtml(err.message)}
-      </p>`;
-    }
+    thinkingEl.remove();
+    appendDocChatMessage("ai", `Error answering from document: ${err.message}`);
   } finally {
-    if (searchBtn) searchBtn.disabled = false;
+    if (docSendBtn) docSendBtn.disabled = false;
+    docChatInput?.focus();
   }
 }
 
-/** Render a synthesized human-readable answer first + Top 3 evidence citations below. */
-function renderDocumentAnswer(data) {
-  if (!searchResults) return;
-  searchResults.innerHTML = "";
-
-  // 1. Synthesized Human Answer Card
-  const answerCard = document.createElement("div");
-  answerCard.className = "doc-answer-card";
-  answerCard.innerHTML = `
-    <div class="doc-answer-header">
-      <span class="doc-answer-badge">✨ Synthesized Answer (from your document)</span>
-    </div>
-    <div class="doc-answer-body">
-      ${escapeHtml(data.answer || "No direct answer synthesized.")}
-    </div>
-  `;
-  searchResults.appendChild(answerCard);
-
-  // 2. Top 3 Evidence Citations
-  const evidence = data.evidence || [];
-  if (evidence.length > 0) {
-    const evidenceSection = document.createElement("div");
-    evidenceSection.className = "evidence-section";
-
-    const header = document.createElement("div");
-    header.className = "evidence-header";
-    header.innerHTML = `
-      <span class="evidence-title">📚 Top ${evidence.length} Verified Document Sources</span>
-    `;
-    evidenceSection.appendChild(header);
-
-    const list = document.createElement("div");
-    list.className = "evidence-list";
-
-    evidence.forEach((r, idx) => {
-      const card = buildResultCard({
-        ...r,
-        text: sanitizeDocText(r.text),
-      });
-      list.appendChild(card);
-    });
-
-    evidenceSection.appendChild(list);
-    searchResults.appendChild(evidenceSection);
+// Wire Document Chat events
+docSendBtn?.addEventListener("click", () => sendDocMessage());
+docChatInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendDocMessage();
   }
-  playNotificationSound();
-}
+});
 
-/**
- * Build a search result card DOM element.
- * @param {{ text: string, filename: string, chunk_index: number, score: number, document_id: string }} result
- */
-function buildResultCard(result) {
-  const pct = Math.round(result.score * 100);
-  const level = pct >= 60 ? "high" : pct >= 35 ? "medium" : "low";
+// Quick prompt chips delegate click
+document.addEventListener("click", (e) => {
+  const chip = e.target.closest(".doc-prompt-chip");
+  if (chip && chip.dataset.query) {
+    sendDocMessage(chip.dataset.query);
+  }
+});
 
-  const card = document.createElement("div");
-  card.className = "search-result-card";
-  card.dataset.scoreLevel = level;
-
-  const header = document.createElement("div");
-  header.className = "result-card-header";
-
-  const filenameBadge = document.createElement("span");
-  filenameBadge.className = "result-filename-badge";
-  filenameBadge.textContent = result.filename || "Unknown source";
-
-  const chunkMeta = document.createElement("span");
-  chunkMeta.className = "result-chunk-meta";
-  chunkMeta.textContent = `chunk ${result.chunk_index}`;
-
-  const scoreBadge = document.createElement("span");
-  scoreBadge.className = "result-score-badge";
-  scoreBadge.dataset.level = level;
-  scoreBadge.textContent = `${pct}%`;
-  scoreBadge.title = "Similarity score (higher = more similar, not necessarily more relevant)";
-
-  header.appendChild(filenameBadge);
-  header.appendChild(chunkMeta);
-  header.appendChild(scoreBadge);
-
-  const text = document.createElement("p");
-  text.className = "result-text";
-  text.textContent = result.text || "";
-
-  card.appendChild(header);
-  card.appendChild(text);
-
-  return card;
-}
-
-searchBtn?.addEventListener("click", runSearch);
+// Fallback search button wiring
+const searchInput = document.getElementById("search-input");
+const searchBtn   = document.getElementById("search-btn");
+searchBtn?.addEventListener("click", () => sendDocMessage(searchInput?.value));
 searchInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") { e.preventDefault(); runSearch(); }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendDocMessage(searchInput?.value);
+  }
 });
 
 // =============================================================================
@@ -2302,22 +2384,33 @@ retrievalsLoadBtn?.addEventListener("click", async () => {
   }
 });
 
-// Wire "+ Upload Another Document" toggle button
+// Wire "+ Upload Another Document" toggle buttons (top and bottom)
 const btnToggleUpload = document.getElementById("btn-toggle-upload");
+const btnUploadBottom = document.getElementById("btn-upload-bottom");
 const uploadContainer = document.getElementById("upload-container");
-btnToggleUpload?.addEventListener("click", () => {
-  if (!uploadContainer) return;
-  const isHidden = uploadContainer.style.display === "none";
-  uploadContainer.style.display = isHidden ? "block" : "none";
-  uploadContainer.dataset.userOpened = isHidden ? "true" : "false";
-  btnToggleUpload.textContent = isHidden ? "✕ Close Upload" : "+ Upload Another Document";
-});
 
-// Wire CAG trigger for hover and mobile touch/click
+function toggleUploadContainer(forceOpen = null) {
+  if (!uploadContainer) return;
+  const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : uploadContainer.style.display === "none";
+  uploadContainer.style.display = shouldOpen ? "block" : "none";
+  uploadContainer.dataset.userOpened = shouldOpen ? "true" : "false";
+  if (btnToggleUpload) {
+    btnToggleUpload.textContent = shouldOpen ? "✕ Close Upload" : "+ Upload Another Document";
+  }
+  if (shouldOpen) {
+    uploadContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+btnToggleUpload?.addEventListener("click", () => toggleUploadContainer());
+btnUploadBottom?.addEventListener("click", () => toggleUploadContainer(true));
+
+// Wire CAG trigger for hover and mobile touch/click (rock-solid on all devices)
 const cagTrigger = document.getElementById("cag-trigger");
 const cagPopover = document.getElementById("cag-popover");
 const cagCloseBtn = document.getElementById("cag-close-btn");
 const cagWrapper = document.getElementById("cag-wrapper");
+let cagHoverTimer = null;
 
 function toggleCagPopover(forceState) {
   if (!cagPopover || !cagTrigger) return;
@@ -2327,9 +2420,25 @@ function toggleCagPopover(forceState) {
   cagTrigger.setAttribute("aria-expanded", String(isOpen));
 }
 
+// Click/tap toggle for mobile & keyboard
 cagTrigger?.addEventListener("click", (e) => {
   e.stopPropagation();
   toggleCagPopover();
+});
+
+// Desktop hover with debounce to prevent accidental mouseleave flickering
+cagWrapper?.addEventListener("mouseenter", () => {
+  if (cagHoverTimer) {
+    clearTimeout(cagHoverTimer);
+    cagHoverTimer = null;
+  }
+  toggleCagPopover(true);
+});
+
+cagWrapper?.addEventListener("mouseleave", () => {
+  cagHoverTimer = setTimeout(() => {
+    toggleCagPopover(false);
+  }, 250);
 });
 
 cagCloseBtn?.addEventListener("click", (e) => {
