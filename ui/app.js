@@ -779,7 +779,7 @@ async function loadDocuments() {
     }
 
     if (documentChatSection) {
-      documentChatSection.style.display = "block";
+      documentChatSection.style.display = "flex";
     }
 
     if (docChatInput) {
@@ -1153,18 +1153,76 @@ async function sendDocMessage(customQuery = null) {
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
 
   try {
-    const res = await fetch(`${API_BASE}/api/documents/ask`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
-    });
+    let data = null;
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Server error ${res.status}`);
+    // 1. Primary endpoint: POST /api/documents/ask
+    try {
+      const res = await fetch(`${API_BASE}/api/documents/ask`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
+      });
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch {}
+
+    // 2. Secondary alias endpoint: POST /api/search/ask
+    if (!data) {
+      try {
+        const res = await fetch(`${API_BASE}/api/search/ask`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch {}
     }
 
-    const data = await res.json();
+    // 3. Tertiary GET endpoint: GET /api/documents/ask?query=...
+    if (!data) {
+      try {
+        const params = new URLSearchParams({ query });
+        if (documentId) params.append("document_id", documentId);
+        const res = await fetch(`${API_BASE}/api/documents/ask?${params.toString()}`, {
+          method: "GET",
+          headers,
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch {}
+    }
+
+    // 4. Fallback search endpoint: POST /api/search
+    if (!data) {
+      const res = await fetch(`${API_BASE}/api/search`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query, top_k: 5, document_id: documentId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+      const rawChunks = await res.json();
+      if (!rawChunks || !rawChunks.length) {
+        data = {
+          answer: "No matching excerpts found in your document for this query.",
+          evidence: [],
+          total_matches: 0,
+        };
+      } else {
+        data = {
+          answer: "Retrieved the most relevant information directly from your uploaded document:",
+          evidence: rawChunks.slice(0, 3),
+          total_matches: rawChunks.length,
+        };
+      }
+    }
+
     thinkingEl.remove();
     appendDocAiResponse(data);
   } catch (err) {

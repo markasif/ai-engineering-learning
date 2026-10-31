@@ -3067,7 +3067,8 @@ textarea:focus,
   background: rgba(16, 185, 129, 0.08);
   border: 1.5px solid rgba(16, 185, 129, 0.3);
   border-radius: var(--radius-md);
-  margin-bottom: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem !important;
   flex-wrap: wrap;
 }
 
@@ -3129,12 +3130,13 @@ textarea:focus,
   flex-shrink: 0;
 }
 
-/* Document Chat Section (Identical Conversational Bubble Design) */
+/* Document Chat Section (Identical Conversational Bubble Design with Clean Spacing) */
 .document-chat-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  margin-bottom: 1.5rem;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.15rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 2rem !important;
 }
 
 .doc-message-history {
@@ -3150,12 +3152,15 @@ textarea:focus,
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  margin-bottom: 0.25rem !important;
 }
 
-.doc-chat-input-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+.doc-chat-input-row,
+.chat-input-row {
+  display: flex !important;
+  gap: 0.65rem !important;
+  align-items: center !important;
+  margin-top: 1.15rem !important;
 }
 
 /* Document Quick Prompt Suggestion Chips */
