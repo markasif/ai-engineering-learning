@@ -15,6 +15,13 @@ def test_health_returns_200(client: TestClient):
     assert "provider" in body
 
 
+def test_root_health_returns_200(client: TestClient):
+    resp = client.get("/health")
+    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
+    body = resp.json()
+    assert body.get("status") == "ok"
+
+
 def test_ui_served(client: TestClient):
     resp = client.get("/")
     assert resp.status_code in (200, 301, 302), f"Expected 200/redirect, got {resp.status_code}"

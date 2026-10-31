@@ -124,6 +124,12 @@ def create_application() -> FastAPI:
     app.include_router(api_router, prefix="/api")
     app.include_router(api_router, prefix="/api/v1")
 
+    # Root health check alias
+    @app.get("/health", tags=["Infrastructure"], include_in_schema=False)
+    async def root_health():
+        from app.api.v1.endpoints.system import health
+        return await health()
+
     # 5. Mount Static Frontend UI if present
     repo_root = Path(__file__).resolve().parent.parent
     ui_path = repo_root / "ui"
