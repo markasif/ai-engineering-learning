@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=2.3.0" />
+  <link rel="stylesheet" href="style.css?v=2.4.0" />
 </head>
 <body>
 
@@ -333,23 +333,11 @@
           <h2 class="panel-title">Admin</h2>
         </div>
 
-        <!-- ── Week 2 Complete banner ── -->
-        <div class="week2-complete-callout">
-          <div class="week2-complete-icon" aria-hidden="true">🎓</div>
-          <div class="week2-complete-body">
-            <strong>Week 2 Complete — Full RAG Pipeline</strong>
-            <p>
-              You've built the complete pipeline: ingest (F4) → embed (F5) → route (F6).
-              The Smart Router now classifies queries before deciding to retrieve,
-              with optional multi-tenant isolation (Part B) and long-term retrieval
-              memory (Part C). Coming in Week 3: Tools, Voice, and production deployment.
-            </p>
-          </div>
-        </div>
+
 
         <!-- ── Part B: Tenant identity ── -->
         <div class="admin-section">
-          <h3 class="admin-section-title">Tenant Identity <span class="admin-part-badge">Part B</span></h3>
+          <h3 class="admin-section-title">Tenant Identity </h3>
           <p class="admin-section-desc">
             Set the <code>X-Tenant-ID</code> header to switch between tenants.
             Only active when <code>ENABLE_MULTI_TENANT=true</code> in your <code>.env</code>.
@@ -366,7 +354,7 @@
 
         <!-- ── Part C: Retrieval memory / Knowledge Digest ── -->
         <div class="admin-section">
-          <h3 class="admin-section-title">Knowledge Digest <span class="admin-part-badge">Part C</span></h3>
+          <h3 class="admin-section-title">Knowledge Digest </h3>
           <p class="admin-section-desc">
             A 2-3 sentence LLM-generated summary of this tenant's retrieval history.
             Once built, it's injected into the Smart Router's system prompt as persistent
@@ -400,13 +388,13 @@
         <div class="admin-section">
           <h3 class="admin-section-title">
             Live Metrics
-            <span class="admin-part-badge">Feature 11</span>
+            
             <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
           </h3>
           <p class="admin-section-desc">
             Request counts, avg latency, and error rate since the server started.
             Updated by <code>TimingMiddleware</code> on every <code>/api/*</code> call.
-            Requires the Feature 11 server.
+            
           </p>
           <div class="metrics-grid" id="metrics-grid">
             <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
@@ -420,7 +408,7 @@
         <div class="admin-section">
           <h3 class="admin-section-title">
             Eval Harness
-            <span class="admin-part-badge">Feature 11</span>
+            
           </h3>
           <p class="admin-section-desc">
             Runs 10 Alpine Trail Co. golden test cases through the Smart Router pipeline
@@ -509,21 +497,7 @@
           <button id="agent-send-btn" class="btn btn-primary" type="button">Run</button>
         </div>
 
-        <!-- ===================================================
-             FEATURE 9: Week 3 Complete callout
-             =================================================== -->
-        <div class="week2-complete-callout week3-agent-callout">
-          <div class="week2-complete-icon" aria-hidden="true">🎓</div>
-          <div class="week2-complete-body">
-            <strong>Week 3 Complete — Tools, Multi-Step &amp; MCP</strong>
-            <p>
-              You've built the complete "Hands" layer: single-turn tool calling (F7),
-              Plan-and-Execute agent with live polling (F8), and MCP integration (F9).
-              Your agent can plan, execute, and call any MCP-compatible tool — local or remote.
-              Coming in Week 4: Docker, production deployment, and eval harness.
-            </p>
-          </div>
-        </div>
+
       </section>
 
       <!-- ===================================================
@@ -547,6 +521,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=2.3.0"></script>
+<script src="app.js?v=2.4.0"></script>
 </body>
 </html>
