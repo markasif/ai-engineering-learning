@@ -61,3 +61,31 @@ def test_sessions_lifecycle(client: TestClient):
     sessions = list_resp.json()
     assert any(s["id"] == session_id for s in sessions)
 
+
+def test_document_upload_lifecycle(client: TestClient):
+    file_content = b"This is a test document. It contains sentences for semantic indexing and vector storage."
+    upload_resp = client.post(
+        "/api/documents/upload",
+        files={"file": ("test_doc.txt", file_content, "text/plain")},
+        data={"strategy": "sentence"},
+    )
+    assert upload_resp.status_code == 200, f"Upload failed: {upload_resp.text}"
+    doc = upload_resp.json()
+    doc_id = doc.get("id")
+    assert doc_id is not None
+    assert doc.get("filename") == "test_doc.txt"
+    assert doc.get("status") == "ready"
+    assert doc.get("chunk_count", 0) >= 1
+
+    # List documents
+    list_resp = client.get("/api/documents")
+    assert list_resp.status_code == 200
+    docs = list_resp.json()
+    assert any(d["id"] == doc_id for d in docs)
+
+    # Delete document
+    del_resp = client.delete(f"/api/documents/{doc_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json().get("deleted") == doc_id
+
+

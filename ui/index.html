@@ -37,55 +37,60 @@
       </nav>
     </aside>
 
-    <!-- ===== Main content ===== -->
-    <main class="main-content">
+    <!-- ===== Main Content Column ===== -->
+    <div class="main-wrapper">
 
       <!-- ===================================================
-           FEATURE 4: Tab navigation (Chat | Documents)
-           Switches between the chat panel and the documents panel.
+           FEATURE 4: Tab navigation (Chat | Documents | Ask | Admin | Agent)
+           Mounted flush directly below the header.
            =================================================== -->
       <nav class="tab-nav" role="tablist" aria-label="Feature panels">
-        <button
-          class="tab-btn active"
-          role="tab"
-          id="tab-chat"
-          data-tab="chat"
-          aria-selected="true"
-          aria-controls="chat-panel"
-        >Chat</button>
-        <button
-          class="tab-btn"
-          role="tab"
-          id="tab-documents"
-          data-tab="documents"
-          aria-selected="false"
-          aria-controls="documents-panel"
-        >Documents</button>
-        <button
-          class="tab-btn"
-          role="tab"
-          id="tab-search"
-          data-tab="search"
-          aria-selected="false"
-          aria-controls="search-panel"
-        >Ask My Documents</button>
-        <button
-          class="tab-btn"
-          role="tab"
-          id="tab-admin"
-          data-tab="admin"
-          aria-selected="false"
-          aria-controls="admin-panel"
-        >Admin</button>
-        <button
-          class="tab-btn"
-          role="tab"
-          id="tab-agent"
-          data-tab="agent"
-          aria-selected="false"
-          aria-controls="agent-panel"
-        >Agent</button>
+        <div class="tab-nav-inner">
+          <button
+            class="tab-btn active"
+            role="tab"
+            id="tab-chat"
+            data-tab="chat"
+            aria-selected="true"
+            aria-controls="chat-panel"
+          >Chat</button>
+          <button
+            class="tab-btn"
+            role="tab"
+            id="tab-documents"
+            data-tab="documents"
+            aria-selected="false"
+            aria-controls="documents-panel"
+          >Documents</button>
+          <button
+            class="tab-btn"
+            role="tab"
+            id="tab-search"
+            data-tab="search"
+            aria-selected="false"
+            aria-controls="search-panel"
+          >Ask My Documents</button>
+          <button
+            class="tab-btn"
+            role="tab"
+            id="tab-admin"
+            data-tab="admin"
+            aria-selected="false"
+            aria-controls="admin-panel"
+          >Admin</button>
+          <button
+            class="tab-btn"
+            role="tab"
+            id="tab-agent"
+            data-tab="agent"
+            aria-selected="false"
+            aria-controls="agent-panel"
+          >Agent</button>
+        </div>
       </nav>
+
+      <!-- ===== Scrollable main panels ===== -->
+      <main class="main-content">
 
       <!-- ===================================================
            FEATURE 1 + 2: Chat panel
@@ -170,13 +175,15 @@
 
         <!-- Upload options row (strategy selector + CAG info) -->
         <div class="upload-options">
-          <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
-          <select id="strategy-select" class="strategy-select">
-            <option value="sentence">Sentence-aware (default)</option>
-            <option value="paragraph">Paragraph</option>
-          </select>
+          <div class="strategy-selector-group">
+            <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
+            <select id="strategy-select" class="strategy-select">
+              <option value="sentence">Sentence-aware (recommended)</option>
+              <option value="paragraph">Paragraph-based</option>
+            </select>
+          </div>
           <span class="cag-trigger" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-            ℹ What is CAG?
+            <span class="cag-icon" aria-hidden="true">💡</span> What is CAG?
             <span class="cag-popover" role="tooltip">
               <strong>CAG (Cache-Augmented Generation)</strong> skips chunking entirely — all documents
               are loaded into one big context window and the model reads everything.
@@ -196,17 +203,35 @@
             class="sr-only"
           />
           <label for="file-input" class="upload-label" id="upload-label">
-            <span class="upload-icon" aria-hidden="true">📄</span>
-            <span>Drag &amp; drop a file here, or <strong>click to upload</strong></span>
-            <span class="upload-hint">.txt · .pdf · .docx</span>
+            <div class="upload-icon-badge" aria-hidden="true">
+              <svg class="upload-svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <polyline points="9 15 12 12 15 15"></polyline>
+              </svg>
+            </div>
+            <div class="upload-text-group">
+              <span class="upload-main-text">Drag &amp; drop your documents here, or <span class="upload-action-highlight">browse files</span></span>
+              <span class="upload-sub-text">Automated text extraction, sentence chunking, and ChromaDB vector indexing</span>
+              <div class="upload-formats-row">
+                <span class="upload-format-tag">PDF</span>
+                <span class="upload-format-tag">DOCX</span>
+                <span class="upload-format-tag">TXT</span>
+                <span class="upload-max-size">Up to 25 MB</span>
+              </div>
+            </div>
           </label>
-          <div class="upload-progress" id="upload-progress" hidden>
+          <div class="upload-progress" id="upload-progress" hidden style="display: none;">
             <span class="upload-spinner" aria-hidden="true"></span>
-            <span id="upload-progress-text">Uploading…</span>
+            <span id="upload-progress-text" class="upload-progress-text">Uploading and indexing document…</span>
           </div>
         </div>
 
         <!-- Document list -->
+        <div class="document-list-header">
+          <h3 class="document-section-subtitle">Indexed Documents</h3>
+        </div>
         <div id="document-list" class="document-list">
           <p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>
         </div>
@@ -482,6 +507,7 @@
            =================================================== -->
 
     </main><!-- /.main-content -->
+    </div><!-- /.main-wrapper -->
 
   </div><!-- /.app-body -->
 

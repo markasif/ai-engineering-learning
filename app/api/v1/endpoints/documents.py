@@ -1,6 +1,7 @@
 """
 Document ingestion, indexing, chunking, and semantic search endpoints.
 """
+import asyncio
 import uuid
 from typing import Any
 
@@ -44,28 +45,33 @@ async def upload_document(
 
     try:
         file_bytes = await file.read()
-        text = extract_text(file_bytes, filename)
-        pages = extract_pages(file_bytes, filename)
-        chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
 
-        for cd in chunk_dicts:
-            save_chunk(
-                Chunk(
-                    id=str(uuid.uuid4()),
-                    document_id=doc.id,
-                    text=cd["text"],
-                    chunk_index=cd["chunk_index"],
-                    metadata={"filename": filename, "chunk_index": cd["chunk_index"]},
+        def _process() -> int:
+            text = extract_text(file_bytes, filename)
+            pages = extract_pages(file_bytes, filename)
+            chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
+
+            for cd in chunk_dicts:
+                save_chunk(
+                    Chunk(
+                        id=str(uuid.uuid4()),
+                        document_id=doc.id,
+                        text=cd["text"],
+                        chunk_index=cd["chunk_index"],
+                        metadata={"filename": filename, "chunk_index": cd["chunk_index"]},
+                    )
                 )
-            )
 
-        add_chunks(
-            doc.id,
-            [cd["text"] for cd in chunk_dicts],
-            [{"filename": filename, "chunk_index": cd["chunk_index"]} for cd in chunk_dicts],
-            tenant_id=tenant_id,
-        )
-        update_document(doc.id, status="ready", chunk_count=len(chunk_dicts), chunking_strategy=strategy)
+            add_chunks(
+                doc.id,
+                [cd["text"] for cd in chunk_dicts],
+                [{"filename": filename, "chunk_index": cd["chunk_index"]} for cd in chunk_dicts],
+                tenant_id=tenant_id,
+            )
+            return len(chunk_dicts)
+
+        chunk_count = await asyncio.to_thread(_process)
+        update_document(doc.id, status="ready", chunk_count=chunk_count, chunking_strategy=strategy)
     except Exception as exc:
         update_document(doc.id, status="error", chunk_count=0, chunking_strategy=strategy)
         raise HTTPException(status_code=422, detail=str(exc))

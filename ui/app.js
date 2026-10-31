@@ -561,17 +561,29 @@ async function uploadFile(file) {
   const strategy = strategySelect?.value ?? "sentence";
 
   // Show spinner, hide label.
-  if (uploadLabel)    uploadLabel.hidden = true;
-  if (uploadProgress) uploadProgress.hidden = false;
-  if (uploadProgressText) uploadProgressText.textContent = `Uploading "${file.name}" (${strategy})…`;
+  if (uploadLabel) {
+    uploadLabel.hidden = true;
+    uploadLabel.style.display = "none";
+  }
+  if (uploadProgress) {
+    uploadProgress.hidden = false;
+    uploadProgress.style.display = "flex";
+  }
+  if (uploadProgressText) {
+    uploadProgressText.textContent = `Uploading & indexing "${file.name}" (${strategy})…`;
+  }
 
   const formData = new FormData();
   formData.append("file", file);
   formData.append("strategy", strategy);
 
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
     const res = await fetch(`${API_BASE}/api/documents/upload`, {
       method: "POST",
+      headers,
       body: formData,
     });
 
@@ -584,9 +596,15 @@ async function uploadFile(file) {
   } catch (err) {
     alert(`Upload failed: ${err.message}`);
   } finally {
-    if (uploadLabel)    uploadLabel.hidden = false;
-    if (uploadProgress) uploadProgress.hidden = true;
-    if (fileInput)      fileInput.value = "";
+    if (uploadLabel) {
+      uploadLabel.hidden = false;
+      uploadLabel.style.display = "flex";
+    }
+    if (uploadProgress) {
+      uploadProgress.hidden = true;
+      uploadProgress.style.display = "none";
+    }
+    if (fileInput) fileInput.value = "";
   }
 }
 
@@ -594,8 +612,11 @@ async function uploadFile(file) {
 async function loadDocuments() {
   if (!documentList) return;
 
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
-    const res = await fetch(`${API_BASE}/api/documents`);
+    const res = await fetch(`${API_BASE}/api/documents`, { headers });
     if (!res.ok) throw new Error("documents endpoint not available");
 
     const docs = await res.json();
@@ -719,8 +740,11 @@ function buildDocumentCard(doc) {
 async function deleteDocumentById(docId) {
   if (!confirm("Delete this document and all its chunks?")) return;
 
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
-    const res = await fetch(`${API_BASE}/api/documents/${docId}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/api/documents/${docId}`, { method: "DELETE", headers });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${res.status}`);
