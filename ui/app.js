@@ -9,6 +9,89 @@
 const API_BASE = "";
 
 // =============================================================================
+// Audio Notification Chime (Web Audio API)
+// =============================================================================
+let audioNotificationCtx = null;
+let soundNotificationsEnabled = localStorage.getItem("askraggy_sound") !== "false";
+
+const soundToggleBtn = document.getElementById("sound-toggle-btn");
+const soundIcon = document.getElementById("sound-icon");
+
+function updateSoundToggleUI() {
+  if (!soundToggleBtn) return;
+  if (soundNotificationsEnabled) {
+    soundToggleBtn.classList.remove("muted");
+    soundToggleBtn.title = "Sound notifications active (Click to mute)";
+    if (soundIcon) soundIcon.textContent = "🔔";
+  } else {
+    soundToggleBtn.classList.add("muted");
+    soundToggleBtn.title = "Sound notifications muted (Click to enable)";
+    if (soundIcon) soundIcon.textContent = "🔕";
+  }
+}
+
+soundToggleBtn?.addEventListener("click", () => {
+  soundNotificationsEnabled = !soundNotificationsEnabled;
+  localStorage.setItem("askraggy_sound", String(soundNotificationsEnabled));
+  updateSoundToggleUI();
+  if (soundNotificationsEnabled) {
+    playNotificationSound();
+  }
+});
+
+updateSoundToggleUI();
+
+/**
+ * Play a gentle, crisp notification chime when an AI response completes.
+ * Synthesized directly via Web Audio API (zero audio files needed, zero latency).
+ */
+function playNotificationSound() {
+  if (!soundNotificationsEnabled) return;
+  try {
+    const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtxClass) return;
+    if (!audioNotificationCtx) {
+      audioNotificationCtx = new AudioCtxClass();
+    }
+    if (audioNotificationCtx.state === "suspended") {
+      audioNotificationCtx.resume();
+    }
+
+    const ctx = audioNotificationCtx;
+    const now = ctx.currentTime;
+
+    // Harmonic pleasant two-tone chime (587Hz -> 880Hz -> 1175Hz)
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(587.33, now); // D5
+    osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.07); // A5
+
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(880.00, now + 0.07);
+    osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15); // D6
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.13);
+    osc2.start(now + 0.07);
+    osc2.stop(now + 0.38);
+  } catch (err) {
+    console.debug("Notification chime suppressed:", err);
+  }
+}
+
+
+// =============================================================================
 // Feature 1: Basic Chat
 // =============================================================================
 
@@ -115,6 +198,8 @@ async function sendMessage() {
     } else {
       appendMessage("ai", data.response ?? "(no response)");
     }
+
+    playNotificationSound();
 
     // Refresh the sidebar after each message so the session title and count update.
     if (currentSessionId) loadSessions();
@@ -986,6 +1071,7 @@ function renderDocumentAnswer(data) {
     evidenceSection.appendChild(list);
     searchResults.appendChild(evidenceSection);
   }
+  playNotificationSound();
 }
 
 /**
@@ -1313,6 +1399,7 @@ function agentAppendResponse(data) {
   wrapper.appendChild(card);
   agentHistory.appendChild(wrapper);
   agentHistory.scrollTop = agentHistory.scrollHeight;
+  playNotificationSound();
 }
 
 /** Send a message to the agent endpoint. */
