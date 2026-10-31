@@ -59,6 +59,26 @@ Confidence guide:
 Be strict with "general": only use it when you're confident retrieval won't help."""
 
 
+_QUICK_GREETINGS = {
+    "hi",
+    "hai",
+    "hello",
+    "hey",
+    "hola",
+    "howdy",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "how are you",
+    "what's up",
+    "whats up",
+    "thanks",
+    "thank you",
+    "bye",
+    "goodbye",
+}
+
+
 async def classify_query(query: str) -> dict:
     """
     Classify whether a query needs document retrieval and how to retrieve.
@@ -80,6 +100,15 @@ async def classify_query(query: str) -> dict:
     needs_retrieval=True, confidence=0.5 (hybrid path) — better to
     retrieve unnecessarily than to skip retrieval when it's needed.
     """
+    normalized = query.strip().lower().rstrip("!?.,")
+    if normalized in _QUICK_GREETINGS:
+        return {
+            "needs_retrieval": False,
+            "confidence": 1.0,
+            "reasoning": "Quick match: common conversational greeting.",
+            "query_type": "general",
+        }
+
     result = await call_llm(
         messages=[
             {"role": "system", "content": _CLASSIFIER_SYSTEM_PROMPT},
