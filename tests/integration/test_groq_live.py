@@ -8,8 +8,11 @@ from shared.config import settings
 from shared.providers.groq_provider import GroqProvider
 
 pytestmark = pytest.mark.skipif(
-    not os.getenv("GROQ_API_KEY") and not settings.groq_api_key.startswith("gsk_"),
-    reason="Requires active GROQ_API_KEY",
+    not os.getenv("GROQ_API_KEY")
+    or os.getenv("GROQ_API_KEY", "").startswith("mock")
+    or os.getenv("GROQ_API_KEY", "").startswith("gsk_mock")
+    or settings.groq_api_key.startswith("gsk_mock"),
+    reason="Requires valid non-mock GROQ_API_KEY in environment",
 )
 
 

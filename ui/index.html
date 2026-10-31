@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NexusAI Enterprise · Autonomous Knowledge & Multimodal Agent Platform</title>
+  <title>Cortex AI · Enterprise Knowledge & Intelligence Platform</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,8 +13,8 @@
   <!-- ===== Header — course branding ===== -->
   <header class="site-header">
     <div class="titles">
-      <span class="course-title">NexusAI Enterprise</span>
-      <span class="org-name">Autonomous Multi-Agent & Knowledge Intelligence Platform</span>
+      <span class="course-title">Cortex AI</span>
+      <span class="org-name">Enterprise Knowledge & Intelligence Engine</span>
     </div>
   </header>
 
@@ -148,9 +148,6 @@
                🎤 records audio via MediaRecorder → /api/voice/chat
                📷 opens file picker (images) → /api/vision/chat
                =================================================== -->
-          <button id="voice-btn" class="btn btn-multimodal" type="button"
-                  title="Click to record voice message (Feature 10)"
-                  aria-label="Record voice message">🎤</button>
           <label for="image-input" class="btn btn-multimodal btn-image-label"
                  title="Attach an image (Feature 10)"
                  aria-label="Attach image">
@@ -159,12 +156,7 @@
           </label>
         </div>
 
-        <!-- Voice recording status bar (shown while recording) -->
-        <div id="voice-status-bar" class="voice-status-bar" hidden>
-          <span class="voice-recording-dot" aria-hidden="true"></span>
-          <span id="voice-status-text">Recording…</span>
-          <button id="voice-stop-btn" class="btn btn-ghost btn-sm" type="button">Stop</button>
-        </div>
+        
       </section>
 
       <!-- ===================================================
