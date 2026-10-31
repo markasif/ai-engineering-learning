@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=2.4.0" />
+  <link rel="stylesheet" href="style.css?v=2.5.0" />
 </head>
 <body>
 
@@ -228,19 +228,33 @@
                 <option value="paragraph">Paragraph-based</option>
               </select>
             </div>
-            <div class="cag-trigger" id="cag-trigger" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-              <span class="cag-icon" aria-hidden="true">💡</span> What is CAG?
-              <div class="cag-popover" id="cag-popover" role="tooltip">
+            <div class="cag-wrapper" id="cag-wrapper">
+              <button type="button" class="cag-btn" id="cag-trigger" aria-haspopup="dialog" aria-expanded="false">
+                <span class="cag-icon" aria-hidden="true">💡</span>
+                <span class="cag-title">What is CAG?</span>
+                <span class="cag-chevron" aria-hidden="true">▾</span>
+              </button>
+              <div class="cag-popover" id="cag-popover" role="dialog" aria-label="Cache-Augmented Generation Explainer">
                 <div class="cag-popover-header">
-                  <strong>CAG (Cache-Augmented Generation)</strong>
+                  <div class="cag-popover-title-row">
+                    <span class="cag-badge-popover">Concept Explainer</span>
+                    <button type="button" class="cag-close-btn" id="cag-close-btn" aria-label="Close">✕</button>
+                  </div>
+                  <strong class="cag-main-heading">CAG (Cache-Augmented Generation)</strong>
                 </div>
-                <p>Skips chunking entirely — all documents are loaded into one long context window and the model reads everything in full.</p>
-                <ul class="cag-features">
-                  <li>No vector database needed</li>
-                  <li>Zero missed chunks or retrieval loss</li>
-                  <li>Best for &lt;50 pages of stable documents</li>
-                </ul>
-                <div class="cag-footer">RAG (what we run here) scales to thousands of documents with semantic indexing.</div>
+                <p class="cag-text">
+                  <strong>CAG</strong> avoids chunking and vector search entirely by loading full documents directly into a massive LLM context window (1M+ tokens), pre-computing the KV cache once.
+                </p>
+                <div class="cag-comparison-grid">
+                  <div class="cag-card-point">
+                    <span class="cag-point-pill cag-pill-cag">When to use CAG</span>
+                    <span class="cag-point-desc">Best for small, fixed doc sets (&lt;50 pages). Zero missed chunks, 100% full-document visibility.</span>
+                  </div>
+                  <div class="cag-card-point">
+                    <span class="cag-point-pill cag-pill-rag">When to use RAG</span>
+                    <span class="cag-point-desc">Best for scaling to thousands of pages. Efficient vector search, lower latency, and lower token cost.</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -521,6 +535,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=2.4.0"></script>
+<script src="app.js?v=2.5.0"></script>
 </body>
 </html>

@@ -853,9 +853,14 @@ html, body {
   border-color: var(--color-matcha);
 }
 
-/* Fixed CAG info trigger + popover (works flawlessly on hover, touch, and all devices) */
-.cag-trigger {
+/* Bulletproof CAG Info Trigger & Popover (Opens Downward, Zero Clipping, Hover & Touch Safe) */
+.cag-wrapper {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cag-btn {
   font-size: 0.82rem;
   color: var(--color-matcha);
   font-weight: 600;
@@ -863,94 +868,173 @@ html, body {
   user-select: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.55rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
   border-radius: var(--radius-sm);
   background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
-.cag-trigger:hover,
-.cag-trigger:focus,
-.cag-trigger.active {
-  background: rgba(16, 185, 129, 0.16);
+.cag-btn:hover,
+.cag-btn:focus,
+.cag-btn.is-active {
+  background: rgba(16, 185, 129, 0.18);
   border-color: var(--color-matcha);
   color: var(--color-matcha-hover);
   outline: none;
 }
 
+.cag-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.cag-btn.is-active .cag-chevron {
+  transform: rotate(180deg);
+}
+
 .cag-popover {
   display: none;
   position: absolute;
-  bottom: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
   left: auto;
-  width: 310px;
-  max-width: min(310px, 85vw);
-  background: #1c1917;
+  width: 320px;
+  max-width: min(320px, 86vw);
+  background: #191716;
   color: #fdfbf7;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.05rem;
   border-radius: var(--radius-md);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  border: 1px solid #38332e;
-  z-index: 1000;
-  font-weight: 400;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  border: 1.5px solid #332d29;
+  z-index: 999;
   pointer-events: auto;
+  text-align: left;
 }
 
-/* Invisible bridge so mouse hover doesn't break when moving into popover */
+/* Invisible bridge connecting button to popover so hover doesn't break */
 .cag-popover::before {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
-  height: 14px;
+  height: 12px;
 }
 
+/* Arrow pointing up to the button */
 .cag-popover::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   right: 20px;
-  border: 7px solid transparent;
-  border-top-color: #1c1917;
+  border: 6px solid transparent;
+  border-bottom-color: #191716;
 }
 
-.cag-trigger:hover .cag-popover,
-.cag-trigger:focus .cag-popover,
-.cag-trigger.active .cag-popover,
-.cag-trigger[aria-expanded="true"] .cag-popover {
+/* Visible on hover or active class */
+.cag-wrapper:hover .cag-popover,
+.cag-popover.is-open {
   display: block;
+  animation: cagFadeIn 0.15s ease-out;
 }
 
-.cag-popover-header strong {
-  color: var(--color-matcha);
-  font-size: 0.86rem;
-  display: block;
+@keyframes cagFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cag-popover-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.35rem;
 }
 
-.cag-features {
-  margin: 0.45rem 0 0.55rem 1.1rem;
-  padding: 0;
-  color: #d6d3d1;
-  font-size: 0.78rem;
+.cag-badge-popover {
+  font-size: 0.70rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-matcha);
+  background: rgba(16, 185, 129, 0.12);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
 }
 
-.cag-features li {
-  margin-bottom: 0.2rem;
-}
-
-.cag-footer {
-  font-size: 0.74rem;
+.cag-close-btn {
+  background: transparent;
+  border: none;
   color: #a8a29e;
-  border-top: 1px solid #292524;
-  padding-top: 0.45rem;
-  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.cag-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cag-main-heading {
+  display: block;
+  font-size: 0.88rem;
+  color: #ffffff;
+  margin-bottom: 0.45rem;
+}
+
+.cag-text {
+  font-size: 0.80rem;
+  color: #d6d3d1;
+  line-height: 1.5;
+  margin-bottom: 0.65rem;
+}
+
+.cag-comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cag-card-point {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cag-point-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.cag-pill-cag {
+  color: #38bdf8;
+}
+
+.cag-pill-rag {
+  color: var(--color-matcha);
+}
+
+.cag-point-desc {
+  font-size: 0.76rem;
+  color: #a8a29e;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .cag-popover {
+    right: -8px;
+    width: calc(100vw - 36px);
+    max-width: 310px;
+  }
 }
 
 /* Alternative architectures callout */

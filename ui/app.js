@@ -2315,17 +2315,37 @@ btnToggleUpload?.addEventListener("click", () => {
 
 // Wire CAG trigger for hover and mobile touch/click
 const cagTrigger = document.getElementById("cag-trigger");
+const cagPopover = document.getElementById("cag-popover");
+const cagCloseBtn = document.getElementById("cag-close-btn");
+const cagWrapper = document.getElementById("cag-wrapper");
+
+function toggleCagPopover(forceState) {
+  if (!cagPopover || !cagTrigger) return;
+  const isOpen = typeof forceState === "boolean" ? forceState : !cagPopover.classList.contains("is-open");
+  cagPopover.classList.toggle("is-open", isOpen);
+  cagTrigger.classList.toggle("is-active", isOpen);
+  cagTrigger.setAttribute("aria-expanded", String(isOpen));
+}
+
 cagTrigger?.addEventListener("click", (e) => {
   e.stopPropagation();
-  const expanded = cagTrigger.getAttribute("aria-expanded") === "true";
-  cagTrigger.setAttribute("aria-expanded", String(!expanded));
-  cagTrigger.classList.toggle("active", !expanded);
+  toggleCagPopover();
+});
+
+cagCloseBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCagPopover(false);
 });
 
 document.addEventListener("click", (e) => {
-  if (cagTrigger && !cagTrigger.contains(e.target)) {
-    cagTrigger.setAttribute("aria-expanded", "false");
-    cagTrigger.classList.remove("active");
+  if (cagWrapper && !cagWrapper.contains(e.target)) {
+    toggleCagPopover(false);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    toggleCagPopover(false);
   }
 });
 
