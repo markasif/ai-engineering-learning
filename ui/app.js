@@ -235,6 +235,13 @@ chatInput.addEventListener("keydown", (e) => {
 });
 
 // =============================================================================
+// Active Domain and Document State
+// =============================================================================
+let currentDomainName = "NeoIntelli HR & Enterprise Operations";
+let activeDocumentId = null;
+let currentDocsCache = [];
+
+// =============================================================================
 // Provider info card
 // Fetches /api/provider-info once on load and shows which provider is active.
 // This endpoint is added in shared/llm_client.py — the card shows a gentle
@@ -250,8 +257,16 @@ async function loadProviderInfo() {
     if (!res.ok) throw new Error("endpoint not available yet");
 
     const info = await res.json();
+    if (info.domain_name || info.assistant_name) {
+      currentDomainName = info.domain_name || info.assistant_name;
+      const domainDisplay = document.getElementById("welcome-domain-display");
+      if (domainDisplay) {
+        domainDisplay.textContent = currentDomainName;
+      }
+    }
 
     card.innerHTML = `
+      <span>Domain: <strong class="domain-info-badge">${escapeHtml(currentDomainName)}</strong></span>
       <span>LLM Provider: <span class="badge">${info.llm_provider ?? "—"}</span></span>
       <span>Model: <code>${info.llm_model ?? "—"}</code></span>
       ${info.voice_provider ? `<span>Voice: <span class="badge">${info.voice_provider}</span> (${info.voice_model ?? "—"})</span>` : ""}
@@ -477,12 +492,59 @@ const newChatBtn    = document.getElementById("new-chat-btn");
 const sessionList   = document.getElementById("session-list");
 const sessionLabel  = document.getElementById("session-label");
 
+/** Render a modern, rich, executive-grade empty state card for the main chat interface */
+function renderEmptyChatState() {
+  const domain = currentDomainName || "NeoIntelli HR & Enterprise Operations";
+  return `
+    <div class="empty-state welcome-card" id="empty-state">
+      <div class="welcome-badge-header">
+        <span class="welcome-badge-pulse" aria-hidden="true">
+          <span class="welcome-badge-icon">✨</span>
+        </span>
+        <span class="welcome-domain-pill">Domain: <strong id="welcome-domain-display">${escapeHtml(domain)}</strong></span>
+      </div>
+
+      <h3 class="welcome-title">AskRaggy Enterprise Assistant</h3>
+      <p class="welcome-subtitle">
+        Start a fresh conversation or query verified company documents, policies, and workflows for 
+        <span class="welcome-domain-highlight">${escapeHtml(domain)}</span>.
+      </p>
+
+      <div class="welcome-chips-container">
+        <div class="welcome-chips-label">Try asking or click a starter prompt:</div>
+        <div class="welcome-chips-grid">
+          <button type="button" class="welcome-chip" data-query="What are our core company policies and employee benefits?">
+            <span class="chip-icon">📋</span>
+            <span class="chip-text">Company policies &amp; benefits</span>
+          </button>
+          <button type="button" class="welcome-chip" data-query="How does leave approval and remote work policy work?">
+            <span class="chip-icon">🏖️</span>
+            <span class="chip-text">Leave &amp; remote work rules</span>
+          </button>
+          <button type="button" class="welcome-chip" data-query="Summarize the uploaded knowledge base documents">
+            <span class="chip-icon">📚</span>
+            <span class="chip-text">Summarize knowledge base</span>
+          </button>
+          <button type="button" class="welcome-chip" data-query="What actions can the autonomous agent execute?">
+            <span class="chip-icon">⚡</span>
+            <span class="chip-text">Agent tools &amp; capabilities</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="welcome-footer-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-new-chat">
+          <span class="btn-icon">💬</span>
+          <span>Start Fresh Session</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 /** Clear the message history area and reset the empty-state placeholder. */
 function clearChat() {
-  messageHistory.innerHTML = `
-    <div class="empty-state" id="empty-state">
-      Start a <strong>New Chat</strong> or ask anything about <strong>[YOUR_DOMAIN]</strong>.
-    </div>`;
+  messageHistory.innerHTML = renderEmptyChatState();
 }
 
 /** Mark one session item as active in the sidebar. */
@@ -599,6 +661,24 @@ function escapeHtml(str) {
 }
 
 newChatBtn?.addEventListener("click", createNewSession);
+
+// Click delegation on message history for welcome suggestion chips and quick new chat
+messageHistory?.addEventListener("click", (e) => {
+  const chip = e.target.closest(".welcome-chip");
+  if (chip && chip.dataset.query) {
+    const query = chip.dataset.query;
+    if (chatInput) {
+      chatInput.value = query;
+      chatInput.focus();
+    }
+    sendMessage(query);
+    return;
+  }
+  const quickNew = e.target.closest("#btn-quick-new-chat");
+  if (quickNew) {
+    createNewSession();
+  }
+});
 
 // Mobile drawer toggle
 const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
@@ -719,6 +799,11 @@ async function uploadFile(file) {
       throw new Error(err.detail || `Server error ${res.status}`);
     }
 
+    const uploadedDoc = await res.json().catch(() => null);
+    if (uploadedDoc && uploadedDoc.id) {
+      activeDocumentId = uploadedDoc.id;
+    }
+
     await loadDocuments();
   } catch (err) {
     alert(`Upload failed: ${err.message}`);
@@ -802,14 +887,25 @@ async function loadDocuments() {
       uploadContainer.style.display = "none";
     }
 
+    currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
-    const docNames = (readyDocs.length ? readyDocs : docs).map((d) => d.filename).join(", ");
-    const primaryDocName = readyDocs.length ? readyDocs[0].filename : docs[0].filename;
+
+    // Select active document: prioritize explicitly active doc (e.g. freshly uploaded),
+    // otherwise default to the latest uploaded document so older files never interfere!
+    let activeDoc = null;
+    if (activeDocumentId) {
+      activeDoc = readyDocs.find((d) => d.id === activeDocumentId) || docs.find((d) => d.id === activeDocumentId);
+    }
+    if (!activeDoc) {
+      activeDoc = readyDocs[readyDocs.length - 1] || docs[docs.length - 1];
+      activeDocumentId = activeDoc ? activeDoc.id : null;
+    }
+    const activeDocName = activeDoc ? activeDoc.filename : "your document";
 
     if (docGroundingBanner) {
       docGroundingBanner.style.display = "flex";
-      if (groundingTitle) groundingTitle.textContent = `Grounded in: ${docNames}`;
-      if (groundingSubtitle) groundingSubtitle.textContent = "This chat answers strictly based on your uploaded document with verified source citations.";
+      if (groundingTitle) groundingTitle.textContent = `Grounded in: ${activeDocName}`;
+      if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${activeDocName}" with verified source citations.`;
     }
 
     if (documentChatSection) {
@@ -817,11 +913,11 @@ async function loadDocuments() {
     }
 
     if (docChatInput) {
-      docChatInput.placeholder = `Ask anything about ${primaryDocName} (press Enter)…`;
+      docChatInput.placeholder = `Ask anything about ${activeDocName} (press Enter)…`;
     }
 
     if (docEmptyHeading) {
-      docEmptyHeading.textContent = `Chat with ${primaryDocName}`;
+      docEmptyHeading.textContent = `Chat with ${activeDocName}`;
     }
 
     if (docCountBadge) {
@@ -995,20 +1091,59 @@ const searchDocFilter   = document.getElementById("search-doc-filter");
 async function loadSearchDocumentFilter(preloadedDocs = null) {
   if (!searchDocFilter) return;
 
-  searchDocFilter.innerHTML = `<option value="">All documents</option>`;
+  searchDocFilter.innerHTML = "";
 
   try {
     const docs = Array.isArray(preloadedDocs) ? preloadedDocs : await (await fetch(`${API_BASE}/api/documents`)).json();
-    docs.filter((d) => d.status === "ready").forEach((d) => {
+    currentDocsCache = docs;
+    const readyDocs = docs.filter((d) => d.status === "ready");
+
+    readyDocs.forEach((d) => {
       const opt = document.createElement("option");
       opt.value = d.id;
       opt.textContent = d.filename;
+      if (d.id === activeDocumentId) {
+        opt.selected = true;
+      }
       searchDocFilter.appendChild(opt);
     });
+
+    if (readyDocs.length > 1) {
+      const allOpt = document.createElement("option");
+      allOpt.value = "";
+      allOpt.textContent = "All uploaded documents";
+      searchDocFilter.appendChild(allOpt);
+    }
+
+    if (activeDocumentId && readyDocs.some((d) => d.id === activeDocumentId)) {
+      searchDocFilter.value = activeDocumentId;
+    }
   } catch {
     // Search still works without the filter populated.
   }
 }
+
+// Synchronize activeDocumentId and UI when user picks a different document in filter
+searchDocFilter?.addEventListener("change", () => {
+  activeDocumentId = searchDocFilter.value || null;
+  const doc = currentDocsCache.find((d) => d.id === activeDocumentId);
+  const groundingTitle = document.getElementById("grounding-title");
+  const groundingSubtitle = document.getElementById("grounding-subtitle");
+  const docChatInput = document.getElementById("doc-chat-input");
+  const docEmptyHeading = document.getElementById("doc-empty-heading");
+
+  if (doc) {
+    if (groundingTitle) groundingTitle.textContent = `Grounded in: ${doc.filename}`;
+    if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${doc.filename}" with verified source citations.`;
+    if (docChatInput) docChatInput.placeholder = `Ask anything about ${doc.filename} (press Enter)…`;
+    if (docEmptyHeading) docEmptyHeading.textContent = `Chat with ${doc.filename}`;
+  } else {
+    if (groundingTitle) groundingTitle.textContent = "Grounded in: All uploaded documents";
+    if (groundingSubtitle) groundingSubtitle.textContent = "This chat answers across all your uploaded documents with verified source citations.";
+    if (docChatInput) docChatInput.placeholder = "Ask anything about your documents (press Enter)…";
+    if (docEmptyHeading) docEmptyHeading.textContent = "Chat with your Documents";
+  }
+});
 
 /** Format text removing unprintable boxes or weird glyphs. */
 function sanitizeDocText(str) {
@@ -1307,7 +1442,7 @@ async function sendDocMessage(customQuery = null) {
   appendDocChatMessage("user", query);
   const thinkingEl = appendDocChatMessage("ai", "", true);
 
-  const documentId = searchDocFilter?.value || null;
+  const documentId = searchDocFilter?.value || activeDocumentId || null;
   const headers = { "Content-Type": "application/json" };
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
 
@@ -2268,7 +2403,7 @@ async function sendImageMessage(file) {
   // Create a local object URL so we can show a thumbnail without uploading yet.
   const thumbUrl = URL.createObjectURL(file);
 
-  const prompt = `Describe this image in the context of [YOUR_DOMAIN].`;
+  const prompt = `Describe this image in the context of ${currentDomainName || "enterprise documentation"}.`;
 
   const formData = new FormData();
   formData.append("image", file, file.name);

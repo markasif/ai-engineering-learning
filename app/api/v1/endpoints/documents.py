@@ -448,8 +448,20 @@ async def ask_documents(
             "total_matches": 0,
         }
 
+    # If document_id is not specified, default to the most recently uploaded ready document
+    # to guarantee older documents never contaminate the answer!
+    if not doc_id:
+        tenant_docs = list_documents(tenant_id=tenant_id)
+        ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
+        if ready_tenant_docs:
+            doc_id = ready_tenant_docs[-1].id
+
     filters = {"document_id": doc_id} if doc_id else None
     chunks = vector_search(q, top_k=k, filters=filters, tenant_id=tenant_id)
+
+    # Secondary defense: strictly isolate to the target document
+    if doc_id:
+        chunks = [c for c in chunks if c.get("document_id") == doc_id]
 
     if not chunks:
         return {
@@ -554,7 +566,10 @@ async def search_documents(
 ) -> list[dict[str, Any]]:
     """Direct semantic similarity search over document chunks."""
     filters = {"document_id": req.document_id} if req.document_id else None
-    return vector_search(req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
+    results = vector_search(req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
+    if req.document_id:
+        results = [c for c in results if c.get("document_id") == req.document_id]
+    return results
 
 
 @router.get("/search/stats", tags=["F5 · Find the Answer"])

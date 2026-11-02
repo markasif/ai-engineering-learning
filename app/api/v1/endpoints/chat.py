@@ -40,13 +40,16 @@ router = APIRouter()
 _log = logging.getLogger(__name__)
 
 CONTEXT_WINDOW_SIZE = 20
+_DOMAIN = settings.effective_domain()
 
-_STRUCTURED_SYSTEM_PROMPT = """You are a helpful AI assistant for [YOUR_DOMAIN].
-Respond ONLY with JSON: {"intent": "...", "answer": "...", "confidence": 0.0, "sources_needed": false}"""
+_STRUCTURED_SYSTEM_PROMPT = f"""You are a helpful AI assistant for {_DOMAIN}.
+Respond ONLY with JSON: {{"intent": "...", "answer": "...", "confidence": 0.0, "sources_needed": false}}"""
 
-_SMART_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely in plain English."
-_SMART_RAG_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Use the provided document excerpts to answer accurately."
-_SMART_HYBRID_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Some excerpts have been retrieved — use them if helpful."
+_SMART_SYSTEM_PROMPT = (
+    f"You are a helpful AI assistant for {_DOMAIN}. Answer clearly and concisely in plain English."
+)
+_SMART_RAG_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Use the provided document excerpts to answer accurately."
+_SMART_HYBRID_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Some excerpts have been retrieved — use them if helpful."
 
 
 def _parse_structured(raw_text: str) -> StructuredResponse:
@@ -76,7 +79,7 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely.",
+            "content": f"You are a helpful AI assistant for {_DOMAIN}. Answer clearly and concisely.",
         },
         {"role": "user", "content": body.message},
     ]

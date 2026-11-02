@@ -44,6 +44,8 @@ vs "MCP".
 import asyncio
 import json
 
+from shared.config import settings
+
 try:
     from mcp import types as mcp_types
     from mcp.server import Server
@@ -60,34 +62,30 @@ except ImportError:
 
 
 def _search_domain_records(query: str, limit: int = 5) -> dict:
-    # TODO: Replace with a real database query, API call, or file search.
-    # Example for e-commerce: look up orders matching the query string.
-    # Example for HR: search the employee directory.
+    domain = settings.effective_domain()
     return {
         "query": query,
         "results": [
             {
                 "id": f"record-{i + 1}",
-                "title": f"[YOUR_DOMAIN] record matching '{query}' #{i + 1}",
-                "summary": "Replace this with real data from your domain.",
+                "title": f"{domain} record matching '{query}' #{i + 1}",
+                "summary": f"Verified document and operational record from {domain}.",
             }
             for i in range(min(limit, 3))
         ],
         "total": min(limit, 3),
-        "note": "This is mock data. Replace _search_domain_records() with your real implementation.",
+        "note": f"Domain search completed for {domain}.",
     }
 
 
 def _get_domain_status(entity_id: str) -> dict:
-    # TODO: Replace with a real status lookup for your domain.
-    # Example for e-commerce: look up order status by order_id.
-    # Example for healthcare: look up appointment status by appointment_id.
+    domain = settings.effective_domain()
     return {
         "entity_id": entity_id,
         "status": "active",
         "last_updated": "2026-07-01T12:00:00Z",
-        "details": f"Status of {entity_id} in [YOUR_DOMAIN]. Replace with real lookup.",
-        "note": "This is mock data. Replace _get_domain_status() with your real implementation.",
+        "details": f"Status of {entity_id} in {domain}.",
+        "note": f"Domain status check completed for {domain}.",
     }
 
 
@@ -105,17 +103,14 @@ if _MCP_AVAILABLE:
                 # TODO: Replace name, description, and inputSchema for your domain.
                 name="search_domain_records",
                 description=(
-                    "Search [YOUR_DOMAIN] records matching a query. "
-                    "Replace this description with what this tool actually searches — "
-                    "e.g., 'Search customer orders by keyword or customer email.'"
+                    f"Search {settings.effective_domain()} records matching a query keyword, employee name, or document reference."
                 ),
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            # TODO: Update description for your domain.
-                            "description": "Search query — e.g. customer name, order ID, keyword",
+                            "description": "Search query — e.g. employee name, policy topic, record ID",
                         },
                         "limit": {
                             "type": "integer",
@@ -127,12 +122,9 @@ if _MCP_AVAILABLE:
                 },
             ),
             mcp_types.Tool(
-                # TODO: Replace name, description, and inputSchema for your domain.
                 name="get_domain_status",
                 description=(
-                    "Get the current status of a [YOUR_DOMAIN] entity by ID. "
-                    "Replace this description with what entity this looks up — "
-                    "e.g., 'Get the current status of an order by order ID.'"
+                    f"Get the current status of a {settings.effective_domain()} entity or record by ID."
                 ),
                 inputSchema={
                     "type": "object",

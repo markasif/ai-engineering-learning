@@ -224,7 +224,9 @@ def get_stats() -> dict:
         }
 
     all_items = collection.get(include=["metadatas"])
-    unique_doc_ids = {m.get("document_id") for m in all_items["metadatas"] if m.get("document_id")}
+    unique_doc_ids = {
+        m.get("document_id") for m in all_items["metadatas"] if m and m.get("document_id")
+    }
 
     return {
         "total_vectors": total,

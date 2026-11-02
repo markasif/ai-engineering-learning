@@ -42,6 +42,7 @@ PUBLIC API:
 import json
 from typing import Any
 
+from shared.config import settings
 from shared.llm_client import call_llm
 from shared.session_store import add_message, get_session
 from shared.tools import (
@@ -74,7 +75,7 @@ TOOLS_REGISTRY: dict[str, tuple[Any, dict]] = {
 # Extract just the schemas for the LLM call (TOOLS_REGISTRY holds both fn + schema).
 _TOOL_SCHEMAS = [schema for _, schema in TOOLS_REGISTRY.values()]
 
-_AGENT_SYSTEM_PROMPT = """You are a helpful AI assistant for [YOUR_DOMAIN].
+_AGENT_SYSTEM_PROMPT = f"""You are a helpful AI assistant for {settings.effective_domain()}.
 You have access to tools that can check availability, create support tickets,
 and look up factual information. Use these tools whenever the user's request
 would benefit from real data — don't guess at facts you could look up.

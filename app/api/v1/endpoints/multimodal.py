@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.api.deps import get_tenant_id
+from app.core.config import settings
 from app.schemas.chat import SmartChatRequest
 from app.schemas.multimodal import (
     MultimodalChatResponse,
@@ -25,7 +26,10 @@ from shared.session_store import add_message, get_session
 
 router = APIRouter()
 
-_SMART_SYSTEM_PROMPT = "You are a helpful AI assistant for [YOUR_DOMAIN]. Answer clearly and concisely in plain English."
+_SMART_SYSTEM_PROMPT = (
+    f"You are a helpful AI assistant for {settings.effective_domain()}. "
+    "Answer clearly and concisely in plain English."
+)
 
 
 @router.post("/voice/transcribe", tags=["F10 · Multimodal AI"])

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=3.5.0" />
+  <link rel="stylesheet" href="style.css?v=3.6.0" />
 </head>
 <body>
 
@@ -151,14 +151,48 @@
 
         <!-- Message history -->
         <div class="message-history" id="message-history" role="log" aria-live="polite" aria-label="Conversation">
-          <div class="empty-state" id="empty-state">
-            <div class="empty-state-badge" aria-hidden="true">
-              <span class="empty-state-emoji">💬</span>
+          <div class="empty-state welcome-card" id="empty-state">
+            <div class="welcome-badge-header">
+              <span class="welcome-badge-pulse" aria-hidden="true">
+                <span class="welcome-badge-icon">✨</span>
+              </span>
+              <span class="welcome-domain-pill">Domain: <strong id="welcome-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong></span>
             </div>
-            <h3 class="empty-state-heading">Welcome to AskRaggy</h3>
-            <p class="empty-state-text">
-              Start a <strong>New Chat</strong> or ask anything about your <strong>Enterprise Documents &amp; Knowledge Base</strong>.
+
+            <h3 class="welcome-title">AskRaggy Enterprise Assistant</h3>
+            <p class="welcome-subtitle">
+              Start a fresh conversation or query verified company documents, policies, and workflows for 
+              <span class="welcome-domain-highlight">NeoIntelli HR &amp; Enterprise Operations</span>.
             </p>
+
+            <div class="welcome-chips-container">
+              <div class="welcome-chips-label">Try asking or click a starter prompt:</div>
+              <div class="welcome-chips-grid">
+                <button type="button" class="welcome-chip" data-query="What are our core company policies and employee benefits?">
+                  <span class="chip-icon">📋</span>
+                  <span class="chip-text">Company policies &amp; benefits</span>
+                </button>
+                <button type="button" class="welcome-chip" data-query="How does leave approval and remote work policy work?">
+                  <span class="chip-icon">🏖️</span>
+                  <span class="chip-text">Leave &amp; remote work rules</span>
+                </button>
+                <button type="button" class="welcome-chip" data-query="Summarize the uploaded knowledge base documents">
+                  <span class="chip-icon">📚</span>
+                  <span class="chip-text">Summarize knowledge base</span>
+                </button>
+                <button type="button" class="welcome-chip" data-query="What actions can the autonomous agent execute?">
+                  <span class="chip-icon">⚡</span>
+                  <span class="chip-text">Agent tools &amp; capabilities</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="welcome-footer-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-new-chat">
+                <span class="btn-icon">💬</span>
+                <span>Start Fresh Session</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -615,6 +649,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=3.5.0"></script>
+<script src="app.js?v=3.6.0"></script>
 </body>
 </html>

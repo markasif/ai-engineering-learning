@@ -72,6 +72,9 @@ async def provider_info() -> dict[str, Any]:
         "vlm_provider": vlm_name if vlm_name != llm_name else None,
         "vlm_model": settings.vlm_model if vlm_name != llm_name else None,
         "rate_limiting": RATE_LIMITING_ENABLED,
+        "assistant_name": settings.assistant_name,
+        "domain_name": settings.effective_domain(),
+        "assistant_description": settings.assistant_description,
     }
 
 

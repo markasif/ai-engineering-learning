@@ -181,9 +181,14 @@ class Settings(BaseSettings):
     # Domain / assistant identity
     # -------------------------------------------------------------------------
     assistant_name: str = "HR Policy Assistant for NeoIntelli"
+    domain_name: str = "NeoIntelli HR & Enterprise Operations"
     assistant_description: str = (
-        "You are a helpful assistant. Replace this with your domain description."
+        "Enterprise AI assistant for HR policy, employee support, and operational knowledge."
     )
+
+    def effective_domain(self) -> str:
+        """Return the active operational domain name for prompts and UI."""
+        return self.domain_name or self.assistant_name or "Enterprise Knowledge Base"
 
     def effective_voice_provider(self) -> str:
         """Return the provider to use for voice features.
