@@ -1705,13 +1705,19 @@ agentInput?.addEventListener("keydown", (e) => {
 // Wire up example prompt buttons.
 document.querySelectorAll(".agent-example-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
+    const promptText = (
+      btn.dataset.prompt ||
+      btn.querySelector(".agent-example-text")?.textContent?.trim() ||
+      btn.textContent?.trim() ||
+      ""
+    );
     if (!currentSessionId) {
       createNewSession().then(() => {
-        if (agentInput) agentInput.value = btn.textContent ?? "";
+        if (agentInput) agentInput.value = promptText;
         checkAgentSessionState();
       });
     } else {
-      if (agentInput) agentInput.value = btn.textContent ?? "";
+      if (agentInput) agentInput.value = promptText;
       agentInput?.focus();
     }
   });

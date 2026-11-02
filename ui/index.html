@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=3.2.0" />
+  <link rel="stylesheet" href="style.css?v=3.3.0" />
 </head>
 <body>
 
@@ -518,13 +518,50 @@
 
         <!-- Conversation history -->
         <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
-          <div class="empty-state" id="agent-empty-state">
-            The agent can <strong>check availability</strong>, <strong>create tickets</strong>,
-            and <strong>look up information</strong>. Try asking it to do one of these.
+          <div class="empty-state agent-empty-state-card" id="agent-empty-state">
+            <div class="empty-state-badge" aria-hidden="true">
+              <span class="empty-state-emoji">🤖</span>
+            </div>
+            <h3 class="empty-state-heading">Autonomous Action Agent</h3>
+            <p class="empty-state-text">
+              The agent can execute workflows, query connected tools, and take autonomous actions:
+            </p>
+
+            <!-- Agent Capabilities Pills -->
+            <div class="agent-capabilities-row" aria-label="Agent Capabilities">
+              <span class="agent-capability-tag">
+                <span class="cap-icon" aria-hidden="true">📅</span> Check Availability
+              </span>
+              <span class="agent-capability-tag">
+                <span class="cap-icon" aria-hidden="true">🎫</span> Create Tickets
+              </span>
+              <span class="agent-capability-tag">
+                <span class="cap-icon" aria-hidden="true">🔍</span> Look Up Information
+              </span>
+            </div>
+
+            <!-- Example Prompt Suggestions Header -->
+            <div class="agent-prompt-suggestions-header">
+              <span class="suggestions-label">Try asking the agent to do one of these:</span>
+            </div>
+
+            <!-- Example Prompt Cards / Buttons -->
             <div class="agent-example-prompts">
-              <button class="agent-example-btn" type="button">Is there an opening this Friday at 3 PM?</button>
-              <button class="agent-example-btn" type="button">I can't log in to my account</button>
-              <button class="agent-example-btn" type="button">What are your business hours?</button>
+              <button class="agent-example-btn" type="button" data-prompt="Is there an opening this Friday at 3 PM?">
+                <span class="agent-example-icon" aria-hidden="true">🗓️</span>
+                <span class="agent-example-text">Is there an opening this Friday at 3 PM?</span>
+                <span class="agent-example-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="agent-example-btn" type="button" data-prompt="I can't log in to my account">
+                <span class="agent-example-icon" aria-hidden="true">🔑</span>
+                <span class="agent-example-text">I can't log in to my account</span>
+                <span class="agent-example-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="agent-example-btn" type="button" data-prompt="What are your business hours?">
+                <span class="agent-example-icon" aria-hidden="true">⏰</span>
+                <span class="agent-example-text">What are your business hours?</span>
+                <span class="agent-example-arrow" aria-hidden="true">→</span>
+              </button>
             </div>
           </div>
         </div>
@@ -566,6 +603,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=3.2.0"></script>
+<script src="app.js?v=3.3.0"></script>
 </body>
 </html>

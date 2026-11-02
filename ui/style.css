@@ -1848,30 +1848,133 @@ html, body {
 
 .agent-no-session-notice p { margin-bottom: 0.75rem; }
 
+/* --- Agent Empty State Card & Capabilities --- */
+.agent-empty-state-card {
+  max-width: 520px;
+  padding: 2.25rem 1.75rem;
+  background: white;
+  border: 1px solid var(--color-pistache);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  margin: 1.5rem auto;
+}
+
+.agent-capabilities-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  margin: 0.75rem 0 1.25rem 0;
+}
+
+.agent-capability-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.75rem;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-matcha-hover);
+  letter-spacing: 0.01em;
+}
+
+.agent-capability-tag .cap-icon {
+  font-size: 0.85rem;
+}
+
+.agent-prompt-suggestions-header {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.45rem;
+  padding-left: 0.15rem;
+}
+
+.suggestions-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
 /* Example prompt buttons */
 .agent-example-prompts {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  margin-top: 1rem;
-  text-align: left;
+  gap: 0.55rem;
+  width: 100%;
 }
 
 .agent-example-btn {
-  background: white;
-  border: 1px solid var(--color-pistache);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.85rem;
-  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  background: var(--color-almond);
+  border: 1.5px solid var(--color-pistache);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
   color: var(--color-carob);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .agent-example-btn:hover {
   border-color: var(--color-matcha);
-  background: rgba(128,150,113,0.06);
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+}
+
+.agent-example-btn:active {
+  transform: translateY(0);
+}
+
+.agent-example-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.agent-example-text {
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #1f2937;
+}
+
+.agent-example-arrow {
+  color: var(--color-matcha);
+  font-weight: 700;
+  font-size: 1rem;
+  opacity: 0.5;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  flex-shrink: 0;
+}
+
+.agent-example-btn:hover .agent-example-arrow {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+@media (max-width: 600px) {
+  .agent-empty-state-card {
+    padding: 1.5rem 1rem;
+    margin: 1rem 0;
+    max-width: 100%;
+  }
+  .agent-example-btn {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.84rem;
+  }
 }
 
 /* Agent response card */
