@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=3.3.0" />
+  <link rel="stylesheet" href="style.css?v=3.4.0" />
 </head>
 <body>
 
@@ -352,12 +352,24 @@
               <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
               <span class="doc-count-badge" id="doc-count-badge">0 files</span>
             </div>
-            <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button" style="display: none;">
+            <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button">
               + Upload File
             </button>
           </div>
           <div id="document-list" class="document-list">
-            <p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>
+            <div class="doc-empty-state-box">
+              <div class="doc-empty-icon-circle" aria-hidden="true">
+                <span class="doc-empty-symbol">📂</span>
+              </div>
+              <h4 class="doc-empty-state-title">No documents uploaded yet</h4>
+              <p class="doc-empty-state-desc">
+                Upload a PDF, DOCX, or TXT file to enable grounded document chat, semantic search, and verified citations.
+              </p>
+              <button type="button" class="btn btn-primary btn-empty-state-upload" id="btn-empty-state-upload">
+                <span class="btn-icon" aria-hidden="true">⬆️</span>
+                <span>Upload Document</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -603,6 +615,6 @@
 
 </div><!-- /#app -->
 
-<script src="app.js?v=3.3.0"></script>
+<script src="app.js?v=3.4.0"></script>
 </body>
 </html>

@@ -766,12 +766,26 @@ async function loadDocuments() {
         uploadContainer.dataset.userOpened = "false";
       }
       if (btnToggleUpload) btnToggleUpload.style.display = "none";
-      if (btnUploadBottom) btnUploadBottom.style.display = "none";
+      if (btnUploadBottom) btnUploadBottom.style.display = "inline-flex";
       if (docGroundingBanner) docGroundingBanner.style.display = "none";
       if (documentChatSection) documentChatSection.style.display = "none";
       if (docCountBadge) docCountBadge.textContent = "0 files";
 
-      documentList.innerHTML = `<p class="sidebar-empty">No documents uploaded yet. Upload a file above to get started.</p>`;
+      documentList.innerHTML = `
+        <div class="doc-empty-state-box">
+          <div class="doc-empty-icon-circle" aria-hidden="true">
+            <span class="doc-empty-symbol">📂</span>
+          </div>
+          <h4 class="doc-empty-state-title">No documents in Knowledge Base</h4>
+          <p class="doc-empty-state-desc">
+            All documents have been removed. Upload a new PDF, DOCX, or TXT file to start chatting with verified citations.
+          </p>
+          <button type="button" class="btn btn-primary btn-empty-state-upload" id="btn-empty-state-upload">
+            <span class="btn-icon" aria-hidden="true">⬆️</span>
+            <span>Upload Document</span>
+          </button>
+        </div>
+      `;
       loadSearchDocumentFilter([]);
       return;
     }
@@ -2579,8 +2593,20 @@ function toggleUploadContainer(forceOpen = null) {
   }
 }
 
+function openFileUploadPicker() {
+  toggleUploadContainer(true);
+  const fileInput = document.getElementById("file-input");
+  fileInput?.click();
+}
+
 btnToggleUpload?.addEventListener("click", () => toggleUploadContainer());
-btnUploadBottom?.addEventListener("click", () => toggleUploadContainer(true));
+btnUploadBottom?.addEventListener("click", openFileUploadPicker);
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#btn-empty-state-upload")) {
+    openFileUploadPicker();
+  }
+});
 
 // Wire CAG trigger for hover and mobile touch/click (rock-solid on all devices)
 const cagTrigger = document.getElementById("cag-trigger");
