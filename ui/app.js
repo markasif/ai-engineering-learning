@@ -314,47 +314,11 @@ function appendStructuredResponse(data) {
   const card = document.createElement("div");
   card.className = "response-card";
 
-  // ── Header row: intent badge + confidence meter ──
-  const header = document.createElement("div");
-  header.className = "response-card-header";
-
-  // Intent badge
-  const badge = document.createElement("span");
-  badge.className = "intent-badge";
-  badge.dataset.intent = data.intent ?? "unclear";
-  badge.textContent = (data.intent ?? "unclear").replace(/_/g, " ");
-  header.appendChild(badge);
-
-  // Confidence meter
-  const pct = Math.round((data.confidence ?? 0) * 100);
-  const level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
-
-  const confidenceWrap = document.createElement("div");
-  confidenceWrap.className = "confidence-wrap";
-  confidenceWrap.innerHTML = `
-    <span class="confidence-label">Confidence</span>
-    <div class="confidence-bar-track">
-      <div class="confidence-bar-fill" data-level="${level}" style="width:${pct}%"></div>
-    </div>
-    <span class="confidence-pct">${pct}%</span>
-  `;
-  header.appendChild(confidenceWrap);
-
-  card.appendChild(header);
-
-  // ── Answer text ──
-  const answer = document.createElement("p");
-  answer.className = "response-card-answer";
-  answer.textContent = data.answer ?? "";
+  // ── Answer text with rich formatting ──
+  const answer = document.createElement("div");
+  answer.className = "response-card-answer markdown-body";
+  answer.innerHTML = formatMarkdownToHtml(data.answer ?? "");
   card.appendChild(answer);
-
-  // ── Sources needed hint ──
-  if (data.sources_needed) {
-    const hint = document.createElement("span");
-    hint.className = "sources-tag";
-    hint.textContent = "⚠ This answer would improve with domain documents (added in Feature 4).";
-    card.appendChild(hint);
-  }
 
   wrapper.appendChild(label);
   wrapper.appendChild(card);
@@ -381,21 +345,7 @@ smartToggle?.addEventListener("change", () => {
 });
 
 /**
- * Source badge labels and colours for SmartChatResponse.
- *   llm       — answered directly from the model's knowledge
- *   rag       — retrieved from uploaded documents
- *   hybrid    — retrieval attempted but confidence was low
- *   pageindex — PageIndex tree navigation (optional, ENABLE_PAGEINDEX=true)
- */
-const SOURCE_LABELS = {
-  llm:       "LLM (no retrieval)",
-  rag:       "RAG (document retrieval)",
-  hybrid:    "Hybrid (low-confidence retrieval)",
-  pageindex: "PageIndex (tree navigation)",
-};
-
-/**
- * Render a SmartChatResponse as a visual card with source + confidence badges.
+ * Render a SmartChatResponse cleanly without technical router metrics.
  *
  * @param {{ answer: string, source: string, chunks_used: object[], confidence: number, retrieval_method: string }} data
  */
@@ -412,41 +362,31 @@ function appendSmartResponse(data) {
   const card = document.createElement("div");
   card.className = "smart-response-card";
 
-  // ── Source + confidence header ──
-  const header = document.createElement("div");
-  header.className = "smart-response-header";
+  // Only show a clean badge if knowledge base passages were actually retrieved
+  const hasCitations = Boolean(data.chunks_used && data.chunks_used.length > 0);
+  if (hasCitations) {
+    const header = document.createElement("div");
+    header.className = "smart-response-header clean-citation-header";
+    header.innerHTML = `
+      <span class="source-badge citation-badge">
+        <span class="badge-icon">📚</span>
+        <span>Knowledge Base (${data.chunks_used.length} passage${data.chunks_used.length !== 1 ? "s" : ""})</span>
+      </span>
+    `;
+    card.appendChild(header);
+  }
 
-  const sourceBadge = document.createElement("span");
-  sourceBadge.className = "source-badge";
-  sourceBadge.dataset.source = data.source ?? "llm";
-  sourceBadge.textContent = SOURCE_LABELS[data.source] ?? data.source ?? "llm";
-  header.appendChild(sourceBadge);
-
-  const pct = Math.round((data.confidence ?? 0) * 100);
-  const level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
-  const confWrap = document.createElement("div");
-  confWrap.className = "confidence-wrap";
-  confWrap.innerHTML = `
-    <span class="confidence-label">Router confidence</span>
-    <div class="confidence-bar-track">
-      <div class="confidence-bar-fill" data-level="${level}" style="width:${pct}%"></div>
-    </div>
-    <span class="confidence-pct">${pct}%</span>
-  `;
-  header.appendChild(confWrap);
-  card.appendChild(header);
-
-  // ── Answer text ──
-  const answer = document.createElement("p");
-  answer.className = "response-card-answer";
-  answer.textContent = data.answer ?? "";
+  // ── Answer text with rich markdown formatting ──
+  const answer = document.createElement("div");
+  answer.className = "response-card-answer markdown-body";
+  answer.innerHTML = formatMarkdownToHtml(data.answer ?? "");
   card.appendChild(answer);
 
-  // ── Retrieved chunks (collapsed by default) ──
-  if (data.chunks_used?.length) {
+  // ── Retrieved supporting citations (collapsed by default) ──
+  if (hasCitations) {
     const chunksToggle = document.createElement("button");
     chunksToggle.className = "smart-chunks-toggle";
-    chunksToggle.textContent = `▶ ${data.chunks_used.length} chunk${data.chunks_used.length !== 1 ? "s" : ""} retrieved`;
+    chunksToggle.textContent = `▶ View ${data.chunks_used.length} supporting passage${data.chunks_used.length !== 1 ? "s" : ""}`;
     card.appendChild(chunksToggle);
 
     const chunksContainer = document.createElement("div");
@@ -456,13 +396,10 @@ function appendSmartResponse(data) {
     data.chunks_used.forEach((chunk, i) => {
       const chunkEl = document.createElement("div");
       chunkEl.className = "smart-chunk-item";
-      const chunkPct = Math.round((chunk.score ?? 0) * 100);
-      const chunkLevel = chunkPct >= 60 ? "high" : chunkPct >= 35 ? "medium" : "low";
       chunkEl.innerHTML = `
-        <span class="result-filename-badge">${escapeHtml(chunk.filename || "unknown")}</span>
+        <span class="result-filename-badge">${escapeHtml(chunk.filename || "Document")}</span>
         <span class="result-chunk-meta">chunk ${chunk.chunk_index ?? i}</span>
-        <span class="result-score-badge" data-level="${chunkLevel}">${chunkPct}%</span>
-        <p class="result-text">${escapeHtml((chunk.text || "").slice(0, 200))}${(chunk.text || "").length > 200 ? "…" : ""}</p>
+        <p class="result-text">${escapeHtml((chunk.text || "").slice(0, 240))}${(chunk.text || "").length > 240 ? "…" : ""}</p>
       `;
       chunksContainer.appendChild(chunkEl);
     });
@@ -471,13 +408,15 @@ function appendSmartResponse(data) {
     chunksToggle.addEventListener("click", () => {
       const hidden = chunksContainer.hidden;
       chunksContainer.hidden = !hidden;
-      chunksToggle.textContent = `${hidden ? "▼" : "▶"} ${data.chunks_used.length} chunk${data.chunks_used.length !== 1 ? "s" : ""} retrieved`;
+      chunksToggle.textContent = `${hidden ? "▼ Hide" : "▶ View"} ${data.chunks_used.length} supporting passage${data.chunks_used.length !== 1 ? "s" : ""}`;
     });
   }
 
   wrapper.appendChild(label);
   wrapper.appendChild(card);
   messageHistory.appendChild(wrapper);
+  messageHistory.scrollTop = messageHistory.scrollHeight;
+}
   messageHistory.scrollTop = messageHistory.scrollHeight;
 }
 
