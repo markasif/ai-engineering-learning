@@ -153,9 +153,21 @@ async function sendMessage() {
   appendMessage("user", text);
   const thinkingEl = appendMessage("ai", "", true);
 
-  const isStructured = structuredToggle?.checked ?? false;
+  const isStructured = structuredToggle?.checked ?? true;
+  const isSmartMode = smartToggle?.checked ?? true;
 
-  const isSmartMode = smartToggle?.checked ?? false;
+  // Smart Mode requires a session. Auto-create one if none exists yet.
+  if (isSmartMode && !currentSessionId) {
+    try {
+      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST" });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        currentSessionId = sData.session_id;
+        setActiveSession(currentSessionId);
+        loadSessions();
+      }
+    } catch {}
+  }
 
   // Feature 3: if a session is active, all messages go through the session endpoint.
   // Feature 6: Smart Mode routes through /chat/smart which uses the Smart Router.
@@ -256,6 +268,10 @@ loadProviderInfo();
 // =============================================================================
 
 const structuredToggle = document.getElementById("structured-toggle");
+if (structuredToggle) {
+  structuredToggle.checked = true;
+  structuredToggle.setAttribute("aria-checked", "true");
+}
 
 // Keep the aria-checked attribute in sync with checkbox state for accessibility.
 structuredToggle?.addEventListener("change", () => {
@@ -336,6 +352,10 @@ function appendStructuredResponse(data) {
 // =============================================================================
 
 const smartToggle = document.getElementById("smart-toggle");
+if (smartToggle) {
+  smartToggle.checked = true;
+  smartToggle.setAttribute("aria-checked", "true");
+}
 
 smartToggle?.addEventListener("change", () => {
   smartToggle.setAttribute("aria-checked", String(smartToggle.checked));
