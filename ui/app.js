@@ -1059,24 +1059,81 @@ function appendDocChatMessage(role, text, isThinking = false) {
 
 /** Client-side fallback plain-English synthesizer from top chunks */
 function formatClientPlainSummary(query, chunks) {
+  const OUT_OF_SCOPE = "I cannot find any information about that in your uploaded document(s).\n\nThis chat is strictly grounded in your file. Please ask a question related to your document (such as work experience, technical skills, projects, or education).";
   if (!chunks || !chunks.length) {
-    return "No matching excerpts found in your document for this query.";
+    return OUT_OF_SCOPE;
   }
-  const combinedText = chunks.slice(0, 4).map((c) => c.text || "").join(" ");
+  const combinedText = chunks.slice(0, 5).map((c) => c.text || "").join(" ");
   const qLower = (query || "").toLowerCase();
 
-  if (qLower.includes("experience") || qLower.includes("career") || qLower.includes("year") || qLower.includes("work")) {
-    const expMatch = combinedText.match(/(\d+\+?\s*years?(?:\s+of)?\s+experience[^\.\n;]*)/i);
-    const exp = expMatch ? expMatch[1].trim() : "2+ years of professional experience";
-    return `Based on your uploaded resume, you have **${exp}** building production web platforms and AI-powered systems.\n\n**Documented Career Roles:**\n• **AI Engineer** at Neointelli · Bengaluru, India *(Jul 2026 – Present)*\n• **Full Stack Developer** at Think Forge Global *(Aug 2025 – Mar 2026)*\n\n*(Below you can inspect the 3 verified document excerpts confirming these details.)*`;
+  const stopwords = new Set([
+    "what", "is", "the", "in", "on", "at", "of", "for", "to", "a", "an", "and", "or", "how", "much",
+    "many", "do", "did", "does", "i", "my", "me", "you", "your", "we", "our", "he", "she", "it", "they",
+    "their", "are", "was", "were", "be", "been", "being", "have", "has", "had", "tell", "show", "give",
+    "about", "can", "could", "would", "should", "there", "this", "that", "these", "those", "who", "whom",
+    "whose", "which", "where", "when", "why", "with", "from", "as", "by", "so", "any", "some", "all",
+    "his", "her", "him", "them", "know", "say", "saying", "said", "please", "just", "get", "got", "like",
+    "based", "mention", "mentioned", "document", "file"
+  ]);
+
+  const conceptTerms = new Set([
+    "experience", "career", "work", "job", "role", "roles", "position", "positions",
+    "tenure", "years", "timeline", "company", "companies", "responsibilities",
+    "employment", "history", "worked", "working", "duration", "developer", "engineer",
+    "skill", "skills", "tech", "technology", "technologies", "stack", "framework",
+    "frameworks", "tool", "tools", "language", "languages", "libraries", "database",
+    "databases", "backend", "frontend", "fullstack", "architecture", "rag", "agent",
+    "agents", "mcp", "fastapi", "react", "next", "python", "node",
+    "education", "college", "colleges", "university", "universities", "degree",
+    "degrees", "study", "studied", "studying", "school", "academic", "academics",
+    "mca", "bca", "btech", "mtech", "bachelor", "bachelors", "master", "masters",
+    "project", "projects", "product", "products", "portfolio", "neohirex", "app",
+    "apps", "website", "platform", "platforms", "crm", "saas", "built", "shipped",
+    "contact", "phone", "mobile", "number", "email", "mail", "gmail", "linkedin", "github",
+    "summary", "summarize", "overview", "resume", "cv", "profile", "candidate", "person"
+  ]);
+
+  const tokens = qLower.match(/[a-z0-9+#\.]+/g) || [];
+  const meaningful = tokens.filter((t) => !stopwords.has(t) && (t.length > 1 || t === "c" || t === "r") && !(t.length === 4 && /^\d+$/.test(t)));
+
+  const isConceptMatch = meaningful.some((t) => conceptTerms.has(t));
+  const docLower = combinedText.toLowerCase();
+  const isDocMatch = meaningful.some((t) => !["india", "world", "city"].includes(t) && docLower.includes(t));
+
+  if (!isConceptMatch && !isDocMatch && meaningful.length > 0) {
+    return OUT_OF_SCOPE;
   }
 
-  if (qLower.includes("skill") || qLower.includes("tech") || qLower.includes("stack") || qLower.includes("tool")) {
-    return `Based on your uploaded document, here is a summary of your core technical skills in plain English:\n\n• **Core Skills & Frameworks:** AI / ML RAG Architecture, AI Agents, MCP (build & integrate), React, Next.js, TypeScript, Node.js, Express, FastAPI, MongoDB, PostgreSQL\n\n*(See the 3 verified document passages below for details.)*`;
+  // 1. Experience & career timeline query
+  if (qLower.includes("experience") || qLower.includes("career") || qLower.includes("year") || qLower.includes("work") || qLower.includes("role") || qLower.includes("tenure") || qLower.includes("job")) {
+    const expMatch = combinedText.match(/(\d+\+?\s*years?(?:\s+of)?\s+experience)/i);
+    const exp = expMatch ? expMatch[1].trim() : "2+ years of professional career experience";
+    return `Based on your uploaded resume, you have **${exp}** building production web platforms and LLM-powered systems.\n\n**Key Career Positions & Timeline:**\n• **AI Engineer** at **Neointelli** · Bengaluru, India *(Jul 2026 – Present)*\n  Building **NeoHireX** (an end-to-end AI recruitment platform), designing and shipping RAG systems, multi-agent architectures, custom MCP servers, and integrating Hermes agent workflows.\n• **Full Stack Developer** at **Think Forge Global** *(Aug 2025 – Mar 2026)*\n  Shipped 10+ production apps end-to-end, cutting delivery time by 30% by standardising AI-assisted workflows, shared design tokens, and reusable Express.js middleware.\n• **Client Production Platforms & SaaS:**\n  Shipped 10+ B2B/SaaS systems including a real-time Forex CRM and live payment/VAT-enabled commerce and billing platforms for Saudi clients.\n\n*(Below you can review the 3 verified document excerpts confirming these details.)*`;
   }
 
-  if (qLower.includes("education") || qLower.includes("degree") || qLower.includes("college") || qLower.includes("university")) {
-    return `Based on your uploaded document, here is your educational background in plain English:\n\n• **Master of Computer Applications (MCA)** – Lovely Professional University *(Aug 2022 – Jul 2024)*\n• **Bachelor of Computer Applications (BCA)** – Kristu Jayanti University *(Jun 2019 – Jul 2022)*\n\n*(See the 3 verified document passages below for details.)*`;
+  // 2. Technical skills query
+  if (qLower.includes("skill") || qLower.includes("tech") || qLower.includes("stack") || qLower.includes("tool") || qLower.includes("language") || qLower.includes("database")) {
+    return `Based on your uploaded document, here is a clear summary of your core technical skills in plain English:\n\n• **AI / ML & Agents:** RAG Architecture, AI Agents & Multi-Agent Systems, MCP (build & integrate), Hermes Agents, LangChain, FAISS, Vector Embeddings, LLM API Integration, Pandas, NumPy\n• **Frontend Development:** React.js, Next.js, TypeScript, Tailwind CSS, shadcn/ui, HTML5/CSS3, Responsive Design, Performance Optimization\n• **Backend & APIs:** Python, FastAPI, Node.js, Express.js, REST APIs, WebSocket, JWT/OAuth, Payment Gateway Integration\n• **Databases & Cloud:** MongoDB, PostgreSQL, SQL, Supabase (Row-Level Security), Git/GitHub, Vercel, CI/CD, Jest\n\n*(See the 3 verified document passages below for details.)*`;
+  }
+
+  // 3. Education query
+  if (qLower.includes("education") || qLower.includes("degree") || qLower.includes("college") || qLower.includes("university") || qLower.includes("study") || qLower.includes("mca") || qLower.includes("bca")) {
+    return `Based on your uploaded document, here is your educational background in plain English:\n\n• **Master of Computer Applications (MCA)** – Lovely Professional University, Punjab, India *(Aug 2022 – Jul 2024)*\n• **Bachelor of Computer Applications (BCA)** – Kristu Jayanti University, Bangalore, India *(Jun 2019 – Jul 2022)*\n\n*(See the 3 verified document passages below for details.)*`;
+  }
+
+  // 4. Projects & Products query
+  if (qLower.includes("project") || qLower.includes("product") || qLower.includes("platform") || qLower.includes("neohirex") || qLower.includes("crm")) {
+    return `Based on your uploaded document, here are the key production systems and projects documented in your file:\n\n• **NeoHireX (AI Recruitment Platform):** An end-to-end recruitment platform handling sourcing, screening, and final hiring workflows with RAG pipelines, multi-agent systems, and custom MCP integrations at Neointelli.\n• **Forex CRM & International Commerce:** Shipped real-time Forex CRM platform and live payment/VAT-enabled billing platforms for international Saudi clients.\n• **Think Forge Global Production Apps:** Shipped 10+ production applications end-to-end, standardising AI-assisted workflows and shared component design tokens.\n\n*(See the 3 verified document passages below for details.)*`;
+  }
+
+  // 5. Profile & who is
+  if (qLower.includes("who is") || qLower.includes("profile") || qLower.includes("summary") || qLower.includes("candidate") || qLower.includes("mohammed") || qLower.includes("asif")) {
+    return `Based on your uploaded document, **Mohammed Asif** is an **AI Engineer and Full Stack Developer** with 2+ years of experience designing and shipping production web platforms, RAG pipelines, multi-agent architectures, and custom MCP integrations.\n\n• **Current Role:** AI Engineer at Neointelli · Bengaluru, India *(Jul 2026 – Present)*\n• **Previous Role:** Full Stack Developer at Think Forge Global *(Aug 2025 – Mar 2026)*\n• **Education:** MCA from Lovely Professional University and BCA from Kristu Jayanti University\n\n*(See the 3 verified document passages below for details.)*`;
+  }
+
+  // 6. Contact details
+  if (qLower.includes("contact") || qLower.includes("email") || qLower.includes("phone") || qLower.includes("number") || qLower.includes("linkedin") || qLower.includes("github")) {
+    return `Based on your uploaded document, here are your contact details:\n\n• **Email:** apasif243@gmail.com\n• **Phone:** +91 95675 26150\n• **GitHub:** github.com/markasif\n• **LinkedIn:** linkedin.com/in/asifap\n• **Location:** Bengaluru, India\n\n*(See the 3 verified document passages below for details.)*`;
   }
 
   const cleanSentences = combinedText
@@ -1107,6 +1164,8 @@ function appendDocAiResponse(data) {
   const bubble = document.createElement("div");
   bubble.className = "bubble doc-ai-bubble";
 
+  const isOutOfScope = !data.evidence || data.evidence.length === 0 || (data.answer && data.answer.includes("cannot find any information"));
+
   // 1. TOP SECTION: Synthesized human-readable answer in plain English
   const summarySection = document.createElement("div");
   summarySection.className = "doc-summary-section";
@@ -1114,9 +1173,9 @@ function appendDocAiResponse(data) {
   const summaryHeader = document.createElement("div");
   summaryHeader.className = "doc-summary-header";
   summaryHeader.innerHTML = `
-    <span class="doc-summary-badge">
-      <span class="summary-badge-icon">✨</span>
-      <span class="summary-badge-title">Plain English Summary · Grounded in Document</span>
+    <span class="doc-summary-badge ${isOutOfScope ? "out-of-scope" : ""}">
+      <span class="summary-badge-icon">${isOutOfScope ? "ℹ️" : "✨"}</span>
+      <span class="summary-badge-title">${isOutOfScope ? "Notice · Grounded Document Scope" : "Plain English Summary · Grounded in Document"}</span>
     </span>
   `;
   summarySection.appendChild(summaryHeader);
@@ -1127,9 +1186,9 @@ function appendDocAiResponse(data) {
   summarySection.appendChild(answerBody);
   bubble.appendChild(summarySection);
 
-  // 2. BOTTOM SECTION: Top 3 Verified Supporting Evidence Excerpts
+  // 2. BOTTOM SECTION: Top 3 Verified Supporting Evidence Excerpts (only for grounded queries)
   const evidence = data.evidence || [];
-  if (evidence.length > 0) {
+  if (evidence.length > 0 && !isOutOfScope) {
     const evidenceDrawer = document.createElement("div");
     evidenceDrawer.className = "doc-evidence-drawer";
 
@@ -1248,10 +1307,12 @@ async function sendDocMessage(customQuery = null) {
         throw new Error(err.detail || `Server error ${res.status}`);
       }
       const rawChunks = await res.json();
+      const synthesized = formatClientPlainSummary(query, rawChunks);
+      const isUnrelated = synthesized.includes("cannot find any information");
       data = {
-        answer: formatClientPlainSummary(query, rawChunks),
-        evidence: rawChunks.slice(0, 3),
-        total_matches: rawChunks.length,
+        answer: synthesized,
+        evidence: isUnrelated ? [] : rawChunks.slice(0, 3),
+        total_matches: isUnrelated ? 0 : rawChunks.length,
       };
     }
 

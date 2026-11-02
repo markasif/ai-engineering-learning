@@ -3235,6 +3235,12 @@ textarea:focus,
   letter-spacing: 0.04em;
 }
 
+.doc-summary-badge.out-of-scope {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+
 .summary-badge-icon {
   font-size: 0.82rem;
 }
