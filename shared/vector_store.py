@@ -174,6 +174,7 @@ def search(
         results["distances"][0],
         strict=False,
     ):
+        meta = meta or {}
         score = max(0.0, 1.0 - (distance / 2.0))
         output.append(
             {

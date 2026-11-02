@@ -93,6 +93,11 @@ async def documents_list(tenant_id: str = Depends(get_tenant_id)) -> list[Docume
     return list_documents(tenant_id=tenant_id)
 
 
+OUT_OF_DOMAIN_MESSAGE = (
+    "I cannot find any information about that in your uploaded document(s).\n\n"
+    "This chat is strictly grounded in your file. Please ask a question related to your document."
+)
+
 STOPWORDS = {
     "what",
     "is",
@@ -182,214 +187,24 @@ STOPWORDS = {
     "file",
 }
 
-COMMON_NON_DOC_WORDS = {
-    "india",
-    "world",
-    "city",
-    "state",
-    "country",
-    "place",
-    "today",
-    "tomorrow",
-    "yesterday",
-}
-
-CONCEPT_MAP = {
-    "experience": [
-        "experience",
-        "career",
-        "work",
-        "job",
-        "role",
-        "roles",
-        "position",
-        "positions",
-        "tenure",
-        "years",
-        "timeline",
-        "company",
-        "companies",
-        "responsibilities",
-        "employment",
-        "history",
-        "worked",
-        "working",
-        "duration",
-        "developer",
-        "engineer",
-    ],
-    "skills": [
-        "skill",
-        "skills",
-        "tech",
-        "technology",
-        "technologies",
-        "stack",
-        "framework",
-        "frameworks",
-        "tool",
-        "tools",
-        "language",
-        "languages",
-        "libraries",
-        "database",
-        "databases",
-        "backend",
-        "frontend",
-        "fullstack",
-        "architecture",
-        "rag",
-        "agent",
-        "agents",
-        "mcp",
-        "fastapi",
-        "react",
-        "next",
-        "python",
-        "node",
-    ],
-    "education": [
-        "education",
-        "college",
-        "colleges",
-        "university",
-        "universities",
-        "degree",
-        "degrees",
-        "study",
-        "studied",
-        "studying",
-        "school",
-        "academic",
-        "academics",
-        "mca",
-        "bca",
-        "btech",
-        "mtech",
-        "bachelor",
-        "bachelors",
-        "master",
-        "masters",
-        "qualification",
-        "qualifications",
-    ],
-    "projects": [
-        "project",
-        "projects",
-        "product",
-        "products",
-        "portfolio",
-        "neohirex",
-        "app",
-        "apps",
-        "website",
-        "platform",
-        "platforms",
-        "crm",
-        "saas",
-        "built",
-        "shipped",
-        "designed",
-        "lead",
-        "leading",
-    ],
-    "contact": [
-        "contact",
-        "phone",
-        "mobile",
-        "number",
-        "call",
-        "email",
-        "mail",
-        "gmail",
-        "linkedin",
-        "github",
-        "address",
-        "portfolio",
-        "hire",
-    ],
-    "meta": [
-        "summary",
-        "summarize",
-        "overview",
-        "document",
-        "doc",
-        "resume",
-        "cv",
-        "profile",
-        "candidate",
-        "person",
-        "who",
-        "details",
-        "everything",
-        "background",
-        "intro",
-        "introduction",
-    ],
-}
-
-CONCEPT_TERMS = {term for term_list in CONCEPT_MAP.values() for term in term_list}
-
-OUT_OF_DOMAIN_MESSAGE = (
-    "I cannot find any information about that in your uploaded document(s).\n\n"
-    "This chat is strictly grounded in your file. Please ask a question related to your document "
-    "(such as work experience, technical skills, projects, or education)."
-)
-
-
-def is_query_grounded_in_doc(query: str, doc_text: str) -> bool:
-    """
-    Determine if a user's question is relevant to the document context.
-    Prevents answering unrelated queries (e.g. weather in Mumbai, world trivia, food recipes)
-    with out-of-context document sentences.
-    """
-    import re
-
-    q_clean = query.lower()
-    tokens = re.findall(r"[a-zA-Z0-9+#\.]+", q_clean)
-    meaningful = [
-        t
-        for t in tokens
-        if t not in STOPWORDS
-        and (len(t) > 1 or t in {"c", "r"})
-        and not (t.isdigit() and len(t) == 4)
-    ]
-
-    if not meaningful:
-        return any(
-            w in q_clean
-            for w in ["about", "summary", "overview", "who", "what", "resume", "experience"]
-        )
-
-    # 1. Does any token match known document concepts?
-    if any(t in CONCEPT_TERMS for t in meaningful):
-        return True
-
-    # 2. Does any token appear directly in document text?
-    doc_words = set(re.findall(r"[a-zA-Z0-9+#\.]+", doc_text.lower()))
-    return any(t in doc_words for t in meaningful if t not in COMMON_NON_DOC_WORDS)
-
 
 def is_refusal_answer(answer: str) -> bool:
     """Check if the synthesized or LLM-generated text is a refusal/out-of-domain response."""
-    if not answer:
-        return True
+    if not answer or not answer.strip():
+        return False
     a_lower = answer.lower()
     refusal_phrases = [
-        "does not contain",
-        "not mentioned in the",
-        "no information about",
         "cannot find any information",
-        "not found in the provided",
+        "does not contain any information",
+        "not mentioned in the provided",
+        "not found in the uploaded",
         "not related to the provided",
-        "provided document excerpts do not",
-        "does not provide information",
-        "no mention of",
-        "is not mentioned",
-        "no details about",
-        "not available in the",
-        "not related to your uploaded",
-        "strictly grounded in",
+        "no information about that in your uploaded",
+        "no mention of that in the uploaded",
+        "strictly grounded in your file",
+        "strictly grounded in the uploaded",
+        "document excerpts do not contain",
+        "provided excerpts do not contain",
     ]
     return any(p in a_lower for p in refusal_phrases)
 
@@ -397,8 +212,8 @@ def is_refusal_answer(answer: str) -> bool:
 def _synthesize_plain_english_summary(query: str, chunks: list[dict[str, Any]]) -> str:
     """
     Extractive plain-English synthesis fallback.
-    Ensures that even if external LLM APIs fail or time out on production,
-    the user always receives a clean, human-readable summary first.
+    Dynamically analyzes retrieved vector chunks for any document type (CV, report, manual, contract),
+    extracting key answers in clear, human-readable plain English.
     """
     import re
 
@@ -407,150 +222,193 @@ def _synthesize_plain_english_summary(query: str, chunks: list[dict[str, Any]]) 
     all_text = re.sub(r"\s+", " ", all_text).strip()
 
     q_lower = query.lower()
+    q_tokens = [w for w in re.findall(r"[a-zA-Z0-9+#\.]+", q_lower) if w not in STOPWORDS]
 
-    # If query is not grounded in document, return polite out-of-domain notice
-    if not is_query_grounded_in_doc(query, all_text):
-        return OUT_OF_DOMAIN_MESSAGE
+    # 1. Identity / Name / Who is
+    if any(
+        k in q_lower
+        for k in ["name", "who is", "who am", "candidate", "author", "person", "whose", "identity"]
+    ):
+        chunk_zero = chunks[0].get("text", "") if chunks else ""
+        chunk_lines = [
+            line.strip()
+            for line in chunk_zero.split("\n")
+            if line.strip() and len(line.strip()) < 80
+        ]
+        if chunk_lines:
+            first_val = chunk_lines[0]
+            first_val = re.sub(
+                r"^(?:resume|cv|curriculum vitae)\s*[-:]?\s*", "", first_val, flags=re.IGNORECASE
+            ).strip()
+            return (
+                f"Based on your uploaded document, the primary name / title identified is **{first_val}**.\n\n"
+                f"*(See the verified document passages below for details.)*"
+            )
 
-    # 1. Experience & career timeline query
+    # 2. Contact details / Email / Phone / Links
+    if any(
+        k in q_lower
+        for k in [
+            "contact",
+            "email",
+            "phone",
+            "number",
+            "mobile",
+            "call",
+            "reach",
+            "linkedin",
+            "github",
+        ]
+    ):
+        emails = re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", all_text)
+        phones = re.findall(
+            r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3,5}\)?[-.\s]?\d{3,5}[-.\s]?\d{3,5}", all_text
+        )
+        details = []
+        if emails:
+            details.append(f"• **Email:** {emails[0]}")
+        if phones:
+            clean_phone = phones[0].strip()
+            if len(re.sub(r"\D", "", clean_phone)) >= 7:
+                details.append(f"• **Phone:** {clean_phone}")
+        li_match = re.search(r"linkedin\.com/in/[\w\.-]+", all_text)
+        if li_match:
+            details.append(f"• **LinkedIn:** {li_match.group(0)}")
+        gh_match = re.search(r"github\.com/[\w\.-]+", all_text)
+        if gh_match:
+            details.append(f"• **GitHub:** {gh_match.group(0)}")
+        if details:
+            return (
+                "Based on your uploaded document, here are the documented contact details:\n\n"
+                + "\n".join(details)
+                + "\n\n*(See the verified document passages below for details.)*"
+            )
+
+    # 3. Technical Skills / Stack / Tools
+    if any(
+        k in q_lower
+        for k in [
+            "skill",
+            "skills",
+            "tech",
+            "technology",
+            "stack",
+            "tool",
+            "tools",
+            "framework",
+            "language",
+        ]
+    ):
+        skills_match = re.search(
+            r"(?:TECHNICAL\s+SKILLS|SKILLS|CORE\s+COMPETENCIES)[:\s]*([^\n\r]+(?:\n[^\n\r]+)?)",
+            all_text,
+            re.IGNORECASE,
+        )
+        if skills_match:
+            skills_text = re.sub(r"\s+", " ", skills_match.group(1)).strip()
+            return (
+                f"Based on your uploaded document, here is a summary of documented technical skills:\n\n"
+                f"• **Skills & Tools:** {skills_text}\n\n"
+                f"*(See the verified document passages below for details.)*"
+            )
+
+    # 4. Experience / Work history / Career
     if any(
         k in q_lower
         for k in [
             "experience",
             "career",
-            "how long",
-            "worked",
-            "tenure",
-            "years",
+            "work",
+            "job",
             "role",
-            "position",
-            "timeline",
+            "roles",
+            "intern",
+            "company",
+            "worked",
         ]
     ):
         exp_match = re.search(r"(\d+\+?\s*years?(?:\s+of)?\s+experience)", all_text, re.IGNORECASE)
-        roles = []
-        if re.search(r"AI\s*Engineer", all_text, re.IGNORECASE):
-            roles.append(
-                "• **AI Engineer** at **Neointelli** · Bengaluru, India *(Jul 2026 – Present)*\n"
-                "  Building **NeoHireX** (an end-to-end AI recruitment platform), designing and shipping RAG systems, "
-                "multi-agent architectures, custom MCP servers, and integrating Hermes agent workflows."
-            )
-        if re.search(r"Full\s*Stack\s*Developer", all_text, re.IGNORECASE):
-            roles.append(
-                "• **Full Stack Developer** at **Think Forge Global** *(Aug 2025 – Mar 2026)*\n"
-                "  Shipped 10+ production apps end-to-end, cutting delivery time by 30% by standardising AI-assisted workflows, "
-                "shared design tokens, and reusable Express.js middleware."
-            )
-        if re.search(r"B2B|Forex|SaaS", all_text, re.IGNORECASE):
-            roles.append(
-                "• **Client Production Platforms & SaaS:**\n"
-                "  Shipped 10+ B2B/SaaS systems including a real-time Forex CRM and live payment/VAT-enabled commerce "
-                "and billing platforms for Saudi clients."
-            )
-
-        exp_statement = (
-            exp_match.group(1).strip()
+        exp_str = (
+            f"you have **{exp_match.group(1)}**"
             if exp_match
-            else "2+ years of professional career experience"
+            else "the following career roles are documented"
         )
-
+        roles = []
+        for line in all_text.split("\n"):
+            line = line.strip()
+            if (
+                any(
+                    r in line.lower()
+                    for r in [
+                        "developer",
+                        "engineer",
+                        "intern",
+                        "manager",
+                        "lead",
+                        "analyst",
+                        "architect",
+                    ]
+                )
+                and len(line) < 120
+            ):
+                clean_line = re.sub(r"^[•\-\*\]\s*", "", line)
+                roles.append(f"• **{clean_line}**")
         roles_text = (
-            "\n\n".join(roles)
+            "\n".join(roles[:4])
             if roles
-            else "• Professional AI Engineering and Full Stack Platform Development roles."
+            else "• Professional technical and operational roles documented in the file."
         )
-
         return (
-            f"Based on your uploaded resume, you have **{exp_statement}** building production web platforms and LLM-powered systems.\n\n"
-            f"**Key Career Positions & Timeline:**\n\n"
+            f"Based on your uploaded document, {exp_str}:\n\n"
             f"{roles_text}\n\n"
-            f"*(Below you can review the 3 verified document excerpts confirming these details.)*"
+            f"*(Below you can review the verified document excerpts confirming these details.)*"
         )
 
-    # 2. Technical skills query
-    if any(
-        k in q_lower
-        for k in ["skill", "tech", "stack", "tool", "framework", "language", "database"]
-    ):
-        return (
-            "Based on your uploaded document, here is a clear summary of your core technical skills in plain English:\n\n"
-            "• **AI / ML & Agents:** RAG Architecture, AI Agents & Multi-Agent Systems, MCP (build & integrate), Hermes Agents, LangChain, FAISS, Vector Embeddings, LLM API Integration, Pandas, NumPy\n"
-            "• **Frontend Development:** React.js, Next.js, TypeScript, Tailwind CSS, shadcn/ui, HTML5/CSS3, Responsive Design, Performance Optimization\n"
-            "• **Backend & APIs:** Python, FastAPI, Node.js, Express.js, REST APIs, WebSocket, JWT/OAuth, Payment Gateway Integration\n"
-            "• **Databases & Cloud:** MongoDB, PostgreSQL, SQL, Supabase (Row-Level Security), Git/GitHub, Vercel, CI/CD, Jest\n\n"
-            "*(See the 3 verified document passages below for details.)*"
-        )
-
-    # 3. Education query
-    if any(
-        k in q_lower
-        for k in ["education", "degree", "college", "university", "study", "mca", "bca", "academic"]
-    ):
-        return (
-            "Based on your uploaded document, here is your educational background in plain English:\n\n"
-            "• **Master of Computer Applications (MCA)** – Lovely Professional University, Punjab, India *(Aug 2022 – Jul 2024)*\n"
-            "• **Bachelor of Computer Applications (BCA)** – Kristu Jayanti University, Bangalore, India *(Jun 2019 – Jul 2022)*\n\n"
-            "*(See the 3 verified document passages below for details.)*"
-        )
-
-    # 4. Projects & Products query
-    if any(
-        k in q_lower
-        for k in ["project", "product", "platform", "neohirex", "crm", "build", "built"]
-    ):
-        return (
-            "Based on your uploaded document, here are the key production systems and projects documented in your file:\n\n"
-            "• **NeoHireX (AI Recruitment Platform):** An end-to-end recruitment platform handling sourcing, screening, and final hiring workflows with RAG pipelines, multi-agent systems, and custom MCP integrations at Neointelli.\n"
-            "• **Forex CRM & International Commerce:** Shipped real-time Forex CRM platform and live payment/VAT-enabled billing platforms for international Saudi clients.\n"
-            "• **Think Forge Global Production Apps:** Shipped 10+ production applications end-to-end, standardising AI-assisted workflows and shared component design tokens.\n\n"
-            "*(See the 3 verified document passages below for details.)*"
-        )
-
-    # 5. Candidate profile / overview query
+    # 5. Education / University / Degree
     if any(
         k in q_lower
         for k in [
-            "who is",
-            "profile",
-            "summary",
-            "candidate",
-            "author",
-            "about me",
-            "mohammed",
-            "asif",
+            "education",
+            "degree",
+            "college",
+            "university",
+            "study",
+            "studied",
+            "graduat",
+            "school",
+            "academic",
         ]
     ):
+        edu_match = re.search(
+            r"(?:EDUCATION)[:\s]*([^\n\r]+(?:\n[^\n\r]+)?)", all_text, re.IGNORECASE
+        )
+        if edu_match:
+            edu_text = re.sub(r"\s+", " ", edu_match.group(1)).strip()
+            return (
+                f"Based on your uploaded document, here is your educational background:\n\n"
+                f"• {edu_text}\n\n"
+                f"*(See the verified document passages below for details.)*"
+            )
+
+    # 6. Content keyword matching across sentences for any general document query
+    sentences = [s.strip() for s in re.split(r"[\.\n]+", all_text) if len(s.strip()) > 20]
+    scored = []
+    for s in sentences:
+        s_lower = s.lower()
+        score = sum(1 for t in q_tokens if t in s_lower)
+        if score > 0:
+            scored.append((score, s))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    if scored:
+        bullets = "\n".join([f"• {s}." for _, s in scored[:3]])
         return (
-            "Based on your uploaded document, **Mohammed Asif** is an **AI Engineer and Full Stack Developer** with 2+ years of experience designing and shipping production web platforms, RAG pipelines, multi-agent architectures, and custom MCP integrations.\n\n"
-            "• **Current Role:** AI Engineer at Neointelli · Bengaluru, India *(Jul 2026 – Present)*\n"
-            "• **Previous Role:** Full Stack Developer at Think Forge Global *(Aug 2025 – Mar 2026)*\n"
-            "• **Education:** MCA from Lovely Professional University and BCA from Kristu Jayanti University\n\n"
-            "*(See the 3 verified document passages below for details.)*"
+            f"Based on your uploaded document, here is what was found regarding your question in plain English:\n\n"
+            f"{bullets}\n\n"
+            f"*(See the verified document passages below for supporting evidence.)*"
         )
 
-    # 6. Contact details
-    if any(
-        k in q_lower
-        for k in ["contact", "email", "phone", "number", "mobile", "linkedin", "github", "address"]
-    ):
-        return (
-            "Based on your uploaded document, here are your contact details:\n\n"
-            "• **Email:** apasif243@gmail.com\n"
-            "• **Phone:** +91 95675 26150\n"
-            "• **GitHub:** github.com/markasif\n"
-            "• **LinkedIn:** linkedin.com/in/asifap\n"
-            "• **Location:** Bengaluru, India\n\n"
-            "*(See the 3 verified document passages below for details.)*"
-        )
-
-    # 7. Grounded general query: extract top sentences containing query keywords
-    sentences = [s.strip() for s in re.split(r"[\.\n]+", all_text) if len(s.strip()) > 35]
-    top_bullets = "\n".join([f"• {s}." for s in sentences[:3]])
-    return (
-        f"Based on your uploaded document, here is a clear summary answering your question in plain English:\n\n"
-        f"{top_bullets}\n\n"
-        f"*(See the 3 verified document passages below for supporting evidence.)*"
-    )
+    # 7. Unrelated out-of-domain query
+    return OUT_OF_DOMAIN_MESSAGE
 
 
 @router.post("/documents/ask", tags=["F5 · Find the Answer"])
@@ -606,16 +464,6 @@ async def ask_documents(
         s = re.sub(r"[\uE000-\uF8FF\u25A0-\u25FF\uFFFD]", " ", s)
         return re.sub(r"\s+", " ", s).strip()
 
-    all_chunk_text = " ".join([c.get("text", "") for c in chunks])
-
-    # Check query relevance: if out of domain, immediately return refusal with zero evidence
-    if not is_query_grounded_in_doc(q, all_chunk_text):
-        return {
-            "answer": OUT_OF_DOMAIN_MESSAGE,
-            "evidence": [],
-            "total_matches": 0,
-        }
-
     # Format the top chunks as grounding context
     context_blocks = []
     for i, c in enumerate(chunks[:5], 1):
@@ -626,15 +474,14 @@ async def ask_documents(
     context_str = "\n\n".join(context_blocks)
 
     system_prompt = (
-        "You are an expert Document Intelligence Assistant. "
+        "You are AskRaggy, an expert enterprise document intelligence assistant. "
         "Your task is to answer the user's question clearly, directly, and thoroughly based ONLY on the provided document excerpts.\n"
         "Guidelines:\n"
-        "1. Give a conversational, human-readable answer first in plain English (e.g., 'Based on your uploaded resume, you have **2+ years of professional career experience**...').\n"
-        "2. If asked about career experience, calculate and clearly state the total duration (from summary statements or dated job entries) and list each role with company and dates in clean bullet points.\n"
-        "3. Highlight key information using clean markdown formatting (bolding and bullet points).\n"
-        "4. If the user's question is unrelated to the provided document excerpts or cannot be answered from them (e.g., asking about weather, food recipes, sports, general world trivia), "
-        "clearly state that this information is not found in the uploaded document and that this chat is strictly grounded in the document.\n"
-        "5. Do not speculate or introduce outside facts. Rely strictly on the document excerpts."
+        "1. Give a conversational, human-readable answer first in plain English. Highlight key names, figures, and technical terms using markdown bolding.\n"
+        "2. The uploaded document can be ANY document (e.g. CV/resume, technical manual, policy, contract, financial statement, research paper). Dynamically analyze the text to answer whatever question the user asks about the document.\n"
+        "3. RELEVANCE RULE: If the user's question is completely unrelated to the provided document excerpts, or if the document does not contain enough information to answer it (e.g. asking about weather in Mumbai when the document is a resume or manual, food recipes, sports trivia), YOU MUST explicitly reply:\n"
+        "'I cannot find any information about that in your uploaded document(s). This chat is strictly grounded in your file. Please ask a question related to your document.'\n"
+        "4. Never invent facts outside the provided document excerpts."
     )
     user_prompt = f"Document Excerpts:\n{context_str}\n\nUser Question: {q}"
 
@@ -645,10 +492,10 @@ async def ask_documents(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=0.2,
-                max_tokens=2500,
+                temperature=0.1,
+                max_tokens=800,
             ),
-            timeout=12.0,
+            timeout=18.0,
         )
         answer = res.content
         if not answer or not answer.strip() or is_refusal_answer(answer):
@@ -660,7 +507,7 @@ async def ask_documents(
                 }
             answer = _synthesize_plain_english_summary(q, chunks)
     except Exception:
-        # Guaranteed plain-English synthesis fallback if external LLM API times out or fails
+        # Dynamic plain-English synthesis fallback if external LLM API times out or fails
         answer = _synthesize_plain_english_summary(q, chunks)
 
     if is_refusal_answer(answer):
