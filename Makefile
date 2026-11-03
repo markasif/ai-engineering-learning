@@ -20,16 +20,16 @@ install:
 	pre-commit install
 
 dev:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	pytest tests -v
+	python -m pytest tests -v
 
 test-unit:
-	pytest tests/unit -v
+	python -m pytest tests/unit -v
 
 test-integration:
-	pytest tests/integration -v
+	python -m pytest tests/integration -v
 
 lint:
 	python -m ruff check .

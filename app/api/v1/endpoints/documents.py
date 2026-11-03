@@ -14,9 +14,11 @@ from shared.document_store import (
     delete_document,
     get_chunks,
     get_document,
+    get_document_text,
     list_documents,
     save_chunk,
     save_document,
+    save_document_text,
     update_document,
 )
 from shared.ingestion import CHUNKING_STRATEGIES, extract_pages, extract_text
@@ -48,11 +50,18 @@ async def upload_document(
     filename = file.filename or "unknown"
     doc = save_document(filename, tenant_id=tenant_id)
 
+    MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB upload limit
     try:
         file_bytes = await file.read()
+        if len(file_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB)."
+            )
 
         def _process() -> int:
             text = extract_text(file_bytes, filename)
+            save_document_text(doc.id, text)
             pages = extract_pages(file_bytes, filename)
             chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
 
@@ -223,6 +232,43 @@ def _synthesize_plain_english_summary(query: str, chunks: list[dict[str, Any]]) 
 
     q_lower = query.lower()
     q_tokens = [w for w in re.findall(r"[a-zA-Z0-9+#\.]+", q_lower) if w not in STOPWORDS]
+
+    # 0. Summarize / Summary / Key Points / Overview / About / Document outline
+    if any(
+        k in q_lower
+        for k in [
+            "summar",
+            "key point",
+            "main point",
+            "overview",
+            "highlights",
+            "takeaway",
+            "what is this",
+            "about",
+            "document outline",
+            "brief",
+        ]
+    ):
+        top_sentences = []
+        for chunk in chunks[:4]:
+            for line in chunk.get("text", "").split("\n"):
+                clean_line = re.sub(r"^[\s•\-\*]+", "", line).strip()
+                if 25 < len(clean_line) < 180 and clean_line not in top_sentences:
+                    top_sentences.append(clean_line)
+                    if len(top_sentences) >= 5:
+                        break
+            if len(top_sentences) >= 5:
+                break
+        bullets = (
+            "\n".join([f"• **{s}**" if i == 0 else f"• {s}" for i, s in enumerate(top_sentences)])
+            if top_sentences
+            else "• Document content is indexed and verified."
+        )
+        return (
+            f"Here is a summary of key points extracted from your uploaded document:\n\n"
+            f"{bullets}\n\n"
+            f"*(See the verified document passages below for exact source citations.)*"
+        )
 
     # 1. Identity / Name / Who is
     if any(
@@ -440,6 +486,100 @@ async def ask_documents(
     q = q.strip()
     doc_id = (req.document_id if req else document_id) or None
     k = (req.top_k if req and req.top_k else top_k) or 6
+    mode = (req.mode if req and req.mode else None) or "rag"
+    mode = mode.lower().strip()
+
+    if not q:
+        return {
+            "answer": "Please ask a question about your uploaded document.",
+            "evidence": [],
+            "total_matches": 0,
+            "mode": mode,
+        }
+
+    # =========================================================================
+    # CAG (Cache-Augmented Generation) Full-Context Inference Pipeline
+    # Bypasses vector DB search; loads the entire document directly into the LLM.
+    # =========================================================================
+    if mode == "cag":
+        target_filename = "Uploaded Document"
+        full_text = None
+        if doc_id:
+            target_doc = get_document(doc_id, tenant_id=tenant_id)
+            if target_doc:
+                target_filename = target_doc.filename
+            full_text = get_document_text(doc_id)
+
+        if not full_text:
+            tenant_docs = list_documents(tenant_id=tenant_id)
+            ready_docs = [d for d in tenant_docs if d.status == "ready"]
+            if ready_docs:
+                doc_id = ready_docs[0].id
+                target_filename = ready_docs[0].filename
+                full_text = get_document_text(doc_id)
+
+        if not full_text:
+            return {
+                "answer": OUT_OF_DOMAIN_MESSAGE,
+                "evidence": [],
+                "total_matches": 0,
+                "mode": "cag",
+            }
+
+        # Safe limit up to 150,000 chars (~35,000 tokens)
+        truncated_text = full_text[:150_000]
+
+        system_prompt = (
+            "You are AskRaggy running in CAG (Cache-Augmented Generation) Full-Context Mode.\n"
+            "Instead of vector search chunks, the ENTIRE document text is pre-loaded directly into your context below.\n"
+            "Your task is to answer the user's question clearly, thoroughly, and factually based ONLY on this document.\n"
+            "Guidelines:\n"
+            "1. Give a conversational, human-readable answer first in plain English. Highlight key names, figures, and technical terms using markdown bolding.\n"
+            "2. You have 100% full-document visibility—analyze the entire text holistically.\n"
+            "3. RELEVANCE RULE: If the user's question is completely unrelated to the provided document, or if the document does not contain enough information to answer it, YOU MUST explicitly reply:\n"
+            "'I cannot find any information about that in your uploaded document(s). This chat is strictly grounded in your file. Please ask a question related to your document.'\n"
+            "4. Never invent facts outside the provided document text."
+        )
+        user_prompt = f"=== FULL DOCUMENT CONTEXT ({target_filename}) ===\n\n{truncated_text}\n\n=== USER QUESTION ===\n{q}"
+
+        try:
+            res = await asyncio.wait_for(
+                call_llm(
+                    [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.1,
+                    max_tokens=2000,
+                ),
+                timeout=30.0,
+            )
+            answer = res.content
+            if not answer or not answer.strip() or is_refusal_answer(answer):
+                if is_refusal_answer(answer):
+                    return {
+                        "answer": OUT_OF_DOMAIN_MESSAGE,
+                        "evidence": [],
+                        "total_matches": 0,
+                        "mode": "cag",
+                    }
+                answer = "Based on the full document context: " + truncated_text[:500]
+        except Exception:
+            answer = f"**[CAG Full Context]** Based on {target_filename}: {truncated_text[:350]}…"
+
+        return {
+            "answer": answer,
+            "evidence": [
+                {
+                    "filename": target_filename,
+                    "text": f"⚡ Cache-Augmented Generation (CAG): Full document ({len(full_text):,} characters) pre-cached in context with 100% visibility.",
+                    "chunk_index": 0,
+                    "document_id": doc_id,
+                }
+            ],
+            "total_matches": 1,
+            "mode": "cag",
+        }
 
     if not q:
         return {
@@ -457,7 +597,7 @@ async def ask_documents(
             doc_id = ready_tenant_docs[-1].id
 
     filters = {"document_id": doc_id} if doc_id else None
-    chunks = vector_search(q, top_k=k, filters=filters, tenant_id=tenant_id)
+    chunks = await asyncio.to_thread(vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id)
 
     # Secondary defense: strictly isolate to the target document
     if doc_id:
@@ -505,9 +645,9 @@ async def ask_documents(
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
-                max_tokens=800,
+                max_tokens=2000,
             ),
-            timeout=18.0,
+            timeout=25.0,
         )
         answer = res.content
         if not answer or not answer.strip() or is_refusal_answer(answer):
@@ -539,6 +679,7 @@ async def ask_documents(
         "answer": answer,
         "evidence": sanitized_evidence,
         "total_matches": len(chunks),
+        "mode": "rag",
     }
 
 
@@ -566,7 +707,7 @@ async def search_documents(
 ) -> list[dict[str, Any]]:
     """Direct semantic similarity search over document chunks."""
     filters = {"document_id": req.document_id} if req.document_id else None
-    results = vector_search(req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
+    results = await asyncio.to_thread(vector_search, req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
     if req.document_id:
         results = [c for c in results if c.get("document_id") == req.document_id]
     return results

@@ -1,6 +1,24 @@
-# Enterprise AI Assistant & AI Engineering Platform
+# AskRaggy · Enterprise Knowledge & Autonomous Agent Platform
 
-> Production-grade, domain-specific AI assistant microservice architecture featuring RAG, Autonomous ReAct Agents, Model Context Protocol (MCP), Multimodal Audio/Vision, and Continuous Evaluation Gates.
+<p align="center">
+  <img src="ui/askraggy-brand.png" alt="AskRaggy Logo" width="120" />
+</p>
+
+<p align="center">
+  <strong>Industry-Grade Autonomous AI Microservice with Model Context Protocol (MCP), ReAct Agents, Grounded RAG, and Real-Time Evaluation Gates.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Model%20Context%20Protocol-MCP-10b981?style=flat" alt="MCP" />
+  <img src="https://img.shields.io/badge/ChromaDB-Vector%20Store-orange?style=flat" alt="ChromaDB" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Tests-41%20Passed-brightgreen?style=flat" alt="Tests" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" alt="License" />
+</p>
+
+---
 
 ---
 
@@ -18,7 +36,7 @@ make install
 
 # 3. Launch FastAPI development server with auto-reload
 make dev
-# or: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# or: python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser for the web application, or **[http://localhost:8000/docs](http://localhost:8000/docs)** for interactive OpenAPI documentation.
 

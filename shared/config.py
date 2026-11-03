@@ -147,12 +147,14 @@ class Settings(BaseSettings):
     enable_ollama_privacy_checks: bool = False
 
     # -------------------------------------------------------------------------
-    # Feature 9: MCP Integration
+    # Feature 9: MCP Integration & Supabase
     # -------------------------------------------------------------------------
     # Enable the domain-specific MCP server (shared/domain_mcp_server.py).
     # When True, the domain server is registered alongside the demo server and
     # its tools appear in /api/mcp/tools and the agent's tool list.
     enable_domain_mcp_server: bool = False
+    supabase_url: str = ""
+    supabase_key: str = ""
 
     # -------------------------------------------------------------------------
     # Application

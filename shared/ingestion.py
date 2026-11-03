@@ -378,9 +378,13 @@ def _paragraph_strategy(text: str, pages: list[dict]) -> list[dict]:
     ]
 
 
+def _cag_strategy(text: str, pages: list[dict]) -> list[dict]:
+    """CAG Full-Context Strategy: Preserves the entire document text as a single unified context."""
+    return [{"text": text, "page_number": None, "chunk_index": 0}]
+
+
 CHUNKING_STRATEGIES: dict[str, Callable[[str, list[dict]], list[dict]]] = {
     "sentence": _sentence_strategy,
     "paragraph": _paragraph_strategy,
-    # "page": chunk_by_page is available above as a reference implementation
-    # but not wired here — see PAGEINDEX_NOTE for a more powerful page-based approach.
+    "cag": _cag_strategy,
 }

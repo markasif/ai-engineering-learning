@@ -80,7 +80,7 @@ class OpenAIProvider(LLMProvider):
                 )
 
         return LLMResponse(
-            content=message.content,
+            content=message.content or getattr(message, "reasoning_content", None),
             tool_calls=normalized_tool_calls,
             raw=completion.model_dump(),
             provider=self._provider_name,  # "groq", "ollama", etc. for subclasses

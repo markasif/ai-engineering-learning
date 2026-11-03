@@ -36,13 +36,15 @@ async def agent_run(
 
 
 @router.post("/agent/plan", tags=["F8 · Multi-Step Agent"])
+@rate_limit("15/minute")
 async def agent_plan(
+    http_request: Request,
     request: PlanRequest,
     background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
 ) -> dict[str, Any]:
     """Plan-and-Execute agent: breaks a goal into sequential steps executed in the background."""
-    session_id = create_session(tenant_id=tenant_id)
+    session_id = request.session_id or create_session(tenant_id=tenant_id)
     task = create_task(message=request.message, session_id=session_id, tenant_id=tenant_id)
     plan = await make_plan(request.message)
     update_task(task.id, plan=plan)
@@ -83,7 +85,8 @@ async def mcp_tools_list() -> list[dict[str, Any]]:
 
 
 @router.post("/mcp/execute", tags=["F9 · MCP Integration"])
-async def mcp_execute(request: McpExecuteRequest) -> dict[str, Any]:
+@rate_limit("30/minute")
+async def mcp_execute(http_request: Request, request: McpExecuteRequest) -> dict[str, Any]:
     """Manually invoke an MCP tool with provided arguments."""
     try:
         result = await call_mcp_tool(request.tool_name, request.arguments)

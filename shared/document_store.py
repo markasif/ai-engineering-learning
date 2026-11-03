@@ -27,6 +27,22 @@ from shared.models import Chunk, Document
 
 _documents: dict[str, Document] = {}
 _chunks: dict[str, list[Chunk]] = {}  # keyed by document_id
+_document_texts: dict[str, str] = {}  # keyed by document_id for CAG full-context queries
+
+
+def save_document_text(document_id: str, text: str) -> None:
+    """Store full raw extracted text of a document for CAG (Cache-Augmented Generation)."""
+    _document_texts[document_id] = text
+
+
+def get_document_text(document_id: str) -> str | None:
+    """Return full raw text for CAG, or fallback to concatenated chunks."""
+    if document_id in _document_texts and _document_texts[document_id].strip():
+        return _document_texts[document_id]
+    chunks = get_chunks(document_id)
+    if chunks:
+        return "\n\n".join(c.text for c in chunks)
+    return None
 
 
 def save_document(filename: str, tenant_id: str = "default") -> Document:
@@ -130,4 +146,5 @@ def delete_document(doc_id: str, tenant_id: str = "default") -> bool:
         return False
     del _documents[doc_id]
     _chunks.pop(doc_id, None)
+    _document_texts.pop(doc_id, None)
     return True

@@ -1,654 +1,875 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=3.7.0" />
+  <link rel="stylesheet" href="style.css?v=6.3.0" />
 </head>
+
 <body>
 
-<div id="app">
+  <div id="app">
 
-  <!-- ===== Header — Enterprise AI Branding ===== -->
-  <header class="site-header">
-    <div class="header-brand">
-      <button id="mobile-sidebar-toggle" class="btn-mobile-sidebar" aria-label="Toggle past chats" type="button">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-        <span class="mobile-toggle-text">Chats</span>
-      </button>
-      <div class="brand-logo-mark" aria-hidden="true">
-        <span class="ask-emoji">💬</span>
+    <!-- ===== Header — Enterprise AI Branding ===== -->
+    <header class="site-header">
+      <div class="header-brand">
+        <button id="mobile-sidebar-toggle" class="btn-mobile-sidebar" aria-label="Toggle past chats" type="button">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <span class="mobile-toggle-text">Chats</span>
+        </button>
+
+<!-- Official AskRaggy 3D Origami/Ribbon Logo Image -->
+        <div class="brand-logo-mark" title="AskRaggy Enterprise Intelligence">
+          <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="brand-logo-img" width="36" height="36" />
+        </div>
+
+        <div class="titles">
+          <div class="brand-title-row">
+            <span class="course-title"><span class="brand-name-ask">Ask</span><span class="brand-name-raggy">Raggy</span></span>
+            <span class="brand-enterprise-badge">AI</span>
+          </div>
+          <span class="org-name">Enterprise Intelligence</span>
+        </div>
       </div>
-      <div class="titles">
-        <span class="course-title">Ask<span class="brand-accent">Raggy</span></span>
-        <span class="title-divider" aria-hidden="true">·</span>
-        <span class="org-name">Enterprise Knowledge &amp; Intelligence Engine</span>
+
+      <div class="header-right">
+        <div class="header-domain-badge">
+          <span class="domain-icon" aria-hidden="true">🏢</span>
+          <span class="domain-label">Domain:</span>
+          <strong class="domain-value" id="header-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong>
+        </div>
+        <div class="header-status">
+          <button id="sound-toggle-btn" class="btn-sound-toggle" type="button" aria-label="Toggle notification sounds"
+            title="Sound notifications active (Click to mute)">
+            <span id="sound-icon" aria-hidden="true">🔔</span>
+          </button>
+          <span class="status-pulse-dot" aria-hidden="true"></span>
+          <span class="status-pulse-text">System Ready</span>
+        </div>
       </div>
-    </div>
-    <div class="header-status">
-      <button id="sound-toggle-btn" class="btn-sound-toggle" type="button" aria-label="Toggle notification sounds" title="Sound notifications active (Click to mute)">
-        <span id="sound-icon" aria-hidden="true">🔔</span>
-      </button>
-      <span class="status-pulse-dot" aria-hidden="true"></span>
-      <span class="status-pulse-text">System Ready</span>
-    </div>
-  </header>
+    </header>
 
-  <!-- Mobile Drawer Backdrop Overlay -->
-  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+    <!-- Mobile Drawer Backdrop Overlay -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
 
-  <!-- ===== App body: sidebar + main (Feature 3 adds the sidebar) ===== -->
-  <div class="app-body">
+    <!-- ===== App body: sidebar + main (Feature 3 adds the sidebar) ===== -->
+    <div class="app-body">
 
-    <!-- ===================================================
+      <!-- ===================================================
          FEATURE 3: Session sidebar
          Lists past conversations; "New Chat" starts a fresh session.
          Populated by app.js calling GET /api/sessions.
          =================================================== -->
-    <aside class="sidebar" id="session-sidebar" aria-label="Conversation history">
-      <div class="sidebar-header">
-        <span class="sidebar-title">Chats</span>
-      </div>
-      <nav id="session-list" class="session-list" aria-label="Past sessions">
-        <p class="sidebar-empty">No sessions yet.<br>Click <strong>New Chat</strong> to start.</p>
-      </nav>
-      <div class="sidebar-footer">
-        <button id="new-chat-btn" class="btn btn-primary btn-full" type="button">
-          + New Chat
-        </button>
-      </div>
-    </aside>
+      <aside class="sidebar" id="session-sidebar" aria-label="Conversation history">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Chats</span>
+        </div>
+        <nav id="session-list" class="session-list" aria-label="Past sessions">
+          <p class="sidebar-empty">No sessions yet.<br>Click <strong>New Chat</strong> to start.</p>
+        </nav>
+        <div class="sidebar-footer">
+          <button id="new-chat-btn" class="btn btn-primary btn-full" type="button">
+            + New Chat
+          </button>
+          <button id="sidebar-admin-btn" class="btn-sidebar-admin" type="button" title="Settings">
+            <span class="admin-icon" aria-hidden="true">⚙️</span>
+            <span class="admin-label">Settings</span>
+            <span class="tenant-pill" id="sidebar-tenant-pill" title="Active Tenant">default</span>
+          </button>
+        </div>
+      </aside>
 
-    <!-- ===== Main Content Column ===== -->
-    <div class="main-wrapper">
+      <!-- ===== Main Content Column ===== -->
+      <div class="main-wrapper">
 
-      <!-- ===================================================
-           FEATURE 4: Tab navigation (Chat | Documents | Ask | Admin | Agent)
+        <!-- ===================================================
+           FEATURE 4: Tab navigation (Chat | Documents & Q&A | Agent)
            Mounted flush directly below the header.
            =================================================== -->
-      <nav class="tab-nav" role="tablist" aria-label="Feature panels">
-        <div class="tab-nav-inner">
-          <div class="tab-nav-tabs">
-            <button
-              class="tab-btn active"
-              role="tab"
-              id="tab-chat"
-              data-tab="chat"
-              aria-selected="true"
-              aria-controls="chat-panel"
-            >Chat</button>
-            <button
-              class="tab-btn"
-              role="tab"
-              id="tab-documents"
-              data-tab="documents"
-              aria-selected="false"
-              aria-controls="documents-panel"
-            >Documents &amp; Q&amp;A</button>
-            <button
-              class="tab-btn"
-              role="tab"
-              id="tab-admin"
-              data-tab="admin"
-              aria-selected="false"
-              aria-controls="admin-panel"
-            >Admin</button>
-            <button
-              class="tab-btn"
-              role="tab"
-              id="tab-agent"
-              data-tab="agent"
-              aria-selected="false"
-              aria-controls="agent-panel"
-            >Agent</button>
-          </div>
-        </div>
-      </nav>
-
-      <!-- ===== Scrollable main panels ===== -->
-      <main class="main-content">
-
-      <!-- ===================================================
-           FEATURE 1 + 2: Chat panel
-           =================================================== -->
-      <section class="panel tab-panel" id="chat-panel" role="tabpanel" aria-labelledby="tab-chat">
-        <!-- Panel header with Structured Mode toggle (Feature 2) -->
-        <div class="panel-header-row">
-          <h2 class="panel-title" id="chat-panel-title">
-            Chat with your AI Assistant
-            <span class="session-label" id="session-label" hidden></span>
-          </h2>
-
-          <!-- ===================================================
-               FEATURE 2: Structured Mode toggle
-               =================================================== -->
-          <label class="toggle-label" for="structured-toggle">
-            <span class="toggle-text">Structured Mode</span>
-            <span class="toggle-wrap">
-              <input type="checkbox" id="structured-toggle" role="switch" aria-checked="true" checked />
-              <span class="toggle-track" aria-hidden="true"></span>
-            </span>
-          </label>
-
-          <!-- ===================================================
-               FEATURE 6: Smart Mode toggle
-               Routes messages through /api/sessions/{id}/chat/smart
-               which classifies the query before deciding to retrieve.
-               =================================================== -->
-          <label class="toggle-label" for="smart-toggle">
-            <span class="toggle-text">Smart Mode</span>
-            <span class="toggle-wrap">
-              <input type="checkbox" id="smart-toggle" role="switch" aria-checked="true" checked />
-              <span class="toggle-track" aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
-
-        <!-- Message history -->
-        <div class="message-history" id="message-history" role="log" aria-live="polite" aria-label="Conversation">
-          <div class="empty-state welcome-card" id="empty-state">
-            <div class="welcome-badge-header">
-              <span class="welcome-badge-pulse" aria-hidden="true">
-                <span class="welcome-badge-icon">✨</span>
-              </span>
-              <span class="welcome-domain-pill">Domain: <strong id="welcome-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong></span>
+        <nav class="tab-nav" role="tablist" aria-label="Feature panels">
+          <div class="tab-nav-inner">
+            <div class="tab-nav-tabs">
+              <button class="tab-btn active" role="tab" id="tab-chat" data-tab="chat" aria-selected="true"
+                aria-controls="chat-panel">
+                <span class="tab-btn-icon" aria-hidden="true">💬</span>
+                <span>Chat</span>
+              </button>
+              <button class="tab-btn" role="tab" id="tab-documents" data-tab="documents" aria-selected="false"
+                aria-controls="documents-panel">
+                <span class="tab-btn-icon" aria-hidden="true">📄</span>
+                <span>Documents &amp; Q&amp;A</span>
+              </button>
+              <button class="tab-btn" role="tab" id="tab-agent" data-tab="agent" aria-selected="false"
+                aria-controls="agent-panel">
+                <span class="tab-btn-icon" aria-hidden="true">⚡</span>
+                <span>Agent</span>
+              </button>
             </div>
 
-            <h3 class="welcome-title">AskRaggy Enterprise Assistant</h3>
-            <p class="welcome-subtitle">
-              Start a fresh conversation or query verified company documents, policies, and workflows for 
-              <span class="welcome-domain-highlight">NeoIntelli HR &amp; Enterprise Operations</span>.
-            </p>
+            <!-- DOCUMENT Q&A HEADER CONTROLS (Top right side, same line as inner navigation) -->
+            <div class="tab-nav-doc-controls" id="tab-nav-doc-controls" style="display: none;">
+              <!-- Chunking Strategy Custom Dropdown (Sentence-aware / Paragraph-based) -->
+              <div class="strategy-dropdown-wrapper" id="strategy-dropdown-wrapper">
+                <button type="button" class="strategy-trigger-btn" id="strategy-trigger-btn" aria-haspopup="listbox" aria-expanded="false" title="Document chunking strategy for vector ingestion">
+                  <span class="strategy-trigger-icon" aria-hidden="true">✂️</span>
+                  <span class="strategy-trigger-label" id="strategy-trigger-label">Sentence-aware</span>
+                  <span class="strategy-rec-badge" id="strategy-rec-badge">Rec</span>
+                  <span class="strategy-trigger-chevron" aria-hidden="true">▾</span>
+                </button>
 
-            <div class="welcome-chips-container">
-              <div class="welcome-chips-label">Try asking or click a starter prompt:</div>
-              <div class="welcome-chips-grid">
-                <button type="button" class="welcome-chip" data-query="What are our core company policies and employee benefits?">
-                  <span class="chip-icon">📋</span>
-                  <span class="chip-text">Company policies &amp; benefits</span>
+                <!-- Hidden select preserved for DOM API compatibility with ingestion scripts -->
+                <select id="strategy-select" class="strategy-hidden-select" style="display: none;" aria-hidden="true" tabindex="-1">
+                  <option value="sentence" selected>Sentence-aware (recommended)</option>
+                  <option value="paragraph">Paragraph-based</option>
+                  <option value="cag">CAG Full-Context Mode</option>
+                </select>
+
+                <!-- Modern Popover Menu -->
+                <div class="strategy-popover" id="strategy-popover" role="listbox" aria-label="Chunking strategies" hidden>
+                  <div class="strategy-popover-header">
+                    <div class="strategy-popover-title-row">
+                      <span class="strategy-popover-tag">RAG Ingestion</span>
+                      <strong class="strategy-popover-title">Chunking Strategy</strong>
+                    </div>
+                    <p class="strategy-popover-subtitle">Controls how uploaded documents are partitioned into vector chunks.</p>
+                  </div>
+
+                  <div class="strategy-options-list">
+                    <!-- Option 1: Sentence-aware (Default / Recommended) -->
+                    <button type="button" class="strategy-option-item selected" role="option" data-value="sentence" aria-selected="true" id="strategy-opt-sentence">
+                      <div class="strategy-option-icon-box">
+                        <span class="strategy-option-icon">✂️</span>
+                      </div>
+                      <div class="strategy-option-content">
+                        <div class="strategy-option-header">
+                          <strong class="strategy-option-name">Sentence-aware</strong>
+                          <span class="strategy-option-badge rec">Recommended</span>
+                        </div>
+                        <p class="strategy-option-desc">
+                          Splits on sentence boundaries with contextual sliding windows. Highest citation accuracy for questions, compliance rules, and data lookups.
+                        </p>
+                      </div>
+                      <div class="strategy-option-check" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </button>
+
+                    <!-- Option 2: Paragraph-based -->
+                    <button type="button" class="strategy-option-item" role="option" data-value="paragraph" aria-selected="false" id="strategy-opt-paragraph">
+                      <div class="strategy-option-icon-box">
+                        <span class="strategy-option-icon">📄</span>
+                      </div>
+                      <div class="strategy-option-content">
+                        <div class="strategy-option-header">
+                          <strong class="strategy-option-name">Paragraph-based</strong>
+                          <span class="strategy-option-badge">Coarse</span>
+                        </div>
+                        <p class="strategy-option-desc">
+                          Splits text by natural paragraph blocks. Preserves larger structural narrative for thematic overviews and long summaries.
+                        </p>
+                      </div>
+                      <div class="strategy-option-check" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </button>
+
+                    <!-- Option 3: CAG Mode (Full Context) -->
+                    <button type="button" class="strategy-option-item" role="option" data-value="cag" aria-selected="false" id="strategy-opt-cag">
+                      <div class="strategy-option-icon-box">
+                        <span class="strategy-option-icon">⚡</span>
+                      </div>
+                      <div class="strategy-option-content">
+                        <div class="strategy-option-header">
+                          <strong class="strategy-option-name">CAG (Full Context)</strong>
+                          <span class="strategy-option-badge cag">Zero Retrieval Errors</span>
+                        </div>
+                        <p class="strategy-option-desc">
+                          Bypasses vector search. Pre-loads the entire document into the LLM context with KV cache for 100% full-document visibility.
+                        </p>
+                      </div>
+                      <div class="strategy-option-check" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CAG popover trigger -->
+              <div class="cag-wrapper" id="cag-wrapper">
+                <button type="button" class="toolbar-pill-btn cag-btn" id="cag-trigger" aria-haspopup="dialog" aria-expanded="false" title="What is CAG?">
+                  <span class="cag-icon" aria-hidden="true">💡</span>
+                  <span class="cag-title">CAG</span>
                 </button>
-                <button type="button" class="welcome-chip" data-query="How does leave approval and remote work policy work?">
-                  <span class="chip-icon">🏖️</span>
-                  <span class="chip-text">Leave &amp; remote work rules</span>
+                <div class="cag-popover" id="cag-popover" role="dialog" aria-label="Cache-Augmented Generation Explainer">
+                  <div class="cag-popover-header">
+                    <div class="cag-popover-title-row">
+                      <span class="cag-badge-popover">Concept Explainer</span>
+                      <button type="button" class="cag-close-btn" id="cag-close-btn" aria-label="Close">✕</button>
+                    </div>
+                    <strong class="cag-main-heading">CAG (Cache-Augmented Generation)</strong>
+                  </div>
+                  <p class="cag-text">
+                    <strong>CAG</strong> avoids chunking and vector search entirely by loading full documents directly
+                    into a massive LLM context window (1M+ tokens), pre-computing the KV cache once.
+                  </p>
+                  <div class="cag-comparison-grid">
+                    <div class="cag-card-point">
+                      <span class="cag-point-pill cag-pill-cag">When to use CAG</span>
+                      <span class="cag-point-desc">Best for small, fixed doc sets (&lt;50 pages). Zero missed chunks, 100% full-document visibility.</span>
+                    </div>
+                    <div class="cag-card-point">
+                      <span class="cag-point-pill cag-pill-rag">When to use RAG</span>
+                      <span class="cag-point-desc">Best for scaling to thousands of pages. Efficient vector search, lower latency, and lower token cost.</span>
+                    </div>
+                  </div>
+                  <div class="cag-action-row">
+                    <button type="button" class="btn-activate-cag" id="btn-activate-cag">
+                      ⚡ Switch to CAG Full-Context Mode
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Uploaded Document Status & Files Manager Dropdown -->
+              <div class="doc-manager-wrapper" id="doc-manager-wrapper">
+                <button type="button" class="doc-manager-trigger" id="doc-files-trigger" aria-haspopup="true" aria-expanded="false" title="View & manage uploaded documents">
+                  <span class="doc-manager-dot" id="doc-manager-dot"></span>
+                  <span class="doc-manager-icon">📄</span>
+                  <span class="doc-manager-label" id="doc-manager-label">No files</span>
+                  <span class="doc-manager-chevron">▾</span>
                 </button>
-                <button type="button" class="welcome-chip" data-query="Summarize the uploaded knowledge base documents">
-                  <span class="chip-icon">📚</span>
-                  <span class="chip-text">Summarize knowledge base</span>
-                </button>
-                <button type="button" class="welcome-chip" data-query="What actions can the autonomous agent execute?">
-                  <span class="chip-icon">⚡</span>
-                  <span class="chip-text">Agent tools &amp; capabilities</span>
+
+                <!-- Dropdown Popover: '+ Upload More' at top, followed by document items with delete button -->
+                <div class="doc-manager-popover" id="doc-manager-popover" hidden>
+                  <div class="doc-manager-popover-header">
+                    <div class="doc-popover-title-row">
+                      <strong class="doc-popover-heading">Uploaded Documents</strong>
+                      <span class="doc-popover-badge" id="doc-popover-badge">0 files</span>
+                    </div>
+                    <!-- TOP OF THE LIST: Upload more option -->
+                    <button type="button" class="btn btn-primary btn-sm btn-popover-upload" id="btn-popover-upload-more">
+                      + Upload More Documents
+                    </button>
+                  </div>
+                  <div class="doc-popover-list" id="doc-popover-list">
+                    <!-- Populated dynamically with file items and delete button -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AGENT HEADER CONTROLS (Top right side, same line as inner navigation) -->
+            <div class="tab-nav-agent-controls" id="tab-nav-agent-controls" style="display: none;">
+              <div class="agent-mode-switcher-pill" role="group" aria-label="Agent execution mode">
+                <button type="button" class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick" title="Quick single-turn tool execution">⚡ Quick</button>
+                <button type="button" class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep" title="Multi-step reasoning and plan execution">🔄 Multi-Step</button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- ===== Scrollable main panels ===== -->
+        <main class="main-content">
+
+                    <!-- ===================================================
+           FEATURE 1 + 2: Chat panel
+           =================================================== -->
+          <section class="panel tab-panel modern-chat-panel" id="chat-panel" role="tabpanel" aria-labelledby="tab-chat">
+            <!-- Session header row removed from chat view; deletion is available in the left sidebar -->
+            <div class="panel-header-row chat-header-minimal" style="display: none !important;">
+              <div class="panel-title-group" style="display: none !important;">
+                <span class="session-label" id="session-label" hidden style="display: none !important;"></span>
+                <button type="button" class="btn-delete-active-chat" id="btn-delete-active-chat"
+                  title="Delete current conversation" aria-label="Delete current conversation" hidden style="display: none !important;">
+                  🗑️ Delete Chat
                 </button>
               </div>
             </div>
 
-            <div class="welcome-footer-actions">
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-new-chat">
-                <span class="btn-icon">💬</span>
-                <span>Start Fresh Session</span>
-              </button>
-            </div>
-          </div>
-        </div>
+            <!-- Message history -->
+            <div class="message-history" id="message-history" role="log" aria-live="polite" aria-label="Conversation">
+              <div class="empty-state welcome-clean" id="empty-state">
+                <div class="hero-logo-wrapper" aria-hidden="true">
+                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                </div>
+                
+                <h1 class="hero-heading">How can I assist you today?</h1>
+                <p class="hero-desc">
+                  Search verified enterprise records, check company policies, or coordinate HR operations for
+                  <span class="welcome-domain-text" id="welcome-domain-desc">NeoIntelli HR &amp; Enterprise Operations</span>.
+                </p>
 
-        <!-- Input row -->
-        <div class="chat-input-row">
-          <label for="chat-input" class="sr-only">Your message</label>
-          <input
-            type="text"
-            id="chat-input"
-            class="chat-input"
-            placeholder="Type your message and press Enter…"
-            autocomplete="off"
-            autofocus
-          />
-          <button id="send-btn" class="btn btn-primary" type="button">Send</button>
+                <!-- Transparent Modern "Try asking" Cards (directly on background) -->
+                <div class="clean-prompt-grid" role="region" aria-label="Suggested prompts">
+                  <button type="button" class="clean-prompt-card welcome-chip"
+                    data-query="Who are the staff members and reporting managers in Engineering?">
+                    <span class="clean-prompt-icon">👥</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Employee Directory</strong>
+                      <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card welcome-chip"
+                    data-query="How does leave approval work and what is our PTO policy?">
+                    <span class="clean-prompt-icon">🌴</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Leave &amp; PTO Approvals</strong>
+                      <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card welcome-chip"
+                    data-query="What is the policy for expense reimbursement claims under $100?">
+                    <span class="clean-prompt-icon">💳</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Expense Compliance</strong>
+                      <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modern Chat Box (Floating Container) -->
+            <div class="modern-chat-box">
+              <label for="chat-input" class="sr-only">Your message</label>
+              <input type="text" id="chat-input" class="modern-input-field" placeholder="Ask me anything…"
+                autocomplete="off" autofocus />
+              <div class="modern-chat-toolbar">
+                <div class="toolbar-left-group">
+                  <label class="toolbar-pill-toggle" for="smart-toggle" title="Smart routing classifies intent before retrieval">
+                    <input type="checkbox" id="smart-toggle" role="switch" aria-checked="true" checked />
+                    <span class="pill-dot-indicator"></span>
+                    <span>Smart Mode</span>
+                  </label>
+                  <label class="toolbar-pill-toggle" for="structured-toggle" title="Format output in structured JSON/schema">
+                    <input type="checkbox" id="structured-toggle" role="switch" aria-checked="true" checked />
+                    <span class="pill-dot-indicator"></span>
+                    <span>Structured</span>
+                  </label>
+                </div>
+                <div class="toolbar-right-group">
+                  <label for="image-input" class="toolbar-icon-btn btn-multimodal btn-camera-upload"
+                    title="Attach image (Camera)" aria-label="Attach image">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                  </label>
+                  <input type="file" id="image-input" accept="image/*" class="sr-only" />
+                  <button id="send-btn" class="btn-circle-send" type="button" aria-label="Send message" title="Send message">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <!-- ===================================================
-               FEATURE 10: Image input button (vision understanding)
-               =================================================== -->
-          <label for="image-input" class="btn btn-multimodal btn-image-label"
-                 title="Attach an image for vision analysis"
-                 aria-label="Attach image">
-            <svg class="btn-image-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-              <circle cx="9" cy="9" r="2"></circle>
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-            </svg>
-            <input type="file" id="image-input" accept="image/*" class="sr-only" />
-          </label>
-        </div>
-
-        
-      </section>
-
-      <!-- ===================================================
            FEATURE 4 & 5: Unified Document Intelligence & Q&A
            Upload documents, chat with document grounding, view files & citations
            =================================================== -->
-      <section class="panel tab-panel" id="documents-panel" role="tabpanel" aria-labelledby="tab-documents" hidden>
-        <div class="panel-header-row">
-          <div class="panel-title-group">
-            <h2 class="panel-title">Document Intelligence &amp; Q&amp;A</h2>
-            <span class="panel-subtitle">Chat with your uploaded documents grounded in verified source passages</span>
-          </div>
-          <button id="btn-toggle-upload" class="btn btn-secondary btn-sm" type="button" style="display: none;">
-            + Upload Another Document
-          </button>
-        </div>
+          <section class="panel tab-panel modern-chat-panel" id="documents-panel" role="tabpanel" aria-labelledby="tab-documents" hidden>
+            <!-- Native hidden file input for document uploads -->
+            <input type="file" id="file-input" accept=".txt,.pdf,.docx" multiple class="sr-only" aria-label="Upload document file" />
 
-        <!-- Dynamic Document Grounding Notice Banner -->
-        <div id="doc-grounding-banner" class="doc-grounding-banner" style="display: none;">
-          <div class="grounding-info-row">
-            <span class="grounding-dot" aria-hidden="true"></span>
-            <div class="grounding-text">
-              <strong id="grounding-title">Grounded in: Mohammed_Asif_Resume.pdf</strong>
-              <span id="grounding-subtitle">This chat answers strictly based on your uploaded document with verified citations.</span>
-            </div>
-          </div>
-          <span class="grounding-pill">100% Document Grounded</span>
-        </div>
-
-        <!-- Upload container: visible initially when 0 documents exist, or toggled via "+ Upload Another Document" -->
-        <div id="upload-container" class="upload-container">
-          <!-- Upload options row (strategy selector + bulletproof CAG info) -->
-          <div class="upload-options">
-            <div class="strategy-selector-group">
-              <label for="strategy-select" class="strategy-label">Chunking strategy:</label>
-              <select id="strategy-select" class="strategy-select">
-                <option value="sentence">Sentence-aware (recommended)</option>
-                <option value="paragraph">Paragraph-based</option>
-              </select>
-            </div>
-            <div class="cag-wrapper" id="cag-wrapper">
-              <button type="button" class="cag-btn" id="cag-trigger" aria-haspopup="dialog" aria-expanded="false">
-                <span class="cag-icon" aria-hidden="true">💡</span>
-                <span class="cag-title">What is CAG?</span>
-                <span class="cag-chevron" aria-hidden="true">▾</span>
-              </button>
-              <div class="cag-popover" id="cag-popover" role="dialog" aria-label="Cache-Augmented Generation Explainer">
-                <div class="cag-popover-header">
-                  <div class="cag-popover-title-row">
-                    <span class="cag-badge-popover">Concept Explainer</span>
-                    <button type="button" class="cag-close-btn" id="cag-close-btn" aria-label="Close">✕</button>
-                  </div>
-                  <strong class="cag-main-heading">CAG (Cache-Augmented Generation)</strong>
+            <!-- Dynamic Document Grounding Notice Banner -->
+            <div id="doc-grounding-banner" class="doc-grounding-banner" style="display: none;">
+              <div class="grounding-info-row">
+                <span class="grounding-dot" aria-hidden="true"></span>
+                <div class="grounding-text">
+                  <strong id="grounding-title">Grounded in: Document</strong>
+                  <span id="grounding-subtitle">This chat answers strictly based on your uploaded document with verified citations.</span>
                 </div>
-                <p class="cag-text">
-                  <strong>CAG</strong> avoids chunking and vector search entirely by loading full documents directly into a massive LLM context window (1M+ tokens), pre-computing the KV cache once.
+              </div>
+              <span class="grounding-pill">100% Document Grounded</span>
+            </div>
+
+            <!-- Message history -->
+            <div class="message-history doc-message-history" id="doc-message-history" role="log" aria-live="polite"
+              aria-label="Document Conversation">
+              <div class="empty-state welcome-clean" id="doc-empty-state">
+                <div class="hero-logo-wrapper" aria-hidden="true">
+                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                </div>
+
+                <h2 class="hero-heading">How can I assist you today?</h2>
+                <p class="hero-desc">
+                  Chat with your uploaded documents grounded in verified source passages and citations.
                 </p>
-                <div class="cag-comparison-grid">
-                  <div class="cag-card-point">
-                    <span class="cag-point-pill cag-pill-cag">When to use CAG</span>
-                    <span class="cag-point-desc">Best for small, fixed doc sets (&lt;50 pages). Zero missed chunks, 100% full-document visibility.</span>
-                  </div>
-                  <div class="cag-card-point">
-                    <span class="cag-point-pill cag-pill-rag">When to use RAG</span>
-                    <span class="cag-point-desc">Best for scaling to thousands of pages. Efficient vector search, lower latency, and lower token cost.</span>
+
+                <!-- Prompt Grid with 3 cards above and upload guidance note below taking the space of the 3 cards -->
+                <div class="clean-prompt-grid" id="doc-prompt-grid" role="region" aria-label="Document suggested prompts">
+                  <button type="button" class="clean-prompt-card doc-prompt-chip"
+                    data-query="Summarize the key points of this document">
+                    <span class="clean-prompt-icon">📄</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Summarize Document</strong>
+                      <span class="clean-prompt-desc">Extract core findings, key takeaways, and executive summary.</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card doc-prompt-chip"
+                    data-query="What are the key requirements, compliance rules, and policies?">
+                    <span class="clean-prompt-icon">🔍</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Key Policies &amp; Rules</strong>
+                      <span class="clean-prompt-desc">Inspect specific requirements, eligibility, and guidelines.</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card doc-prompt-chip"
+                    data-query="What important dates, deadlines, or metrics are mentioned?">
+                    <span class="clean-prompt-icon">📊</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Dates &amp; Metrics</strong>
+                      <span class="clean-prompt-desc">Extract deadlines, numerical metrics, and referenced entities.</span>
+                    </div>
+                  </button>
+
+                  <!-- Transparent Guidance Note below taking the space of the 3 cards above it -->
+                  <div class="doc-upload-hint-box" id="doc-upload-hint" role="note" aria-label="Document upload guidance">
+                    <span class="doc-hint-icon" aria-hidden="true">📄</span>
+                    <div class="doc-hint-text">
+                      <strong>No documents uploaded yet</strong>
+                      <span>Click <em>Attach file</em> or drag &amp; drop a PDF, DOCX, or TXT file into the chat bar below to start.</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Upload drop area -->
-          <div class="upload-area" id="upload-area">
-            <input
-              type="file"
-              id="file-input"
-              accept=".txt,.pdf,.docx"
-              class="sr-only"
-            />
-            <label for="file-input" class="upload-label" id="upload-label">
-              <div class="upload-icon-badge" aria-hidden="true">
-                <svg class="upload-svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="12" y1="18" x2="12" y2="12"></line>
-                  <polyline points="9 15 12 12 15 15"></polyline>
-                </svg>
-              </div>
-              <div class="upload-text-group">
-                <span class="upload-main-text">Drag &amp; drop your documents here, or <span class="upload-action-highlight">browse files</span></span>
-                <span class="upload-sub-text">Automated text extraction, sentence chunking, and ChromaDB vector indexing</span>
-                <div class="upload-formats-row">
-                  <span class="upload-format-tag">PDF</span>
-                  <span class="upload-format-tag">DOCX</span>
-                  <span class="upload-format-tag">TXT</span>
-                  <span class="upload-max-size">Up to 25 MB</span>
+            <!-- Modern Chat Box for Documents (Supports drag-and-drop & file attachment) -->
+            <div class="modern-chat-box" id="doc-modern-chat-box">
+              <label for="doc-chat-input" class="sr-only">Ask your document</label>
+              <input type="text" id="doc-chat-input" class="modern-input-field"
+                placeholder="Attach or drop a document (.pdf, .docx, .txt) to ask questions…" autocomplete="off" />
+              <select id="search-doc-filter" class="search-doc-filter" style="display: none;">
+                <option value="">All documents</option>
+              </select>
+
+              <div class="modern-chat-toolbar">
+                <div class="toolbar-left-group">
+                  <button type="button" class="toolbar-pill-btn btn-doc-attach" id="btn-doc-attach" title="Attach Document file">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                    <span>Attach file</span>
+                  </button>
+                </div>
+                <div class="toolbar-right-group">
+                  <button id="doc-send-btn" class="btn-circle-send" type="button" aria-label="Send query" title="Ask document">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
                 </div>
               </div>
-            </label>
-            <div class="upload-progress" id="upload-progress" hidden style="display: none;">
-              <span class="upload-spinner" aria-hidden="true"></span>
-              <span id="upload-progress-text" class="upload-progress-text">Uploading and indexing document…</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- ===================================================
-             DOCUMENT CHAT SECTION (Exact same design as Chat)
-             Appears when a document is uploaded!
-             =================================================== -->
-        <div id="document-chat-section" class="document-chat-section" style="display: none;">
-          <!-- Message history: uses .message-history so it gets identical warm dots, bubbles, & layout -->
-          <div class="message-history doc-message-history" id="doc-message-history" role="log" aria-live="polite" aria-label="Document Conversation">
-            <div class="empty-state" id="doc-empty-state">
-              <div class="empty-state-badge" aria-hidden="true">
-                <span class="empty-state-emoji">📄</span>
-              </div>
-              <h3 class="empty-state-heading" id="doc-empty-heading">Chat with your Document</h3>
-              <p class="empty-state-text" id="doc-empty-desc">
-                Your document is loaded and ready! Ask any question below to get a clear, human-readable answer grounded in verified citations.
-              </p>
-              <div class="doc-quick-prompts" id="doc-quick-prompts">
-                <button type="button" class="doc-prompt-chip" data-query="How much experience do I have in career?">
-                  💼 Career Experience
-                </button>
-                <button type="button" class="doc-prompt-chip" data-query="What are my top technical skills, frameworks, and tools?">
-                  ⚡ Technical Skills
-                </button>
-                <button type="button" class="doc-prompt-chip" data-query="What is my educational background and degrees?">
-                  🎓 Education
-                </button>
+              <!-- Uploading progress indicator inside modern chat box -->
+              <div class="upload-progress-inline" id="upload-progress" style="display: none;">
+                <span class="upload-spinner" aria-hidden="true"></span>
+                <span id="upload-progress-text">Uploading and indexing document chunks…</span>
               </div>
             </div>
-          </div>
 
-          <!-- Document Chat Input Row (Exact same design as Chat) -->
-          <div class="chat-input-row doc-chat-input-row">
-            <label for="doc-chat-input" class="sr-only">Ask your document</label>
-            <input
-              type="text"
-              id="doc-chat-input"
-              class="chat-input"
-              placeholder="Ask anything about your document (press Enter)…"
-              autocomplete="off"
-            />
-            <select id="search-doc-filter" class="search-doc-filter" style="display: none;">
-              <option value="">All documents</option>
-            </select>
-            <button id="doc-send-btn" class="btn btn-primary" type="button">Send</button>
-          </div>
-        </div>
-
-        <!-- ===================================================
-             UPLOADED DOCUMENT DETAILS (Shown Below the Chat)
-             =================================================== -->
-        <div class="document-details-section" id="document-details-section">
-          <div class="document-list-header">
-            <div class="document-header-left">
-              <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
-              <span class="doc-count-badge" id="doc-count-badge">0 files</span>
-            </div>
-            <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button">
-              + Upload File
-            </button>
-          </div>
-          <div id="document-list" class="document-list">
-            <div class="doc-empty-state-box">
-              <div class="doc-empty-icon-circle" aria-hidden="true">
-                <span class="doc-empty-symbol">📂</span>
+            <!-- Uploaded Document Details (Knowledge Base Files) -->
+            <div class="document-details-section" id="document-details-section" style="display: none;">
+              <div class="document-list-header">
+                <div class="document-header-left">
+                  <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
+                  <span class="doc-count-badge" id="doc-count-badge">0 files</span>
+                </div>
+                <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button">
+                  + Upload File
+                </button>
               </div>
-              <h4 class="doc-empty-state-title">No documents uploaded yet</h4>
-              <p class="doc-empty-state-desc">
-                Upload a PDF, DOCX, or TXT file to enable grounded document chat, semantic search, and verified citations.
-              </p>
-              <button type="button" class="btn btn-primary btn-empty-state-upload" id="btn-empty-state-upload">
-                <span class="btn-icon" aria-hidden="true">⬆️</span>
-                <span>Upload Document</span>
-              </button>
+              <div id="document-list" class="document-list"></div>
             </div>
-          </div>
-        </div>
 
-        <!-- Backward compatibility anchors (hidden) -->
-        <input type="text" id="search-input" style="display: none;" />
-        <button id="search-btn" style="display: none;"></button>
-        <div id="search-results" style="display: none;"></div>
-        <div id="search-panel" hidden style="display: none;"></div>
-      </section>
+            <!-- Fallback elements for JS compatibility -->
+            <div id="upload-container" style="display: none;">
+              <div id="upload-area" style="display: none;">
+                <label id="upload-label" style="display: none;"></label>
+              </div>
+            </div>
+            <input type="text" id="search-input" style="display: none;" />
+            <button id="search-btn" style="display: none;"></button>
+            <div id="search-results" style="display: none;"></div>
+            <div id="search-panel" hidden style="display: none;"></div>
+          </section>
 
-      <!-- ===================================================
-           FEATURE 6: Admin panel
-           Part B: tenant identity + switcher
-           Part C: retrieval memory + knowledge digest
-           =================================================== -->
-      <section class="panel tab-panel" id="admin-panel" role="tabpanel" aria-labelledby="tab-admin" hidden>
-        <div class="panel-header-row">
-          <h2 class="panel-title">Admin</h2>
-        </div>
-
-
-
-        <!-- ── Part B: Tenant identity ── -->
-        <div class="admin-section">
-          <h3 class="admin-section-title">Tenant Identity </h3>
-          <p class="admin-section-desc">
-            Set the <code>X-Tenant-ID</code> header to switch between tenants.
-            Only active when <code>ENABLE_MULTI_TENANT=true</code> in your <code>.env</code>.
-          </p>
-          <div class="admin-tenant-row">
-            <input type="text" id="tenant-id-input" class="admin-input" placeholder="tenant-a" value="" />
-            <button id="tenant-apply-btn" class="btn btn-primary">Apply</button>
-            <button id="tenant-clear-btn" class="btn btn-ghost">Reset to default</button>
-          </div>
-          <div id="tenant-info-card" class="admin-info-card">
-            <span style="color:var(--color-pistache);font-size:0.82rem">Click Apply to check tenant info.</span>
-          </div>
-        </div>
-
-        <!-- ── Part C: Retrieval memory / Knowledge Digest ── -->
-        <div class="admin-section">
-          <h3 class="admin-section-title">Knowledge Digest </h3>
-          <p class="admin-section-desc">
-            A 2-3 sentence LLM-generated summary of this tenant's retrieval history.
-            Once built, it's injected into the Smart Router's system prompt as persistent
-            cross-session context. Requires <code>ENABLE_LONG_TERM_CONTEXT=true</code>.
-          </p>
-          <div class="admin-digest-controls">
-            <button id="digest-rebuild-btn" class="btn btn-primary">Rebuild Digest</button>
-            <button id="digest-view-btn" class="btn btn-ghost">View Current</button>
-          </div>
-          <div id="digest-card" class="admin-info-card" hidden>
-            <!-- populated by JS -->
-          </div>
-        </div>
-
-        <!-- ── Retrieval log ── -->
-        <div class="admin-section">
-          <h3 class="admin-section-title">Recent Retrievals</h3>
-          <p class="admin-section-desc">
-            Queries that triggered document retrieval in this session.
-            This log is the raw material for the Knowledge Digest above.
-          </p>
-          <button id="retrievals-load-btn" class="btn btn-ghost">Load Recent Retrievals</button>
-          <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
-        </div>
-
-        <!-- ===================================================
-             FEATURE 11: Metrics Dashboard (Part A)
-             Auto-refreshes every 5 seconds when Admin tab is open.
-             Populated by app.js calling GET /api/metrics.
-             =================================================== -->
-        <div class="admin-section">
-          <h3 class="admin-section-title">
-            Live Metrics
-            
-            <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
-          </h3>
-          <p class="admin-section-desc">
-            Request counts, avg latency, and error rate since the server started.
-            Updated by <code>TimingMiddleware</code> on every <code>/api/*</code> call.
-            
-          </p>
-          <div class="metrics-grid" id="metrics-grid">
-            <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
-          </div>
-        </div>
-
-        <!-- ===================================================
-             FEATURE 11: Eval Harness (Part B)
-             Runs tests/eval_cases_example.json against the live server.
-             =================================================== -->
-        <div class="admin-section">
-          <h3 class="admin-section-title">
-            Eval Harness
-            
-          </h3>
-          <p class="admin-section-desc">
-            Runs 10 Alpine Trail Co. golden test cases through the Smart Router pipeline
-            and scores each one. Uses <code>POST /api/eval/run</code>.
-            Upload documents first for accurate domain-question scoring.
-          </p>
-          <div class="eval-controls">
-            <button id="eval-run-btn" class="btn btn-primary" type="button">Run Eval</button>
-            <button id="eval-last-btn" class="btn btn-ghost" type="button">Load Last Report</button>
-          </div>
-          <div id="eval-results" class="eval-results"></div>
-        </div>
-      </section>
-
-      <!-- ===================================================
+          <!-- ===================================================
            FEATURE 7: Agent panel
            Uses the two-call tool-calling loop in shared/agent.py.
            Shows a "🔧 Steps" audit trail for each tool invoked.
            =================================================== -->
-      <section class="panel tab-panel" id="agent-panel" role="tabpanel" aria-labelledby="tab-agent" hidden>
-        <div class="panel-header-row">
-          <h2 class="panel-title">
-            Agent
-            <span class="panel-subtitle">uses tools to take actions, not just answer</span>
-          </h2>
+          <section class="panel tab-panel modern-chat-panel" id="agent-panel" role="tabpanel" aria-labelledby="tab-agent" hidden>
+            <!-- Conversation history -->
+            <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
+              <div class="empty-state welcome-clean" id="agent-empty-state">
+                <div class="hero-logo-wrapper" aria-hidden="true">
+                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                </div>
+
+                <h2 class="hero-heading">How can I assist you today?</h2>
+                <p class="hero-desc">
+                  Execute enterprise workflows, inspect leave records, or approve transactions across connected systems.
+                </p>
+
+                <!-- Transparent Modern Agent Cards -->
+                <div class="clean-prompt-grid" role="region" aria-label="Available Specialized Agents">
+                  <button type="button" class="clean-prompt-card agent-prompt-chip"
+                    data-prompt="List all staff members and roles in the Engineering department">
+                    <span class="clean-prompt-icon">👥</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Engineering Staff Directory</strong>
+                      <span class="clean-prompt-desc">All department staff members, roles &amp; managers</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card agent-prompt-chip"
+                    data-prompt="Show all pending leave requests for HR review">
+                    <span class="clean-prompt-icon">🌴</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Leave &amp; PTO Agent</strong>
+                      <span class="clean-prompt-desc">Pending requests &amp; balance approvals</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card agent-prompt-chip"
+                    data-prompt="Submit an expense claim of $85 for team client lunch at Starbucks">
+                    <span class="clean-prompt-icon">💳</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Expense Compliance Agent</strong>
+                      <span class="clean-prompt-desc">Reimbursements &amp; $100 policy checks</span>
+                    </div>
+                  </button>
+                  <button type="button" class="clean-prompt-card agent-prompt-chip"
+                    data-prompt="Check pending leave requests, verify employee PTO balance, and approve LV-2026-001">
+                    <span class="clean-prompt-icon">🔄</span>
+                    <div class="clean-prompt-content">
+                      <strong class="clean-prompt-title">Multi-Step Workflow Agent</strong>
+                      <span class="clean-prompt-desc">Multi-tool plan-and-execute automation</span>
+                    </div>
+                  </button>
+                  <!-- Transparent Guidance Note taking space of the two cards above it -->
+                  <div class="agent-multistep-note-card" role="note" aria-label="Multi-Step Workflow Guidance">
+                    <div class="agent-multistep-note-content">
+                      <span class="agent-multistep-note-icon">💡</span>
+                      <div class="agent-multistep-note-body">
+                        <strong class="agent-multistep-note-title">Multi-Step Workflow Mode:</strong>
+                        <span class="agent-multistep-note-desc">
+                          For compound or multiple sequential actions (e.g., verifying balances, checking requests, and approving in one turn), switch to <strong>🔄 Multi-Step</strong> at the top right to plan and execute safely.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modern Chat Box for Agent -->
+            <div class="modern-chat-box">
+              <label for="agent-input" class="sr-only">Agent message</label>
+              <input type="text" id="agent-input" class="modern-input-field"
+                placeholder="Ask anything (e.g. Look up an employee, check department staff, approve leave, submit expense)…"
+                autocomplete="off" />
+              <div class="modern-chat-toolbar">
+                <div class="toolbar-left-group">
+                  <div class="mcp-services-wrapper" id="mcp-services-wrapper">
+                    <button class="toolbar-pill-btn mcp-services-toggle" id="mcp-services-toggle" type="button" aria-expanded="false"
+                      aria-controls="mcp-services-body" title="View connected MCP servers &amp; tools">
+                      <span class="mcp-services-icon" aria-hidden="true">🔌</span>
+                      <span class="mcp-services-label">Connected Services</span>
+                      <span class="mcp-services-count" id="mcp-services-count"></span>
+                      <span class="mcp-toggle-chevron" aria-hidden="true">▼</span>
+                    </button>
+
+                    <!-- Connected Services Popover Body (floats upward above input) -->
+                    <div class="mcp-services-popover" id="mcp-services-body" hidden>
+                      <div class="mcp-services-popover-header">
+                        <div class="mcp-popover-title-row">
+                          <strong class="mcp-popover-title">Connected Tool Servers</strong>
+                          <span class="mcp-popover-badge">Live MCP</span>
+                        </div>
+                        <span class="mcp-popover-desc">Autonomous tools available for agent execution</span>
+                      </div>
+                      <div id="mcp-servers-list" class="mcp-servers-list">
+                        <span class="mcp-loading">Click to load connected MCP servers…</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="toolbar-right-group">
+                  <button id="agent-send-btn" class="btn-circle-send" type="button" aria-label="Run agent" title="Run agent">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- ===================================================
-               FEATURE 8: Quick / Multi-Step mode switcher
-               Quick = Feature 7 single-turn tool-call loop.
-               Multi-Step = Feature 8 plan-and-execute loop with polling.
-               =================================================== -->
-          <div class="agent-mode-switcher" role="group" aria-label="Agent mode">
-            <button class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick">Quick</button>
-            <button class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep">Multi-Step</button>
-          </div>
-        </div>
-
-        <!-- Agent requires a session — prompt if none active -->
-        <div id="agent-no-session" class="agent-no-session-notice" hidden>
-          <p>The agent needs a session to track conversation history.</p>
-          <button id="agent-create-session-btn" class="btn btn-primary" type="button">Start New Session</button>
-        </div>
-
-        <!-- ===================================================
-             FEATURE 9: Connected Services panel (MCP)
-             Collapsible — click to expand and see which MCP servers
-             are connected and what tools they expose.
-             =================================================== -->
-        <div class="mcp-services-section" id="mcp-services-section">
-          <button class="mcp-services-toggle" id="mcp-services-toggle" type="button"
-                  aria-expanded="false" aria-controls="mcp-services-body">
-            <span class="mcp-services-icon" aria-hidden="true">🔌</span>
-            <span class="mcp-services-label">Connected Services</span>
-            <span class="mcp-services-count" id="mcp-services-count"></span>
-            <span class="mcp-toggle-chevron" aria-hidden="true">▶</span>
-          </button>
-          <div class="mcp-services-body" id="mcp-services-body" hidden>
-            <div id="mcp-servers-list" class="mcp-servers-list">
-              <span class="mcp-loading">Click to load connected MCP servers…</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Conversation history -->
-        <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
-          <div class="empty-state agent-empty-state-card" id="agent-empty-state">
-            <div class="empty-state-badge" aria-hidden="true">
-              <span class="empty-state-emoji">🤖</span>
-            </div>
-            <h3 class="empty-state-heading">Autonomous Action Agent</h3>
-            <p class="empty-state-text">
-              The agent can execute workflows, query connected tools, and take autonomous actions:
-            </p>
-
-            <!-- Agent Capabilities Pills -->
-            <div class="agent-capabilities-row" aria-label="Agent Capabilities">
-              <span class="agent-capability-tag">
-                <span class="cap-icon" aria-hidden="true">📅</span> Check Availability
-              </span>
-              <span class="agent-capability-tag">
-                <span class="cap-icon" aria-hidden="true">🎫</span> Create Tickets
-              </span>
-              <span class="agent-capability-tag">
-                <span class="cap-icon" aria-hidden="true">🔍</span> Look Up Information
-              </span>
-            </div>
-
-            <!-- Example Prompt Suggestions Header -->
-            <div class="agent-prompt-suggestions-header">
-              <span class="suggestions-label">Try asking the agent to do one of these:</span>
-            </div>
-
-            <!-- Example Prompt Cards / Buttons -->
-            <div class="agent-example-prompts">
-              <button class="agent-example-btn" type="button" data-prompt="Is there an opening this Friday at 3 PM?">
-                <span class="agent-example-icon" aria-hidden="true">🗓️</span>
-                <span class="agent-example-text">Is there an opening this Friday at 3 PM?</span>
-                <span class="agent-example-arrow" aria-hidden="true">→</span>
-              </button>
-              <button class="agent-example-btn" type="button" data-prompt="I can't log in to my account">
-                <span class="agent-example-icon" aria-hidden="true">🔑</span>
-                <span class="agent-example-text">I can't log in to my account</span>
-                <span class="agent-example-arrow" aria-hidden="true">→</span>
-              </button>
-              <button class="agent-example-btn" type="button" data-prompt="What are your business hours?">
-                <span class="agent-example-icon" aria-hidden="true">⏰</span>
-                <span class="agent-example-text">What are your business hours?</span>
-                <span class="agent-example-arrow" aria-hidden="true">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Input row -->
-        <div class="chat-input-row">
-          <label for="agent-input" class="sr-only">Agent message</label>
-          <input
-            type="text"
-            id="agent-input"
-            class="chat-input"
-            placeholder="Ask the agent to do something…"
-            autocomplete="off"
-          />
-          <button id="agent-send-btn" class="btn btn-primary" type="button">Run</button>
-        </div>
-
-
-      </section>
-
-      <!-- ===================================================
-           PROVIDER INFO — shows which LLM + Voice provider is active.
+           FEATURE 6: Admin & System Settings Console
+           Part A: Active Configuration (Moved from main screen)
+           Part B: tenant identity, switcher, and dynamic toggle
+           Part C: retrieval memory + knowledge digest
            =================================================== -->
-      <section class="panel" id="provider-panel" aria-labelledby="provider-panel-title">
-        <h2 class="panel-title" id="provider-panel-title">Active Configuration</h2>
-        <div class="provider-info-card" id="provider-info-card">
-          <span>Loading provider info…</span>
+          <section class="panel tab-panel admin-modern-panel" id="admin-panel" role="tabpanel" aria-labelledby="sidebar-admin-btn" hidden>
+            <div class="admin-panel-container">
+              <!-- Enterprise Settings Header Row -->
+              <div class="panel-header-row admin-header-row">
+                <div class="admin-header-title-group">
+                  <span class="admin-eyebrow">Enterprise Console</span>
+                  <h2 class="admin-main-title">
+                    <span class="admin-title-icon" aria-hidden="true">⚙️</span> Settings &amp; Configuration
+                  </h2>
+                  <p class="admin-header-desc">
+                    Manage active AI models, tenant isolation, long-term memory digests, and live service metrics.
+                  </p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm btn-admin-back" id="btn-admin-back-chat" title="Back to Chat">
+                  ← Back to Chat
+                </button>
+              </div>
+
+              <!-- CARDS CONTAINER -->
+              <div class="admin-cards-grid">
+                <!-- ── Card 1: Active AI & Voice Provider Configuration ── -->
+                <div class="admin-card admin-section" id="provider-panel-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🤖</span>
+                      <h3 class="admin-section-title">Active AI &amp; Voice Engine</h3>
+                      <span class="admin-card-badge">Live Provider</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      Currently running LLM provider, domain persona, and real-time audio pipeline.
+                    </p>
+                  </div>
+                  <div class="provider-info-card" id="provider-info-card">
+                    <span>Loading provider info…</span>
+                  </div>
+                </div>
+
+                <!-- ── Card 2: Tenant identity & dynamic multi-tenant toggle ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-section-header-flex">
+                      <div class="admin-card-title-row">
+                        <span class="admin-card-icon" aria-hidden="true">🏢</span>
+                        <h3 class="admin-section-title">Multi-Tenant Isolation &amp; Identity</h3>
+                      </div>
+                      <div class="admin-toggle-group">
+                        <label class="toggle-label" for="toggle-multi-tenant-switch" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                          <span class="toggle-text" id="tenant-toggle-label-text">Multi-Tenant: <strong>Disabled</strong></span>
+                          <span class="toggle-wrap">
+                            <input type="checkbox" id="toggle-multi-tenant-switch" role="switch" aria-checked="false" />
+                            <span class="toggle-track" aria-hidden="true"></span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <p class="admin-section-desc">
+                      Isolate conversations, documents, and vector storage per organization.
+                    </p>
+                  </div>
+
+                  <div class="admin-tenant-row">
+                    <input type="text" id="tenant-id-input" class="admin-input" placeholder="e.g. tenant-a, hr-corp, alpine"
+                      value="" />
+                    <button id="tenant-apply-btn" class="btn btn-primary btn-sm">Apply Tenant</button>
+                    <button id="tenant-clear-btn" class="btn btn-ghost btn-sm">Reset</button>
+                  </div>
+
+                  <div class="tenant-quick-pills" id="tenant-quick-pills">
+                    <span class="quick-pill-label">Quick switch:</span>
+                    <button type="button" class="quick-tenant-pill" data-tenant="default">default</button>
+                    <button type="button" class="quick-tenant-pill" data-tenant="tenant-a">tenant-a</button>
+                    <button type="button" class="quick-tenant-pill" data-tenant="tenant-b">tenant-b</button>
+                    <button type="button" class="quick-tenant-pill" data-tenant="hr-corp">hr-corp</button>
+                  </div>
+
+                  <div id="tenant-info-card" class="admin-info-card">
+                    <span style="color:var(--color-pistache);font-size:0.82rem">Loading tenant configuration…</span>
+                  </div>
+                </div>
+
+                <!-- ── Card 3: Retrieval memory / Knowledge Digest ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🧠</span>
+                      <h3 class="admin-section-title">Knowledge Digest &amp; Memory</h3>
+                      <span class="admin-card-badge">Long-Term Context</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      A 2-3 sentence LLM-generated summary of this tenant's retrieval history, injected into the Smart Router prompt as persistent cross-session context.
+                    </p>
+                  </div>
+                  <div class="admin-digest-controls">
+                    <button id="digest-rebuild-btn" class="btn btn-primary btn-sm">Rebuild Digest</button>
+                    <button id="digest-view-btn" class="btn btn-ghost btn-sm">View Current</button>
+                  </div>
+                  <div id="digest-card" class="admin-info-card" hidden>
+                    <!-- populated by JS -->
+                  </div>
+                </div>
+
+                <!-- ── Card 4: Live Metrics Dashboard (Feature 11 Part A) ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">📊</span>
+                      <h3 class="admin-section-title">
+                        Live Telemetry &amp; System Metrics
+                        <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
+                      </h3>
+                      <span class="admin-card-badge live-telemetry-badge">Every 5s</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      Request counts, average response latency, and system error rates updated on every <code>/api/*</code> call.
+                    </p>
+                  </div>
+                  <div class="metrics-grid" id="metrics-grid">
+                    <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
+                  </div>
+                </div>
+
+                <!-- ── Card 5: Eval Harness (Feature 11 Part B) ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🎯</span>
+                      <h3 class="admin-section-title">Evaluation &amp; Quality Benchmark</h3>
+                      <span class="admin-card-badge">Golden Eval</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      Runs 10 golden test cases through the Smart Router pipeline and scores each one on accuracy and tool execution.
+                    </p>
+                  </div>
+                  <div class="eval-controls">
+                    <button id="eval-run-btn" class="btn btn-primary btn-sm" type="button">Run Eval</button>
+                    <button id="eval-last-btn" class="btn btn-ghost btn-sm" type="button">Load Last Report</button>
+                  </div>
+                  <div id="eval-results" class="eval-results"></div>
+                </div>
+
+                <!-- ── Card 6: Retrieval log ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🔍</span>
+                      <h3 class="admin-section-title">Recent Retrieval History</h3>
+                    </div>
+                    <p class="admin-section-desc">
+                      Inspection log of queries that triggered document chunk retrieval in this session.
+                    </p>
+                  </div>
+                  <div style="margin-bottom: 0.65rem;">
+                    <button id="retrievals-load-btn" class="btn btn-ghost btn-sm">Load Recent Retrievals</button>
+                  </div>
+                  <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+
+        </main><!-- /.main-content -->
+      </div><!-- /.main-wrapper -->
+
+    </div><!-- /.app-body -->
+
+  </div><!-- /#app -->
+
+  <!-- ===================================================
+       CONFIRMATION MODAL (Replaces browser alert/confirm)
+       =================================================== -->
+  <div id="confirm-modal-backdrop" class="modal-backdrop" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+      <div class="modal-header">
+        <div class="modal-icon-badge" id="confirm-modal-icon-badge">
+          <span id="confirm-modal-icon" aria-hidden="true">🗑️</span>
         </div>
-      </section>
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="confirm-modal-title">Delete Document?</h3>
+          <p class="modal-subtitle" id="confirm-modal-subtitle">This action cannot be undone.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="confirm-modal-close" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body" id="confirm-modal-body">
+        Are you sure you want to delete <strong id="confirm-modal-item-name">this item</strong>? All indexed chunks,
+        embeddings, and context will be permanently removed.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="confirm-modal-cancel">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirm-modal-confirm">
+          <span class="btn-spinner" id="confirm-modal-spinner" hidden></span>
+          <span id="confirm-modal-btn-text">Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-      <!-- ===================================================
-           FUTURE FEATURES — new panels will be added here each week.
-           =================================================== -->
+    <!-- ===================================================
+       MULTI-STEP WORKFLOW SUGGESTION MODAL
+       Prompts the user when a complex multi-action goal is submitted in Quick mode
+       =================================================== -->
+  <div id="multistep-modal-backdrop" class="modal-backdrop" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="multistep-modal-title">
+      <div class="modal-header">
+        <div class="modal-icon-badge" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
+          <span aria-hidden="true">⚡</span>
+        </div>
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="multistep-modal-title">Multi-Step Workflow Detected</h3>
+          <p class="modal-subtitle">Composite task recommendation</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="multistep-modal-close" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body" id="multistep-modal-body">
+        <p style="margin-bottom: 0.5rem;">Your request looks like a composite multi-step workflow:</p>
+        <div id="multistep-modal-prompt-preview" style="font-style: italic; background: var(--surface-muted, #f8fafc); padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color, #e2e8f0); margin-bottom: 0.75rem; font-size: 0.88rem; color: var(--text, #1e293b);"></div>
+        <p style="font-size: 0.84rem; color: var(--text-muted, #64748b); line-height: 1.5;">
+          <strong>Quick Mode</strong> is designed for single-action lookups. <strong>Multi-Step Mode</strong> autonomously plans out the sequence of steps, tracks live execution progress, and synthesizes a full resolution report.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="multistep-modal-quick-btn">Continue in Quick Mode</button>
+        <button type="button" class="btn btn-primary" id="multistep-modal-switch-btn">
+          <span>🔄 Switch to Multi-Step &amp; Run</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-    </main><!-- /.main-content -->
-    </div><!-- /.main-wrapper -->
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  </div><!-- /.app-body -->
-
-</div><!-- /#app -->
-
-<script src="app.js?v=3.7.0"></script>
+  <script src="app.js?v=6.3.0"></script>
 </body>
+
 </html>

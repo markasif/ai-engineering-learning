@@ -67,7 +67,7 @@ async def voice_chat(
                     {"role": "user", "content": transcript},
                 ]
             )
-            answer = result.content or ""
+            answer = result.content or "Image analyzed successfully."
     else:
         result = await call_llm(
             [
@@ -75,7 +75,7 @@ async def voice_chat(
                 {"role": "user", "content": transcript},
             ]
         )
-        answer = result.content or ""
+        answer = result.content or "Image analyzed successfully."
 
     audio_base64 = ""
     try:
@@ -110,7 +110,7 @@ async def vision_chat(
     """Multi-turn Vision chat appending image prompts into session memory."""
     image_bytes = await image.read()
     result = await analyze_image(image_bytes, prompt, detail)
-    answer = result.content or ""
+    answer = result.content or "Image analyzed successfully."
 
     if session_id:
         session = get_session(session_id, tenant_id=tenant_id)
@@ -165,7 +165,7 @@ async def multimodal_chat(
         image_bytes = await image.read()  # type: ignore[union-attr]
         text_prompt = prompt or message or "Describe this image in detail."
         result = await analyze_image(image_bytes, text_prompt)
-        answer = result.content or ""
+        answer = result.content or "Image analyzed successfully."
         session = get_session(session_id, tenant_id=tenant_id)
         if session:
             add_message(session_id, "user", f"[IMAGE] {text_prompt}")

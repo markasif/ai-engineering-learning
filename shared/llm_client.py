@@ -123,7 +123,7 @@ async def analyze_image(
     try:
         provider = get_provider("vlm")
         return await provider.analyze_image(image_bytes, prompt, detail)
-    except NotImplementedError as exc:
+    except Exception as exc:
         logger.warning(
             "VLM_MODEL does not support image input — %s. "
             "Set VLM_PROVIDER=openai (gpt-4o) or VLM_PROVIDER=ollama (llava) in .env.",

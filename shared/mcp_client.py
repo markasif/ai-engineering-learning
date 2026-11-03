@@ -43,6 +43,7 @@ PUBLIC API:
 import json
 import os
 import sys
+from shared.config import settings
 
 # ---------------------------------------------------------------------------
 # MCP SDK import — graceful fallback if not installed
@@ -74,25 +75,29 @@ except ImportError:
 
 
 def _build_server_registry() -> list[dict]:
-    demo_server_cmd = [sys.executable, "-m", "shared.mcp_demo_server"]
-    registry = [
-        {
-            "name": "demo",
-            "command": demo_server_cmd,
-            "enabled": True,
-            "transport": "stdio",
-            "description": "Course demo server — weather, news, exchange rate (all mock data)",
-        }
-    ]
-    # Domain server is opt-in via ENABLE_DOMAIN_MCP_SERVER=true in .env
-    if os.getenv("ENABLE_DOMAIN_MCP_SERVER", "false").lower() == "true":
+    registry = []
+    # Domain server (Enterprise HR & Operations)
+    if settings.enable_domain_mcp_server or os.getenv("ENABLE_DOMAIN_MCP_SERVER", "false").lower() == "true":
         registry.append(
             {
                 "name": "domain",
                 "command": [sys.executable, "-m", "shared.domain_mcp_server"],
                 "enabled": True,
                 "transport": "stdio",
-                "description": "Your domain MCP server — replace placeholder tools with real ones",
+                "description": "Enterprise HR & Operations MCP Server (Employees, Leaves, Expenses)",
+            }
+        )
+    # Demo server only enabled if explicitly requested or if domain server is not active
+    enable_demo = os.getenv("ENABLE_DEMO_MCP_SERVER", "false" if registry else "true").lower() == "true"
+    if enable_demo:
+        demo_server_cmd = [sys.executable, "-m", "shared.mcp_demo_server"]
+        registry.append(
+            {
+                "name": "demo",
+                "command": demo_server_cmd,
+                "enabled": True,
+                "transport": "stdio",
+                "description": "Course demo server — weather, news, exchange rate (all mock data)",
             }
         )
     return registry
@@ -130,7 +135,7 @@ async def _list_tools_from_server(server_entry: dict) -> list[dict]:
                 {
                     "name": tool.name,
                     "description": tool.description or "",
-                    "inputSchema": tool.inputSchema or {},
+                    "inputSchema": getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None) or {},
                     "server": server_entry["name"],
                 }
             )

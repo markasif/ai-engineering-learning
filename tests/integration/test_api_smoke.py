@@ -61,6 +61,15 @@ def test_sessions_lifecycle(client: TestClient):
     sessions = list_resp.json()
     assert any(s["id"] == session_id for s in sessions)
 
+    # Delete session
+    del_resp = client.delete(f"/api/sessions/{session_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json().get("deleted") == session_id
+
+    # Verify session is deleted
+    list_after = client.get("/api/sessions").json()
+    assert not any(s["id"] == session_id for s in list_after)
+
 
 def test_document_upload_lifecycle(client: TestClient):
     file_content = (
@@ -99,3 +108,20 @@ def test_v1_models_endpoint(client: TestClient):
     assert "data" in body
     assert len(body["data"]) >= 1
     assert any(m["id"] == "cortex-ai" for m in body["data"])
+
+
+def test_tenant_mode_toggle_endpoint(client: TestClient):
+    resp = client.post("/api/tenant/mode", json={"enabled": True})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body.get("multi_tenant_enabled") is True
+
+    info = client.get("/api/tenant/info", headers={"X-Tenant-ID": "acme"})
+    assert info.status_code == 200
+    assert info.json().get("tenant_id") == "acme"
+    assert info.json().get("multi_tenant_enabled") is True
+
+    # Disable back to clean state
+    resp2 = client.post("/api/tenant/mode", json={"enabled": False})
+    assert resp2.status_code == 200
+    assert resp2.json().get("multi_tenant_enabled") is False

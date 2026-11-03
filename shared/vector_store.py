@@ -163,7 +163,10 @@ def search(
 
     kwargs: dict = {"query_texts": [query], "n_results": n_results}
     if effective_filters:
-        kwargs["where"] = effective_filters
+        if len(effective_filters) > 1:
+            kwargs["where"] = {"$and": [{k: v} for k, v in effective_filters.items()]}
+        else:
+            kwargs["where"] = effective_filters
 
     results = collection.query(**kwargs)
 

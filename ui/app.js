@@ -263,6 +263,18 @@ async function loadProviderInfo() {
       if (domainDisplay) {
         domainDisplay.textContent = currentDomainName;
       }
+      const domainDesc = document.getElementById("welcome-domain-desc");
+      if (domainDesc) {
+        domainDesc.textContent = currentDomainName;
+      }
+      const agentDomainDisplay = document.getElementById("agent-domain-display");
+      if (agentDomainDisplay) {
+        agentDomainDisplay.textContent = currentDomainName;
+      }
+      const headerDomainDisplay = document.getElementById("header-domain-display");
+      if (headerDomainDisplay) {
+        headerDomainDisplay.textContent = currentDomainName;
+      }
     }
 
     card.innerHTML = `
@@ -277,6 +289,145 @@ async function loadProviderInfo() {
 }
 
 loadProviderInfo();
+
+// =============================================================================
+// Toast Notifications & Custom Confirmation Modal
+// =============================================================================
+
+/** Show an accessible toast notification banner. */
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast-pill toast-${type}`;
+
+  const iconMap = {
+    success: "✅",
+    error: "❌",
+    info: "ℹ️",
+    warning: "⚠️",
+  };
+  const icon = iconMap[type] || "ℹ️";
+
+  toast.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${icon}</span>
+    <span class="toast-msg">${escapeHtml(message)}</span>
+    <button type="button" class="toast-close" aria-label="Close notification">✕</button>
+  `;
+
+  const removeToast = () => {
+    toast.classList.add("toast-fade-out");
+    setTimeout(() => {
+      toast.remove();
+    }, 200);
+  };
+
+  toast.querySelector(".toast-close")?.addEventListener("click", removeToast);
+  toast.addEventListener("click", removeToast);
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+
+  setTimeout(removeToast, 4200);
+}
+
+/**
+ * Show a sleek modal dialog to confirm an action. Returns a Promise resolving to boolean.
+ */
+function showConfirmDialog({
+  title = "Confirm Action",
+  subtitle = "This action cannot be undone.",
+  itemName = "",
+  bodyHtml = null,
+  icon = "🗑️",
+  confirmText = "Delete",
+  confirmDanger = true,
+}) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById("confirm-modal-backdrop");
+    const titleEl = document.getElementById("confirm-modal-title");
+    const subtitleEl = document.getElementById("confirm-modal-subtitle");
+    const bodyEl = document.getElementById("confirm-modal-body");
+    const iconEl = document.getElementById("confirm-modal-icon");
+    const cancelBtn = document.getElementById("confirm-modal-cancel");
+    const confirmBtn = document.getElementById("confirm-modal-confirm");
+    const closeBtn = document.getElementById("confirm-modal-close");
+    const btnText = document.getElementById("confirm-modal-btn-text");
+    const spinner = document.getElementById("confirm-modal-spinner");
+
+    if (!backdrop) {
+      resolve(window.confirm(`${title}\n${itemName}`));
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+    if (iconEl) iconEl.textContent = icon;
+    if (btnText) btnText.textContent = confirmText;
+    if (spinner) spinner.hidden = true;
+
+    if (bodyHtml) {
+      if (bodyEl) bodyEl.innerHTML = bodyHtml;
+    } else if (bodyEl) {
+      bodyEl.innerHTML = `Are you sure you want to delete <strong class="modal-highlight">${escapeHtml(itemName || "this item")}</strong>?<br><span class="modal-hint">All associated chunks, embeddings, and context will be permanently removed.</span>`;
+    }
+
+    if (confirmBtn) {
+      confirmBtn.className = confirmDanger ? "btn btn-danger" : "btn btn-primary";
+      confirmBtn.disabled = false;
+    }
+
+    const cleanup = () => {
+      backdrop.classList.remove("open");
+      setTimeout(() => {
+        backdrop.setAttribute("hidden", "");
+      }, 160);
+      document.removeEventListener("keydown", onKeyDown);
+      cancelBtn?.removeEventListener("click", onCancel);
+      closeBtn?.removeEventListener("click", onCancel);
+      confirmBtn?.removeEventListener("click", onConfirm);
+      backdrop.removeEventListener("click", onBackdropClick);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const onConfirm = () => {
+      if (spinner) spinner.hidden = false;
+      if (confirmBtn) confirmBtn.disabled = true;
+      cleanup();
+      resolve(true);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    const onBackdropClick = (e) => {
+      if (e.target === backdrop) {
+        onCancel();
+      }
+    };
+
+    backdrop.removeAttribute("hidden");
+    requestAnimationFrame(() => {
+      backdrop.classList.add("open");
+      confirmBtn?.focus();
+    });
+
+    cancelBtn?.addEventListener("click", onCancel);
+    closeBtn?.addEventListener("click", onCancel);
+    confirmBtn?.addEventListener("click", onConfirm);
+    backdrop.addEventListener("click", onBackdropClick);
+    document.addEventListener("keydown", onKeyDown);
+  });
+}
 
 // =============================================================================
 // Feature 2: Structured Mode
@@ -417,8 +568,6 @@ function appendSmartResponse(data) {
   messageHistory.appendChild(wrapper);
   messageHistory.scrollTop = messageHistory.scrollHeight;
 }
-  messageHistory.scrollTop = messageHistory.scrollHeight;
-}
 
 // =============================================================================
 // Feature 3: Session management
@@ -431,50 +580,45 @@ const newChatBtn    = document.getElementById("new-chat-btn");
 const sessionList   = document.getElementById("session-list");
 const sessionLabel  = document.getElementById("session-label");
 
-/** Render a modern, rich, executive-grade empty state card for the main chat interface */
+/** Render a clean, transparent, minimalist welcome state for the main chat interface */
 function renderEmptyChatState() {
   const domain = currentDomainName || "NeoIntelli HR & Enterprise Operations";
   return `
-    <div class="empty-state welcome-card" id="empty-state">
-      <div class="welcome-badge-header">
-        <span class="welcome-badge-pulse" aria-hidden="true">
-          <span class="welcome-badge-icon">✨</span>
-        </span>
-        <span class="welcome-domain-pill">Domain: <strong id="welcome-domain-display">${escapeHtml(domain)}</strong></span>
-      </div>
-
-      <h3 class="welcome-title">AskRaggy Enterprise Assistant</h3>
-      <p class="welcome-subtitle">
-        Start a fresh conversation or query verified company documents, policies, and workflows for 
-        <span class="welcome-domain-highlight">${escapeHtml(domain)}</span>.
+    <div class="empty-state welcome-clean" id="empty-state">
+      <div class="hero-logo-wrapper" aria-hidden="true">
+          <img src="askraggy-logo-mark.png?v=5.9.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+        </div>
+      <h1 class="hero-heading">How can I assist you today?</h1>
+      <p class="hero-desc">
+        Search verified enterprise records, check company policies, or coordinate HR operations for
+        <span class="welcome-domain-text" id="welcome-domain-desc">${escapeHtml(domain)}</span>.
       </p>
 
-      <div class="welcome-chips-container">
-        <div class="welcome-chips-label">Try asking or click a starter prompt:</div>
-        <div class="welcome-chips-grid">
-          <button type="button" class="welcome-chip" data-query="What are our core company policies and employee benefits?">
-            <span class="chip-icon">📋</span>
-            <span class="chip-text">Company policies &amp; benefits</span>
-          </button>
-          <button type="button" class="welcome-chip" data-query="How does leave approval and remote work policy work?">
-            <span class="chip-icon">🏖️</span>
-            <span class="chip-text">Leave &amp; remote work rules</span>
-          </button>
-          <button type="button" class="welcome-chip" data-query="Summarize the uploaded knowledge base documents">
-            <span class="chip-icon">📚</span>
-            <span class="chip-text">Summarize knowledge base</span>
-          </button>
-          <button type="button" class="welcome-chip" data-query="What actions can the autonomous agent execute?">
-            <span class="chip-icon">⚡</span>
-            <span class="chip-text">Agent tools &amp; capabilities</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="welcome-footer-actions">
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-new-chat">
-          <span class="btn-icon">💬</span>
-          <span>Start Fresh Session</span>
+      <!-- Transparent Modern "Try asking" Cards (directly on background) -->
+      <div class="clean-prompt-grid" role="region" aria-label="Suggested prompts">
+        <button type="button" class="clean-prompt-card welcome-chip"
+          data-query="Who are the staff members and reporting managers in Engineering?">
+          <span class="clean-prompt-icon">👥</span>
+          <div class="clean-prompt-content">
+            <strong class="clean-prompt-title">Employee Directory</strong>
+            <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
+          </div>
+        </button>
+        <button type="button" class="clean-prompt-card welcome-chip"
+          data-query="How does leave approval work and what is our PTO policy?">
+          <span class="clean-prompt-icon">🌴</span>
+          <div class="clean-prompt-content">
+            <strong class="clean-prompt-title">Leave &amp; PTO Approvals</strong>
+            <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
+          </div>
+        </button>
+        <button type="button" class="clean-prompt-card welcome-chip"
+          data-query="What is the policy for expense reimbursement claims under $100?">
+          <span class="clean-prompt-icon">💳</span>
+          <div class="clean-prompt-content">
+            <strong class="clean-prompt-title">Expense Compliance</strong>
+            <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
+          </div>
         </button>
       </div>
     </div>
@@ -492,48 +636,110 @@ function setActiveSession(sessionId) {
     el.classList.toggle("active", el.dataset.sessionId === sessionId);
   });
 
+  const btnDeleteActiveChat = document.getElementById("btn-delete-active-chat");
+
   if (sessionLabel) {
     if (sessionId) {
       sessionLabel.textContent = `session: ${sessionId.slice(0, 8)}…`;
       sessionLabel.removeAttribute("hidden");
+      if (btnDeleteActiveChat) btnDeleteActiveChat.removeAttribute("hidden");
     } else {
       sessionLabel.setAttribute("hidden", "");
+      if (btnDeleteActiveChat) btnDeleteActiveChat.setAttribute("hidden", "");
     }
   }
 }
 
 /**
- * Fetch all sessions from the API and render them in the sidebar.
+ * Fetch all sessions from the API and render them in the sidebar with delete option.
  * Silently does nothing if the /api/sessions endpoint isn't available yet
  * (Feature 1 and 2 servers don't have it).
  */
 async function loadSessions() {
   if (!sessionList) return;
 
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
-    const res = await fetch(`${API_BASE}/api/sessions`);
+    const res = await fetch(`${API_BASE}/api/sessions`, { headers });
     if (!res.ok) throw new Error("sessions endpoint not available");
 
     const sessions = await res.json();
 
-    if (!sessions.length) {
-      sessionList.innerHTML = `<p class="sidebar-empty">No sessions yet.<br>Click <strong>New Chat</strong> to start.</p>`;
+    // Filter out abandoned 0-message sessions so history doesn't flood with ghosts
+    const displaySessions = sessions.filter(
+      (s) => s.message_count > 0 || s.id === currentSessionId
+    );
+
+    if (!displaySessions.length) {
+      sessionList.innerHTML = `<p class="sidebar-empty">No conversations yet.<br>Click <strong>New Chat</strong> to start.</p>`;
       return;
     }
 
     sessionList.innerHTML = "";
-    sessions.forEach((s) => {
-      const btn = document.createElement("button");
-      btn.className = "session-item";
-      btn.dataset.sessionId = s.id;
-      if (s.id === currentSessionId) btn.classList.add("active");
+    displaySessions.forEach((s) => {
+      const item = document.createElement("div");
+      item.className = "session-item";
+      item.dataset.sessionId = s.id;
+      if (s.id === currentSessionId) item.classList.add("active");
 
-      btn.innerHTML = `
+      const selectBtn = document.createElement("button");
+      selectBtn.type = "button";
+      selectBtn.className = "session-item-btn";
+      selectBtn.title = s.title;
+      selectBtn.innerHTML = `
         <div class="session-item-title">${escapeHtml(s.title)}</div>
         <div class="session-item-meta">${s.message_count} message${s.message_count !== 1 ? "s" : ""}</div>
       `;
-      btn.addEventListener("click", () => switchToSession(s.id));
-      sessionList.appendChild(btn);
+      selectBtn.addEventListener("click", () => switchToSession(s.id));
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn-delete-session";
+      delBtn.title = "Delete conversation";
+      delBtn.setAttribute("aria-label", `Delete conversation "${s.title}"`);
+      delBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
+      `;
+
+      delBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const sessionTitle = s.title || "this conversation";
+        const confirmed = await showConfirmDialog({
+          title: "Delete Conversation?",
+          subtitle: "Permanent conversation deletion",
+          itemName: sessionTitle,
+          bodyHtml: `Are you sure you want to delete <strong class="modal-highlight">${escapeHtml(sessionTitle)}</strong>?<br><span class="modal-hint">This will permanently delete this conversation and its message history.</span>`,
+          confirmText: "Delete Chat",
+          confirmDanger: true,
+        });
+        if (!confirmed) return;
+
+        try {
+          const delHeaders = {};
+          if (activeTenantId) delHeaders["X-Tenant-ID"] = activeTenantId;
+          const delRes = await fetch(`${API_BASE}/api/sessions/${s.id}`, { method: "DELETE", headers: delHeaders });
+          if (!delRes.ok) throw new Error(`Server returned ${delRes.status}`);
+          if (currentSessionId === s.id) {
+            currentSessionId = null;
+            clearChat();
+            setActiveSession(null);
+          }
+          showToast("Conversation deleted.", "success");
+          await loadSessions();
+        } catch (err) {
+          showToast(`Could not delete conversation: ${err.message}`, "error");
+        }
+      });
+
+      item.appendChild(selectBtn);
+      item.appendChild(delBtn);
+      sessionList.appendChild(item);
     });
   } catch {
     // /api/sessions isn't available on the Feature 1/2 server — sidebar stays empty gracefully.
@@ -545,8 +751,22 @@ async function loadSessions() {
  * Create a new session via the API and switch to it.
  */
 async function createNewSession() {
+  // If current session is already empty (no messages sent), don't create another empty session
+  if (currentSessionId) {
+    const currentMsgCount = document.querySelectorAll("#message-history .message").length;
+    if (currentMsgCount === 0) {
+      clearChat();
+      if (window.innerWidth <= 768) toggleMobileSidebar(true);
+      if (chatInput) chatInput.focus();
+      return;
+    }
+  }
+
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
-    const res = await fetch(`${API_BASE}/api/sessions`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
 
     const data = await res.json();
@@ -565,8 +785,11 @@ async function createNewSession() {
  * Load a session's history from the API and render it in the chat area.
  */
 async function switchToSession(sessionId) {
+  const headers = {};
+  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+
   try {
-    const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/history`);
+    const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/history`, { headers });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
 
     const messages = await res.json();
@@ -600,6 +823,34 @@ function escapeHtml(str) {
 }
 
 newChatBtn?.addEventListener("click", createNewSession);
+
+const btnDeleteActiveChat = document.getElementById("btn-delete-active-chat");
+btnDeleteActiveChat?.addEventListener("click", async () => {
+  if (!currentSessionId) return;
+  const confirmed = await showConfirmDialog({
+    title: "Delete Current Conversation?",
+    subtitle: "Permanent conversation deletion",
+    itemName: "Current active conversation",
+    bodyHtml: `Are you sure you want to delete the active conversation?<br><span class="modal-hint">All message history for this session will be permanently erased.</span>`,
+    confirmText: "Delete Chat",
+    confirmDanger: true,
+  });
+  if (!confirmed) return;
+
+  try {
+    const headers = {};
+    if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+    const res = await fetch(`${API_BASE}/api/sessions/${currentSessionId}`, { method: "DELETE", headers });
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    currentSessionId = null;
+    clearChat();
+    setActiveSession(null);
+    showToast("Conversation deleted.", "success");
+    await loadSessions();
+  } catch (err) {
+    showToast(`Could not delete conversation: ${err.message}`, "error");
+  }
+});
 
 // Click delegation on message history for welcome suggestion chips and quick new chat
 messageHistory?.addEventListener("click", (e) => {
@@ -638,8 +889,10 @@ function toggleMobileSidebar(forceClose = false) {
 mobileSidebarToggle?.addEventListener("click", () => toggleMobileSidebar());
 sidebarBackdrop?.addEventListener("click", () => toggleMobileSidebar(true));
 
-// Load session list on page load so the sidebar populates immediately.
+// Load session list and tenant info on page load so the sidebar and pill populate immediately.
+loadTenantInfo();
 loadSessions();
+loadDocuments();
 
 // =============================================================================
 // Feature 4: Tab navigation (Chat | Documents)
@@ -647,10 +900,12 @@ loadSessions();
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels  = document.querySelectorAll(".tab-panel");
+const sidebarAdminBtn = document.getElementById("sidebar-admin-btn");
+const btnAdminBackChat = document.getElementById("btn-admin-back-chat");
 
 /**
  * Switch the visible tab panel.
- * @param {string} tabName - the data-tab value: "chat" or "documents"
+ * @param {string} tabName - the data-tab value: "chat", "documents", "agent", or "admin"
  */
 function switchTab(tabName) {
   if (tabName === "search") tabName = "documents";
@@ -660,10 +915,45 @@ function switchTab(tabName) {
     btn.setAttribute("aria-selected", String(active));
   });
 
+  if (sidebarAdminBtn) {
+    const isAdmin = tabName === "admin";
+    sidebarAdminBtn.classList.toggle("active", isAdmin);
+    sidebarAdminBtn.setAttribute("aria-selected", String(isAdmin));
+  }
+
   tabPanels.forEach((panel) => {
     const show = panel.id === `${tabName}-panel`;
     panel.toggleAttribute("hidden", !show);
   });
+
+  // Toggle top-right document controls in navigation bar
+  const docNavControls = document.getElementById("tab-nav-doc-controls");
+  if (docNavControls) {
+    docNavControls.style.display = tabName === "documents" ? "flex" : "none";
+  }
+  // Dismiss document popover when switching away
+  const docPop = document.getElementById("doc-manager-popover");
+  if (docPop) docPop.hidden = true;
+  document.getElementById("doc-files-trigger")?.classList.remove("active");
+  document.getElementById("doc-files-trigger")?.setAttribute("aria-expanded", "false");
+
+  // Dismiss chunking strategy popover when switching away
+  const stratPop = document.getElementById("strategy-popover");
+  if (stratPop) stratPop.hidden = true;
+  document.getElementById("strategy-trigger-btn")?.classList.remove("active");
+  document.getElementById("strategy-trigger-btn")?.setAttribute("aria-expanded", "false");
+
+  // Toggle top-right agent controls in navigation bar (⚡ Quick / 🔄 Multi-Step)
+  const agentNavControls = document.getElementById("tab-nav-agent-controls");
+  if (agentNavControls) {
+    agentNavControls.style.display = tabName === "agent" ? "flex" : "none";
+  }
+  // Dismiss MCP popover if open when switching away
+  const mcpBody = document.getElementById("mcp-services-body");
+  if (mcpBody) mcpBody.hidden = true;
+  document.getElementById("mcp-services-toggle")?.setAttribute("aria-expanded", "false");
+  const mcpChevron = document.querySelector("#mcp-services-toggle .mcp-toggle-chevron");
+  if (mcpChevron) mcpChevron.textContent = "▼";
 
   // Refresh document list whenever the Documents tab is opened.
   if (tabName === "documents") loadDocuments();
@@ -690,6 +980,15 @@ tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
 
+sidebarAdminBtn?.addEventListener("click", () => {
+  switchTab("admin");
+  if (window.innerWidth <= 768) toggleMobileSidebar(true);
+});
+
+btnAdminBackChat?.addEventListener("click", () => {
+  switchTab("chat");
+});
+
 // =============================================================================
 // Feature 4: Document ingestion
 // =============================================================================
@@ -705,6 +1004,7 @@ const strategySelect    = document.getElementById("strategy-select");
 /** Upload a File object to POST /api/documents/upload with the selected strategy. */
 async function uploadFile(file) {
   const strategy = strategySelect?.value ?? "sentence";
+  showToast(`Uploading and indexing "${file.name}"…`, "info");
 
   // Show spinner, hide label.
   if (uploadLabel) {
@@ -744,8 +1044,13 @@ async function uploadFile(file) {
     }
 
     await loadDocuments();
+    showToast(`"${file.name}" uploaded and indexed successfully!`, "success");
+    if (docChatInput) {
+      docChatInput.disabled = false;
+      docChatInput.focus();
+    }
   } catch (err) {
-    alert(`Upload failed: ${err.message}`);
+    showToast(`Upload failed: ${err.message}`, "error");
   } finally {
     if (uploadLabel) {
       uploadLabel.hidden = false;
@@ -759,10 +1064,89 @@ async function uploadFile(file) {
   }
 }
 
+/** Helper to return a file icon based on file extension */
+function getDocFileIcon(filename) {
+  const ext = (filename || "").split(".").pop().toLowerCase();
+  if (ext === "pdf") return "📕";
+  if (ext === "docx" || ext === "doc") return "📘";
+  if (ext === "txt") return "📄";
+  return "📄";
+}
+
+/** Render the list of uploaded documents inside the top-right popover dropdown */
+function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
+  if (!popoverListEl) return;
+  popoverListEl.innerHTML = "";
+
+  if (!docs || !docs.length) {
+    popoverListEl.innerHTML = `
+      <div class="popover-empty-notice">
+        <strong>No documents uploaded yet</strong><br>
+        Click "+ Upload More Documents" above to upload PDF, DOCX, or TXT.
+      </div>
+    `;
+    return;
+  }
+
+  docs.forEach((doc) => {
+    const item = document.createElement("div");
+    const isActive = doc.id === currentActiveId;
+    item.className = `doc-popover-item ${isActive ? "is-active" : ""}`;
+    item.dataset.id = doc.id;
+
+    const icon = getDocFileIcon(doc.filename);
+    const chunkInfo = doc.chunk_count !== undefined && doc.chunk_count !== null 
+      ? `${doc.chunk_count} chunk${doc.chunk_count !== 1 ? "s" : ""}`
+      : "Indexed";
+    const strategyInfo = doc.strategy ? ` • ${escapeHtml(doc.strategy)}` : "";
+
+    item.innerHTML = `
+      <div class="doc-popover-item-left" title="Ground Q&amp;A in ${escapeHtml(doc.filename)}">
+        <span class="doc-file-type-icon">${icon}</span>
+        <div class="doc-popover-item-details">
+          <span class="doc-popover-item-name" title="${escapeHtml(doc.filename)}">${escapeHtml(doc.filename)}</span>
+          <span class="doc-popover-item-meta">${chunkInfo}${strategyInfo}</span>
+        </div>
+      </div>
+      <div class="doc-popover-item-actions">
+        ${isActive 
+          ? '<span class="doc-active-badge">Active</span>' 
+          : `<button type="button" class="btn-select-doc" data-id="${doc.id}" title="Set as active grounded document">Set Active</button>`}
+        <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
+      </div>
+    `;
+
+    // Click on item body or "Set Active" to ground chat in this document
+    item.querySelector(".doc-popover-item-left")?.addEventListener("click", () => {
+      if (activeDocumentId !== doc.id) {
+        activeDocumentId = doc.id;
+        loadDocuments();
+        showToast(`Active grounded document: "${doc.filename}"`, "info");
+      }
+    });
+
+    item.querySelector(".btn-select-doc")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activeDocumentId = doc.id;
+      loadDocuments();
+      showToast(`Active grounded document: "${doc.filename}"`, "info");
+    });
+
+    // Click delete button
+    item.querySelector(".btn-popover-delete")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteDocumentById(doc.id);
+    });
+
+    popoverListEl.appendChild(item);
+  });
+}
+
 /** Fetch /api/documents and render the document list, dynamically syncing upload and Q&A state. */
 async function loadDocuments() {
   if (!documentList) return;
 
+  const documentDetailsSection = document.getElementById("document-details-section");
   const uploadContainer = document.getElementById("upload-container");
   const btnToggleUpload = document.getElementById("btn-toggle-upload");
   const btnUploadBottom = document.getElementById("btn-upload-bottom");
@@ -772,7 +1156,6 @@ async function loadDocuments() {
   const documentChatSection = document.getElementById("document-chat-section");
   const docCountBadge = document.getElementById("doc-count-badge");
   const docChatInput = document.getElementById("doc-chat-input");
-  const docEmptyHeading = document.getElementById("doc-empty-heading");
 
   const headers = {};
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
@@ -783,46 +1166,69 @@ async function loadDocuments() {
 
     const docs = await res.json();
 
+    const docUploadHint = document.getElementById("doc-upload-hint");
+    const docPromptGrid = document.getElementById("doc-prompt-grid");
+
     if (!docs.length) {
-      // 0 documents: automatically show upload dropzone, hide toggle and chat
-      if (uploadContainer) {
-        uploadContainer.style.display = "block";
-        uploadContainer.dataset.userOpened = "false";
+      activeDocumentId = null;
+      currentDocsCache = [];
+
+      // 0 documents: show upload guidance hint below the 3 prompt cards
+      if (docUploadHint) docUploadHint.style.display = "flex";
+      if (docPromptGrid) docPromptGrid.style.display = "grid";
+
+      if (documentDetailsSection) {
+        documentDetailsSection.style.display = "none";
       }
-      if (btnToggleUpload) btnToggleUpload.style.display = "none";
-      if (btnUploadBottom) btnUploadBottom.style.display = "inline-flex";
-      if (docGroundingBanner) docGroundingBanner.style.display = "none";
-      if (documentChatSection) documentChatSection.style.display = "none";
+
+      if (docGroundingBanner) {
+        docGroundingBanner.style.display = "none";
+      }
+
+      if (docChatInput) {
+        docChatInput.placeholder = "Attach or drop a document (.pdf, .docx, .txt) to ask questions…";
+      }
+
       if (docCountBadge) docCountBadge.textContent = "0 files";
 
-      documentList.innerHTML = `
-        <div class="doc-empty-state-box">
-          <div class="doc-empty-icon-circle" aria-hidden="true">
-            <span class="doc-empty-symbol">📂</span>
-          </div>
-          <h4 class="doc-empty-state-title">No documents in Knowledge Base</h4>
-          <p class="doc-empty-state-desc">
-            All documents have been removed. Upload a new PDF, DOCX, or TXT file to start chatting with verified citations.
-          </p>
-          <button type="button" class="btn btn-primary btn-empty-state-upload" id="btn-empty-state-upload">
-            <span class="btn-icon" aria-hidden="true">⬆️</span>
-            <span>Upload Document</span>
-          </button>
-        </div>
-      `;
+      // Update doc manager pill in top right
+      const docManagerDot = document.getElementById("doc-manager-dot");
+      const docManagerLabel = document.getElementById("doc-manager-label");
+      const docPopoverBadge = document.getElementById("doc-popover-badge");
+      const docPopoverList = document.getElementById("doc-popover-list");
+
+      if (docManagerDot) docManagerDot.classList.remove("active");
+      if (docManagerLabel) {
+        docManagerLabel.textContent = "No files";
+        docManagerLabel.title = "No documents uploaded yet";
+      }
+      if (docPopoverBadge) docPopoverBadge.textContent = "0 files";
+      if (docPopoverList) {
+        renderDocPopoverList(docPopoverList, [], null);
+      }
+
+      // Clear documentList
+      documentList.innerHTML = "";
       loadSearchDocumentFilter([]);
       return;
     }
 
-    // 1+ documents: show active grounding banner, toggle button, and Chat interface!
+    // 1+ documents: hide upload guidance hint, SHOW "Try asking" prompt cards
+    if (docUploadHint) docUploadHint.style.display = "none";
+    if (docPromptGrid) docPromptGrid.style.display = "grid";
+
+    // 1+ documents: show active grounding banner, chat interface, and uploaded documents list below
+    if (documentDetailsSection) {
+      documentDetailsSection.style.display = "block";
+    }
     if (btnToggleUpload) {
-      btnToggleUpload.style.display = "inline-flex";
-      btnToggleUpload.textContent = uploadContainer?.style.display === "block" ? "✕ Close Upload" : "+ Upload Another Document";
+      btnToggleUpload.style.display = "none";
     }
     if (btnUploadBottom) {
       btnUploadBottom.style.display = "inline-flex";
     }
-    if (uploadContainer && uploadContainer.dataset.userOpened !== "true") {
+    // Upload dropzone above is not needed when documents are uploaded
+    if (uploadContainer) {
       uploadContainer.style.display = "none";
     }
 
@@ -851,16 +1257,40 @@ async function loadDocuments() {
       documentChatSection.style.display = "flex";
     }
 
+    // Explicitly ENABLE the input and send button!
     if (docChatInput) {
+      docChatInput.disabled = false;
       docChatInput.placeholder = `Ask anything about ${activeDocName} (press Enter)…`;
     }
-
-    if (docEmptyHeading) {
-      docEmptyHeading.textContent = `Chat with ${activeDocName}`;
+    if (docSendBtn) {
+      docSendBtn.disabled = false;
     }
 
     if (docCountBadge) {
       docCountBadge.textContent = `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
+    }
+
+    // Update doc manager pill in top right
+    const docManagerDot = document.getElementById("doc-manager-dot");
+    const docManagerLabel = document.getElementById("doc-manager-label");
+    const docPopoverBadge = document.getElementById("doc-popover-badge");
+    const docPopoverList = document.getElementById("doc-popover-list");
+
+    if (docManagerDot) docManagerDot.classList.add("active");
+    if (docManagerLabel) {
+      if (docs.length === 1) {
+        docManagerLabel.textContent = activeDocName;
+        docManagerLabel.title = activeDocName;
+      } else {
+        docManagerLabel.textContent = `${activeDocName} (${docs.length})`;
+        docManagerLabel.title = `${activeDocName} (and ${docs.length - 1} other file${docs.length > 2 ? 's' : ''})`;
+      }
+    }
+    if (docPopoverBadge) {
+      docPopoverBadge.textContent = `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
+    }
+    if (docPopoverList) {
+      renderDocPopoverList(docPopoverList, docs, activeDocumentId);
     }
 
     documentList.innerHTML = "";
@@ -975,9 +1405,21 @@ function buildDocumentCard(doc) {
   return card;
 }
 
-/** Delete a document by ID, then refresh the list. */
+/** Delete a document by ID with verification modal and toast notifications. */
 async function deleteDocumentById(docId) {
-  if (!confirm("Delete this document and all its chunks?")) return;
+  const doc = currentDocsCache.find((d) => d.id === docId);
+  const docName = doc ? doc.filename : "this document";
+
+  const confirmed = await showConfirmDialog({
+    title: "Delete Document?",
+    subtitle: "Permanent knowledge base deletion",
+    itemName: docName,
+    bodyHtml: `Are you sure you want to delete <strong class="modal-highlight">${escapeHtml(docName)}</strong>?<br><span class="modal-hint">All chunked passages and ChromaDB vector embeddings will be permanently erased.</span>`,
+    confirmText: "Delete Document",
+    confirmDanger: true,
+  });
+
+  if (!confirmed) return;
 
   const headers = {};
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
@@ -988,16 +1430,27 @@ async function deleteDocumentById(docId) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${res.status}`);
     }
+
+    // If deleted document was active, reset activeDocumentId so next document is selected
+    if (activeDocumentId === docId) {
+      activeDocumentId = null;
+    }
+
+    showToast(`"${docName}" was deleted successfully.`, "success");
     await loadDocuments();
   } catch (err) {
-    alert(`Delete failed: ${err.message}`);
+    showToast(`Delete failed: ${err.message}`, "error");
   }
 }
 
-// ── File input handler ──
-fileInput?.addEventListener("change", (e) => {
-  const file = e.target.files?.[0];
-  if (file) uploadFile(file);
+// ── File input handler (supports multiple files) ──
+fileInput?.addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  for (const file of files) {
+    await uploadFile(file);
+  }
+  if (fileInput) fileInput.value = "";
 });
 
 // ── Drag-and-drop ──
@@ -1010,11 +1463,18 @@ uploadArea?.addEventListener("dragleave", () => {
   uploadArea.classList.remove("drag-over");
 });
 
-uploadArea?.addEventListener("drop", (e) => {
+uploadArea?.addEventListener("drop", async (e) => {
   e.preventDefault();
   uploadArea.classList.remove("drag-over");
-  const file = e.dataTransfer?.files?.[0];
-  if (file) uploadFile(file);
+  const files = Array.from(e.dataTransfer?.files || []);
+  for (const file of files) {
+    await uploadFile(file);
+  }
+});
+
+uploadArea?.addEventListener("click", (e) => {
+  if (e.target.closest("label") || e.target.closest("input")) return;
+  openFileUploadPicker();
 });
 
 // =============================================================================
@@ -1069,18 +1529,15 @@ searchDocFilter?.addEventListener("change", () => {
   const groundingTitle = document.getElementById("grounding-title");
   const groundingSubtitle = document.getElementById("grounding-subtitle");
   const docChatInput = document.getElementById("doc-chat-input");
-  const docEmptyHeading = document.getElementById("doc-empty-heading");
 
   if (doc) {
     if (groundingTitle) groundingTitle.textContent = `Grounded in: ${doc.filename}`;
     if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${doc.filename}" with verified source citations.`;
     if (docChatInput) docChatInput.placeholder = `Ask anything about ${doc.filename} (press Enter)…`;
-    if (docEmptyHeading) docEmptyHeading.textContent = `Chat with ${doc.filename}`;
   } else {
     if (groundingTitle) groundingTitle.textContent = "Grounded in: All uploaded documents";
     if (groundingSubtitle) groundingSubtitle.textContent = "This chat answers across all your uploaded documents with verified source citations.";
     if (docChatInput) docChatInput.placeholder = "Ask anything about your documents (press Enter)…";
-    if (docEmptyHeading) docEmptyHeading.textContent = "Chat with your Documents";
   }
 });
 
@@ -1090,10 +1547,11 @@ function sanitizeDocText(str) {
   return str.replace(/[\u25a0-\u25ff\uf000-\uf0ff\ue000-\uf8ff\ufffd]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/** Format markdown into clean HTML with paragraphs, bold, lists, and code */
+/** Format markdown into clean HTML with tables, headings, paragraphs, bold, lists, and code */
 function formatMarkdownToHtml(markdown) {
   if (!markdown) return "";
-  let html = escapeHtml(markdown);
+  let text = String(markdown).trim();
+  let html = escapeHtml(text);
 
   // Bold **text**
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -1102,30 +1560,97 @@ function formatMarkdownToHtml(markdown) {
   // Inline code `text`
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
-  // Format bullet lists and paragraphs
-  const lines = html.split("\n");
+  const rawLines = html.split("\n");
   const output = [];
   let inList = false;
+  let inTable = false;
+  let tableHeaders = [];
+  let tableRows = [];
 
-  for (let line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith("- ") || trimmed.startsWith("• ") || trimmed.startsWith("* ")) {
-      if (!inList) {
-        output.push("<ul>");
-        inList = true;
-      }
-      output.push(`<li>${trimmed.replace(/^[-•*]\s*/, "")}</li>`);
-    } else {
-      if (inList) {
-        output.push("</ul>");
-        inList = false;
-      }
-      if (trimmed) {
-        output.push(`<p>${trimmed}</p>`);
-      }
+  function flushTable() {
+    if (!inTable) return;
+    let tHtml = '<div class="table-container"><table class="rich-table">';
+    if (tableHeaders.length > 0) {
+      tHtml += '<thead><tr>';
+      tableHeaders.forEach(h => { tHtml += `<th>${h}</th>`; });
+      tHtml += '</tr></thead>';
+    }
+    tHtml += '<tbody>';
+    tableRows.forEach(row => {
+      tHtml += '<tr>';
+      row.forEach(cell => { tHtml += `<td>${cell}</td>`; });
+      tHtml += '</tr>';
+    });
+    tHtml += '</tbody></table></div>';
+    output.push(tHtml);
+    inTable = false;
+    tableHeaders = [];
+    tableRows = [];
+  }
+
+  function flushList() {
+    if (inList) {
+      output.push("</ul>");
+      inList = false;
     }
   }
-  if (inList) output.push("</ul>");
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+
+    // Markdown Table Detection (e.g. | col1 | col2 |)
+    if (line.startsWith("|") && line.endsWith("|")) {
+      flushList();
+      const cells = line.slice(1, -1).split("|").map(c => c.trim());
+      // Check if delimiter row like |---|---|
+      const isDelimiter = cells.every(c => /^[\-:\s]+$/.test(c));
+      if (isDelimiter) {
+        continue;
+      }
+      if (!inTable) {
+        inTable = true;
+        tableHeaders = cells;
+      } else {
+        tableRows.push(cells);
+      }
+      continue;
+    } else {
+      flushTable();
+    }
+
+    // Headings
+    if (line.startsWith("### ")) {
+      flushList();
+      output.push(`<h4 class="md-heading-3">${line.slice(4)}</h4>`);
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushList();
+      output.push(`<h3 class="md-heading-2">${line.slice(3)}</h3>`);
+      continue;
+    }
+
+    // Lists
+    if (line.startsWith("- ") || line.startsWith("• ") || line.startsWith("* ")) {
+      if (!inList) {
+        output.push('<ul class="md-list">');
+        inList = true;
+      }
+      output.push(`<li>${line.replace(/^[-•*]\s*/, "")}</li>`);
+      continue;
+    } else {
+      flushList();
+    }
+
+    // Paragraph
+    if (line) {
+      output.push(`<p class="md-paragraph">${line}</p>`);
+    }
+  }
+
+  flushList();
+  flushTable();
+
   return output.join("");
 }
 
@@ -1184,6 +1709,24 @@ function formatClientPlainSummary(query, chunks) {
     "based", "mention", "mentioned", "document", "file"
   ]);
 
+  // 0. Summarize / Summary / Key Points / Overview / About / Document outline
+  if (/\b(summar|summary|key points?|main points?|overview|highlights?|takeaways?|what is this|about|outline|brief)\b/i.test(qLower)) {
+    const topSentences = [];
+    for (const chunk of chunks.slice(0, 4)) {
+      const lines = (chunk.text || "").split("\n");
+      for (const rawLine of lines) {
+        const clean = rawLine.replace(/^[\s•\-\*]+/, "").trim();
+        if (clean.length > 25 && clean.length < 180 && !topSentences.includes(clean)) {
+          topSentences.push(clean);
+          if (topSentences.length >= 5) break;
+        }
+      }
+      if (topSentences.length >= 5) break;
+    }
+    const bullets = topSentences.map((s, idx) => idx === 0 ? `• **${s}**` : `• ${s}`).join("\n");
+    return `Here is a summary of key points extracted from your uploaded document:\n\n${bullets || "• Document content is indexed and verified."}\n\n*(See the verified document passages below for details.)*`;
+  }
+
   // 1. Identity / Name / Who is
   if (/\b(name|who is|who am|candidate|author|person|whose|identity)\b/i.test(qLower)) {
     const chunkZero = (chunks[0] && chunks[0].text) || "";
@@ -1233,7 +1776,7 @@ function formatClientPlainSummary(query, chunks) {
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (/\b(developer|engineer|intern|manager|lead|analyst|architect)\b/i.test(line) && line.length < 120) {
-        const cleanLine = line.replace(/^[•\-\*\]\s*/, "");
+        const cleanLine = line.replace(/^[•\-\*\s]+/, "");
         roles.push(`• **${cleanLine}**`);
       }
     }
@@ -1291,14 +1834,15 @@ function appendDocAiResponse(data) {
   const wrapper = document.createElement("div");
   wrapper.className = "message ai";
 
+  const isCag = Boolean(data && data.mode === "cag");
+  const isOutOfScope = !data.evidence || data.evidence.length === 0 || (data.answer && data.answer.includes("cannot find any information"));
+
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "AskRaggy · Grounded in Document";
+  label.textContent = isCag ? "AskRaggy · ⚡ CAG Full Context" : "AskRaggy · Grounded in Document";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble doc-ai-bubble";
-
-  const isOutOfScope = !data.evidence || data.evidence.length === 0 || (data.answer && data.answer.includes("cannot find any information"));
 
   // 1. TOP SECTION: Synthesized human-readable answer in plain English
   const summarySection = document.createElement("div");
@@ -1306,10 +1850,13 @@ function appendDocAiResponse(data) {
 
   const summaryHeader = document.createElement("div");
   summaryHeader.className = "doc-summary-header";
+  const badgeTitle = isCag
+    ? "⚡ Cache-Augmented Generation · 100% Full Document Context"
+    : (isOutOfScope ? "Notice · Grounded Document Scope" : "Plain English Summary · Grounded in Document");
   summaryHeader.innerHTML = `
-    <span class="doc-summary-badge ${isOutOfScope ? "out-of-scope" : ""}">
-      <span class="summary-badge-icon">${isOutOfScope ? "ℹ️" : "✨"}</span>
-      <span class="summary-badge-title">${isOutOfScope ? "Notice · Grounded Document Scope" : "Plain English Summary · Grounded in Document"}</span>
+    <span class="doc-summary-badge ${isCag ? "cag" : (isOutOfScope ? "out-of-scope" : "")}">
+      <span class="summary-badge-icon">${isCag ? "⚡" : (isOutOfScope ? "ℹ️" : "✨")}</span>
+      <span class="summary-badge-title">${badgeTitle}</span>
     </span>
   `;
   summarySection.appendChild(summaryHeader);
@@ -1375,6 +1922,11 @@ async function sendDocMessage(customQuery = null) {
   const query = (typeof customQuery === "string" ? customQuery : (docChatInput?.value || "")).trim();
   if (!query) return;
 
+  if (!currentDocsCache.length || !activeDocumentId) {
+    showToast("Please upload a document to enable document questions.", "info");
+    return;
+  }
+
   if (docChatInput) docChatInput.value = "";
   if (docSendBtn) docSendBtn.disabled = true;
 
@@ -1388,12 +1940,17 @@ async function sendDocMessage(customQuery = null) {
   try {
     let data = null;
 
+    // Check if CAG (Cache-Augmented Generation) Full-Context mode is active
+    const currentStrategy = strategySelect?.value || "sentence";
+    const isCagMode = currentStrategy === "cag";
+    const mode = isCagMode ? "cag" : "rag";
+
     // 1. Primary endpoint: POST /api/documents/ask
     try {
       const res = await fetch(`${API_BASE}/api/documents/ask`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
+        body: JSON.stringify({ query, top_k: 6, document_id: documentId, mode }),
       });
       if (res.ok) {
         data = await res.json();
@@ -1498,21 +2055,46 @@ searchInput?.addEventListener("keydown", (e) => {
 });
 
 // =============================================================================
-// Feature 6: Admin panel — tenant switcher + Knowledge Digest (Parts B & C)
+// Feature 6: Admin panel — tenant switcher + dynamic multi-tenant mode + Knowledge Digest
 // =============================================================================
 
 /** The active X-Tenant-ID header value. Empty string = no custom tenant. */
 let activeTenantId = "";
+let isMultiTenantEnabled = false;
 
-const tenantIdInput     = document.getElementById("tenant-id-input");
-const tenantApplyBtn    = document.getElementById("tenant-apply-btn");
-const tenantClearBtn    = document.getElementById("tenant-clear-btn");
-const tenantInfoCard    = document.getElementById("tenant-info-card");
-const digestRebuildBtn  = document.getElementById("digest-rebuild-btn");
-const digestViewBtn     = document.getElementById("digest-view-btn");
-const digestCard        = document.getElementById("digest-card");
-const retrievalsLoadBtn = document.getElementById("retrievals-load-btn");
-const retrievalsList    = document.getElementById("retrievals-list");
+const tenantIdInput           = document.getElementById("tenant-id-input");
+const tenantApplyBtn          = document.getElementById("tenant-apply-btn");
+const tenantClearBtn          = document.getElementById("tenant-clear-btn");
+const tenantInfoCard          = document.getElementById("tenant-info-card");
+const toggleMultiTenantSwitch = document.getElementById("toggle-multi-tenant-switch");
+const tenantToggleLabelText   = document.getElementById("tenant-toggle-label-text");
+const sidebarTenantPill       = document.getElementById("sidebar-tenant-pill");
+const digestRebuildBtn        = document.getElementById("digest-rebuild-btn");
+const digestViewBtn           = document.getElementById("digest-view-btn");
+const digestCard              = document.getElementById("digest-card");
+const retrievalsLoadBtn       = document.getElementById("retrievals-load-btn");
+const retrievalsList          = document.getElementById("retrievals-list");
+
+/** Update multi-tenant status indicators in the UI */
+function updateMultiTenantUI(info) {
+  const enabled = Boolean(info?.multi_tenant_enabled);
+  isMultiTenantEnabled = enabled;
+  const activeId = activeTenantId || info?.tenant_id || "default";
+
+  if (sidebarTenantPill) {
+    sidebarTenantPill.textContent = activeId;
+    sidebarTenantPill.title = `Active tenant: ${activeId} (${enabled ? "Multi-tenant active" : "Single-tenant"})`;
+  }
+
+  if (toggleMultiTenantSwitch) {
+    toggleMultiTenantSwitch.checked = enabled;
+    toggleMultiTenantSwitch.setAttribute("aria-checked", String(enabled));
+  }
+
+  if (tenantToggleLabelText) {
+    tenantToggleLabelText.innerHTML = `Multi-Tenant: <strong style="color: ${enabled ? 'var(--color-matcha-hover)' : 'inherit'};">${enabled ? "Active" : "Disabled"}</strong>`;
+  }
+}
 
 /** Fetch /api/tenant/info and display the result card. */
 async function loadTenantInfo() {
@@ -1525,29 +2107,100 @@ async function loadTenantInfo() {
     const res = await fetch(`${API_BASE}/api/tenant/info`, { headers });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     const info = await res.json();
+    updateMultiTenantUI(info);
+
     tenantInfoCard.innerHTML = `
-      <span>Tenant ID: <code>${escapeHtml(info.tenant_id)}</code></span>
-      <span>Multi-tenant mode: <span class="badge">${info.multi_tenant_enabled ? "enabled" : "disabled"}</span></span>
-      <span>Documents visible: <strong>${info.document_count}</strong></span>
+      <div class="tenant-info-grid">
+        <div class="tenant-info-stat">
+          <span class="stat-label">Active Tenant</span>
+          <span class="stat-value"><code>${escapeHtml(info.tenant_id)}</code></span>
+        </div>
+        <div class="tenant-info-stat">
+          <span class="stat-label">Multi-Tenant</span>
+          <span class="stat-value"><span class="status-badge" data-status="${info.multi_tenant_enabled ? "ready" : "disabled"}">${info.multi_tenant_enabled ? "Active" : "Disabled"}</span></span>
+        </div>
+        <div class="tenant-info-stat">
+          <span class="stat-label">Tenant Documents</span>
+          <span class="stat-value"><strong>${info.document_count}</strong></span>
+        </div>
+        <div class="tenant-info-stat">
+          <span class="stat-label">Tenant Sessions</span>
+          <span class="stat-value"><strong>${info.session_count ?? 0}</strong></span>
+        </div>
+      </div>
     `;
     tenantInfoCard.removeAttribute("hidden");
   } catch (err) {
     tenantInfoCard.innerHTML = `<span style="color:var(--color-pistache);font-size:0.82rem">
-      Tenant info unavailable (requires Feature 6 server): ${escapeHtml(err.message)}
+      Tenant info unavailable: ${escapeHtml(err.message)}
     </span>`;
     tenantInfoCard.removeAttribute("hidden");
   }
 }
 
+/** Switch active tenant, reset session context, and refresh documents & sessions. */
+async function applyTenant(newTenantId, announce = true) {
+  activeTenantId = (newTenantId || "").trim();
+  if (tenantIdInput) tenantIdInput.value = activeTenantId;
+
+  const effectiveName = activeTenantId || "default";
+  if (sidebarTenantPill) {
+    sidebarTenantPill.textContent = effectiveName;
+  }
+
+  // Clear current active session because switching tenant changes security domain
+  currentSessionId = null;
+  clearChat();
+  setActiveSession(null);
+
+  await loadTenantInfo();
+  await loadSessions();
+  await loadDocuments();
+
+  if (announce) {
+    showToast(`Switched to tenant: "${effectiveName}"`, "info");
+  }
+}
+
+// Multi-tenant toggle switch
+toggleMultiTenantSwitch?.addEventListener("change", async (e) => {
+  const nextState = e.target.checked;
+  toggleMultiTenantSwitch.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/tenant/mode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: nextState }),
+    });
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
+    isMultiTenantEnabled = Boolean(data.multi_tenant_enabled);
+    updateMultiTenantUI(data);
+    showToast(data.message || `Multi-tenant isolation ${isMultiTenantEnabled ? "enabled" : "disabled"}`, "success");
+    await applyTenant(activeTenantId, false);
+  } catch (err) {
+    showToast(`Failed to toggle multi-tenant mode: ${err.message}`, "error");
+    toggleMultiTenantSwitch.checked = isMultiTenantEnabled;
+  } finally {
+    toggleMultiTenantSwitch.disabled = false;
+  }
+});
+
+// Quick switch preset pills
+document.querySelectorAll(".quick-tenant-pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    const t = pill.dataset.tenant;
+    applyTenant(t === "default" ? "" : t);
+  });
+});
+
 tenantApplyBtn?.addEventListener("click", () => {
-  activeTenantId = tenantIdInput?.value.trim() ?? "";
-  loadTenantInfo();
+  const t = tenantIdInput?.value.trim() ?? "";
+  applyTenant(t);
 });
 
 tenantClearBtn?.addEventListener("click", () => {
-  activeTenantId = "";
-  if (tenantIdInput) tenantIdInput.value = "";
-  loadTenantInfo();
+  applyTenant("");
 });
 
 /** Render a Knowledge Digest response into digestCard. */
@@ -1622,18 +2275,12 @@ const agentEmptyState     = document.getElementById("agent-empty-state");
 const agentNoSession      = document.getElementById("agent-no-session");
 const agentCreateSessBtn  = document.getElementById("agent-create-session-btn");
 
-/** Show/hide the "no session" notice based on whether a session is active. */
+/** Check session state when entering agent tab. Input is always enabled. */
 function checkAgentSessionState() {
-  const hasSession = !!currentSessionId;
-  if (agentNoSession) agentNoSession.hidden = hasSession;
-  if (agentInput) agentInput.disabled = !hasSession;
-  if (agentSendBtn) agentSendBtn.disabled = !hasSession;
+  if (agentNoSession) agentNoSession.hidden = true;
+  if (agentInput) agentInput.disabled = false;
+  if (agentSendBtn) agentSendBtn.disabled = false;
 }
-
-agentCreateSessBtn?.addEventListener("click", async () => {
-  await createNewSession();
-  checkAgentSessionState();
-});
 
 /** Append a user message bubble to the agent history. */
 function agentAppendUser(text) {
@@ -1658,7 +2305,7 @@ function agentAppendThinking() {
   wrapper.className = "message ai thinking";
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Agent";
+  label.innerHTML = "<strong>AskRaggy</strong> · Autonomous HR Agent";
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   for (let i = 0; i < 3; i++) {
@@ -1683,7 +2330,7 @@ function agentAppendResponse(data) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Agent";
+  label.innerHTML = "<strong>AskRaggy</strong> · Autonomous HR Agent";
 
   const card = document.createElement("div");
   card.className = "agent-response-card";
@@ -1715,9 +2362,9 @@ function agentAppendResponse(data) {
   }
 
   // ── Answer text ──
-  const answerEl = document.createElement("p");
+  const answerEl = document.createElement("div");
   answerEl.className = "response-card-answer";
-  answerEl.textContent = data.result ?? "";
+  answerEl.innerHTML = formatMarkdownToHtml(data.result ?? "");
   card.appendChild(answerEl);
 
   // ── Steps panel (collapsible) ──
@@ -1778,12 +2425,33 @@ function agentAppendResponse(data) {
 }
 
 /** Send a message to the agent endpoint. */
-async function runAgent() {
-  const text = agentInput?.value.trim();
-  if (!text || !currentSessionId) return;
+async function runAgent(overrideText = null) {
+  const text = (overrideText ?? agentInput?.value)?.trim();
+  if (!text) return;
 
-  agentInput.value = "";
+  if (!overrideText && agentInput) agentInput.value = "";
   if (agentSendBtn) agentSendBtn.disabled = true;
+
+  // Auto-provision session in background if none active
+  if (!currentSessionId) {
+    try {
+      const headers = {};
+      if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        currentSessionId = sData.session_id;
+        setActiveSession(currentSessionId);
+        await loadSessions();
+      }
+    } catch {}
+  }
+
+  if (!currentSessionId) {
+    showToast("Unable to initialize session for agent.", "error");
+    if (agentSendBtn) agentSendBtn.disabled = false;
+    return;
+  }
 
   agentAppendUser(text);
   const thinkingEl = agentAppendThinking();
@@ -1824,8 +2492,8 @@ agentInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); dispatchAgent(); }
 });
 
-// Wire up example prompt buttons.
-document.querySelectorAll(".agent-example-btn").forEach((btn) => {
+// Wire up example prompt buttons and chips.
+document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn) => {
   btn.addEventListener("click", () => {
     const promptText = (
       btn.dataset.prompt ||
@@ -1833,15 +2501,11 @@ document.querySelectorAll(".agent-example-btn").forEach((btn) => {
       btn.textContent?.trim() ||
       ""
     );
-    if (!currentSessionId) {
-      createNewSession().then(() => {
-        if (agentInput) agentInput.value = promptText;
-        checkAgentSessionState();
-      });
-    } else {
-      if (agentInput) agentInput.value = promptText;
-      agentInput?.focus();
+    if (agentInput) {
+      agentInput.value = promptText;
+      agentInput.focus();
     }
+    dispatchAgent();
   });
 });
 
@@ -1855,16 +2519,107 @@ let agentMode = "quick";
 const agentModeBtns = document.querySelectorAll(".agent-mode-btn");
 agentModeBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
-    agentMode = btn.dataset.mode;
-    agentModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.mode === agentMode));
+    setAgentMode(btn.dataset.mode);
   });
+});
+
+function setAgentMode(mode) {
+  agentMode = mode;
+  agentModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.mode === agentMode));
+}
+
+/** Check if a user's prompt is a compound or multi-action workflow. */
+function isComplexMultiStepQuery(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase().trim();
+
+  // Explicit connectors & sequence words
+  const sequencePatterns = [
+    /\band\s+then\b/,
+    /\bafter\s+(that|which)\b/,
+    /\bfirst\b[\s\S]*?\bthen\b/,
+    /\balso\s+(check|approve|update|submit)\b/,
+    /\b(step\s*\d+|1\.\s+[\s\S]*?2\.)/,
+  ];
+  if (sequencePatterns.some((p) => p.test(lower))) return true;
+
+  // Composite multi-actions across domain tools (e.g. "check ... and approve ...")
+  const actionVerbs = ["check", "look up", "find", "search", "retrieve", "approve", "reject", "update", "submit", "file", "verify"];
+  let matchedActions = 0;
+  for (const v of actionVerbs) {
+    if (lower.includes(v)) matchedActions++;
+  }
+  if (matchedActions >= 2 && (lower.includes(" and ") || lower.includes(" then ") || lower.includes(", then") || lower.includes(" if "))) {
+    return true;
+  }
+
+  return false;
+}
+
+// Multi-step suggestion modal elements
+const multistepModalBackdrop  = document.getElementById("multistep-modal-backdrop");
+const multistepModalClose     = document.getElementById("multistep-modal-close");
+const multistepModalQuickBtn  = document.getElementById("multistep-modal-quick-btn");
+const multistepModalSwitchBtn = document.getElementById("multistep-modal-switch-btn");
+const multistepModalPreview   = document.getElementById("multistep-modal-prompt-preview");
+
+let pendingMultiStepPrompt = "";
+
+function showMultiStepModal(promptText) {
+  pendingMultiStepPrompt = promptText;
+  if (multistepModalPreview) {
+    multistepModalPreview.textContent = `\"${promptText}\"`;
+  }
+  if (multistepModalBackdrop) {
+    multistepModalBackdrop.hidden = false;
+  }
+}
+
+function hideMultiStepModal() {
+  if (multistepModalBackdrop) {
+    multistepModalBackdrop.hidden = true;
+  }
+  pendingMultiStepPrompt = "";
+}
+
+multistepModalClose?.addEventListener("click", hideMultiStepModal);
+multistepModalBackdrop?.addEventListener("click", (e) => {
+  if (e.target === multistepModalBackdrop) hideMultiStepModal();
+});
+
+multistepModalQuickBtn?.addEventListener("click", () => {
+  const prompt = pendingMultiStepPrompt;
+  hideMultiStepModal();
+  if (prompt) {
+    if (agentInput) agentInput.value = "";
+    runAgent(prompt);
+  }
+});
+
+multistepModalSwitchBtn?.addEventListener("click", () => {
+  const prompt = pendingMultiStepPrompt;
+  hideMultiStepModal();
+  setAgentMode("multistep");
+  showToast("Switched to Multi-Step Mode", "info");
+  if (prompt) {
+    if (agentInput) agentInput.value = "";
+    runMultiStepAgent(prompt);
+  }
 });
 
 /**
  * Route agent submit to Quick or Multi-Step depending on agentMode.
- * Replaces the old direct binding to runAgent().
+ * If in Quick mode and the query requires multi-step coordination, prompts the user to switch.
  */
 function dispatchAgent() {
+  const text = agentInput?.value.trim();
+  if (!text) return;
+
+  if (agentMode === "quick" && isComplexMultiStepQuery(text)) {
+    showMultiStepModal(text);
+    return;
+  }
+
   if (agentMode === "multistep") {
     runMultiStepAgent();
   } else {
@@ -1879,12 +2634,27 @@ function dispatchAgent() {
  *   3. Poll GET /api/agent/status/{task_id} every 1.5 s
  *   4. Update the card as steps complete; show result or error when done
  */
-async function runMultiStepAgent() {
-  const text = agentInput?.value.trim();
+async function runMultiStepAgent(overrideText = null) {
+  const text = (overrideText ?? agentInput?.value)?.trim();
   if (!text) return;
 
-  agentInput.value = "";
+  if (!overrideText && agentInput) agentInput.value = "";
   if (agentSendBtn) agentSendBtn.disabled = true;
+
+  // Auto-provision session in background if none active
+  if (!currentSessionId) {
+    try {
+      const headers = {};
+      if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        currentSessionId = sData.session_id;
+        setActiveSession(currentSessionId);
+        await loadSessions();
+      }
+    } catch {}
+  }
 
   agentAppendUser(text);
   // Insert a placeholder progress card — we'll update it as the task runs.
@@ -1897,7 +2667,7 @@ async function runMultiStepAgent() {
     const res = await fetch(`${API_BASE}/api/agent/plan`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text, session_id: currentSessionId }),
     });
 
     if (!res.ok) {
@@ -1937,7 +2707,7 @@ function agentAppendPlanningCard(message) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Agent";
+  label.innerHTML = "<strong>AskRaggy</strong> · Autonomous HR Agent";
 
   const card = document.createElement("div");
   card.className = "agent-task-card";
@@ -2001,7 +2771,7 @@ function updatePlanningCard(card, task) {
       if (stepRecord?.result) {
         const resultSpan = document.createElement("div");
         resultSpan.className = "agent-task-step-result";
-        resultSpan.textContent = stepRecord.result;
+        resultSpan.innerHTML = formatMarkdownToHtml(stepRecord.result);
         li.appendChild(resultSpan);
       }
 
@@ -2025,7 +2795,7 @@ function updatePlanningCard(card, task) {
   if (task.status === "done" && task.result && resultEl) {
     resultEl.innerHTML = `
       <div class="agent-task-result-header">Final Answer</div>
-      <p class="agent-task-result-text">${escapeHtml(task.result)}</p>
+      <div class="agent-task-result-text">${formatMarkdownToHtml(task.result)}</div>
     `;
     resultEl.removeAttribute("hidden");
   }
@@ -2071,13 +2841,37 @@ const mcpServicesBody   = document.getElementById("mcp-services-body");
 const mcpServicesCount  = document.getElementById("mcp-services-count");
 const mcpServersList    = document.getElementById("mcp-servers-list");
 
-mcpServicesToggle?.addEventListener("click", () => {
+mcpServicesToggle?.addEventListener("click", (e) => {
+  e.stopPropagation();
   const expanded = mcpServicesToggle.getAttribute("aria-expanded") === "true";
   mcpServicesToggle.setAttribute("aria-expanded", String(!expanded));
   if (mcpServicesBody) mcpServicesBody.hidden = expanded;
   const chevron = mcpServicesToggle.querySelector(".mcp-toggle-chevron");
-  if (chevron) chevron.textContent = expanded ? "▶" : "▼";
+  if (chevron) chevron.textContent = "▼";
   if (!expanded) loadMcpServices();
+});
+
+// Close MCP popover when clicking outside
+document.addEventListener("click", (e) => {
+  const mcpWrapper = document.getElementById("mcp-services-wrapper");
+  if (mcpWrapper && !mcpWrapper.contains(e.target)) {
+    if (mcpServicesBody && !mcpServicesBody.hidden) {
+      mcpServicesBody.hidden = true;
+      mcpServicesToggle?.setAttribute("aria-expanded", "false");
+      const chevron = mcpServicesToggle?.querySelector(".mcp-toggle-chevron");
+      if (chevron) chevron.textContent = "▼";
+    }
+  }
+});
+
+// Close MCP popover on Escape key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && mcpServicesBody && !mcpServicesBody.hidden) {
+    mcpServicesBody.hidden = true;
+    mcpServicesToggle?.setAttribute("aria-expanded", "false");
+    const chevron = mcpServicesToggle?.querySelector(".mcp-toggle-chevron");
+    if (chevron) chevron.textContent = "▼";
+  }
 });
 
 /**
@@ -2337,12 +3131,16 @@ voiceStopBtn?.addEventListener("click", stopVoiceRecording);
  * @param {File} file - the image file from the file picker
  */
 async function sendImageMessage(file) {
-  const thinkingEl = appendMessage("ai", "", true);
-
-  // Create a local object URL so we can show a thumbnail without uploading yet.
+  // Create a local object URL so we can show a thumbnail immediately.
   const thumbUrl = URL.createObjectURL(file);
 
-  const prompt = `Describe this image in the context of ${currentDomainName || "enterprise documentation"}.`;
+  // Show the image attachment as a user bubble immediately!
+  appendImageUserBubble(thumbUrl, file.name);
+  const thinkingEl = appendMessage("ai", "", true);
+
+  const userQuery = chatInput?.value?.trim() || "";
+  if (chatInput) chatInput.value = "";
+  const prompt = userQuery || `Describe this image in the context of ${currentDomainName || "enterprise documentation"}.`;
 
   const formData = new FormData();
   formData.append("image", file, file.name);
@@ -2368,20 +3166,13 @@ async function sendImageMessage(file) {
     const data = await res.json();
     thinkingEl.remove();
 
-    // Show the image attachment as a user bubble.
-    appendImageUserBubble(thumbUrl, file.name);
-
     // Show the vision response card.
     appendVisionResponse(data, thumbUrl);
 
-    URL.revokeObjectURL(thumbUrl);
-
     if (currentSessionId) loadSessions();
-
   } catch (err) {
-    URL.revokeObjectURL(thumbUrl);
     thinkingEl.remove();
-    appendMessage("ai", `Vision error: ${err.message}. Is the Feature 10 server running?`);
+    appendMessage("ai", `Vision error: ${err.message}.`);
   }
 }
 
@@ -2702,7 +3493,6 @@ function toggleUploadContainer(forceOpen = null) {
 }
 
 function openFileUploadPicker() {
-  toggleUploadContainer(true);
   const fileInput = document.getElementById("file-input");
   fileInput?.click();
 }
@@ -2711,10 +3501,21 @@ btnToggleUpload?.addEventListener("click", () => toggleUploadContainer());
 btnUploadBottom?.addEventListener("click", openFileUploadPicker);
 
 document.addEventListener("click", (e) => {
-  if (e.target.closest("#btn-empty-state-upload")) {
+  if (e.target.closest("#btn-empty-state-upload, .btn-empty-state-upload, .btn-doc-trigger-upload")) {
     openFileUploadPicker();
   }
 });
+
+// Switch to CAG button inside cag-popover
+const btnActivateCag = document.getElementById("btn-activate-cag");
+if (btnActivateCag) {
+  btnActivateCag.addEventListener("click", () => {
+    const cagOpt = document.getElementById("strategy-opt-cag");
+    if (cagOpt) cagOpt.click();
+    if (typeof toggleCagPopover === "function") toggleCagPopover(false);
+    showToast("Switched to CAG (Full Context) mode! Queries will now analyze the entire document.", "success");
+  });
+}
 
 // Wire CAG trigger for hover and mobile touch/click (rock-solid on all devices)
 const cagTrigger = document.getElementById("cag-trigger");
@@ -2769,3 +3570,208 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+
+
+// =============================================================================
+// Document Q&A Modern Chat Box: Drag & Drop + Attach File Button
+// =============================================================================
+(function initDocModernChatBox() {
+  const docChatBox = document.getElementById("doc-modern-chat-box");
+  const btnDocAttach = document.getElementById("btn-doc-attach");
+  const fileInputEl = document.getElementById("file-input");
+
+  if (btnDocAttach && fileInputEl) {
+    btnDocAttach.addEventListener("click", () => {
+      fileInputEl.click();
+    });
+  }
+
+  const docUploadHint = document.getElementById("doc-upload-hint");
+  if (docUploadHint && fileInputEl) {
+    docUploadHint.addEventListener("click", () => {
+      fileInputEl.click();
+    });
+  }
+
+  if (docChatBox) {
+    ["dragenter", "dragover"].forEach((eventName) => {
+      docChatBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        docChatBox.classList.add("drag-over");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      docChatBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        docChatBox.classList.remove("drag-over");
+      });
+    });
+
+    docChatBox.addEventListener("drop", async (e) => {
+      const dt = e.dataTransfer;
+      const files = Array.from(dt?.files || []);
+      for (const file of files) {
+        await uploadFile(file);
+      }
+    });
+  }
+
+  // Top-right Document manager popover toggle & outside click handlers
+  const docFilesTrigger = document.getElementById("doc-files-trigger");
+  const docManagerPopover = document.getElementById("doc-manager-popover");
+  const docManagerWrapper = document.getElementById("doc-manager-wrapper");
+  const btnPopoverUploadMore = document.getElementById("btn-popover-upload-more");
+
+  if (docFilesTrigger && docManagerPopover) {
+    docFilesTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Dismiss strategy popover if open
+      const stratPop = document.getElementById("strategy-popover");
+      if (stratPop && !stratPop.hasAttribute("hidden")) {
+        stratPop.setAttribute("hidden", "true");
+        document.getElementById("strategy-trigger-btn")?.classList.remove("active");
+        document.getElementById("strategy-trigger-btn")?.setAttribute("aria-expanded", "false");
+      }
+      const isHidden = docManagerPopover.hasAttribute("hidden");
+      if (isHidden) {
+        docManagerPopover.removeAttribute("hidden");
+        docFilesTrigger.classList.add("active");
+        docFilesTrigger.setAttribute("aria-expanded", "true");
+      } else {
+        docManagerPopover.setAttribute("hidden", "true");
+        docFilesTrigger.classList.remove("active");
+        docFilesTrigger.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (docManagerWrapper && !docManagerWrapper.contains(e.target)) {
+        docManagerPopover.setAttribute("hidden", "true");
+        docFilesTrigger.classList.remove("active");
+        docFilesTrigger.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !docManagerPopover.hasAttribute("hidden")) {
+        docManagerPopover.setAttribute("hidden", "true");
+        docFilesTrigger.classList.remove("active");
+        docFilesTrigger.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  if (btnPopoverUploadMore && fileInputEl) {
+    btnPopoverUploadMore.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileInputEl.click();
+    });
+  }
+
+  // =============================================================================
+  // Chunking Strategy Custom Dropdown wiring
+  // =============================================================================
+  const strategyWrapper = document.getElementById("strategy-dropdown-wrapper");
+  const strategyTriggerBtn = document.getElementById("strategy-trigger-btn");
+  const strategyPopover = document.getElementById("strategy-popover");
+  const strategyHiddenSelect = document.getElementById("strategy-select");
+  const strategyTriggerLabel = document.getElementById("strategy-trigger-label");
+  const strategyRecBadge = document.getElementById("strategy-rec-badge");
+  const strategyOptionItems = document.querySelectorAll(".strategy-option-item");
+
+  if (strategyTriggerBtn && strategyPopover) {
+    strategyTriggerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Close doc files popover if open
+      if (docManagerPopover && !docManagerPopover.hasAttribute("hidden")) {
+        docManagerPopover.setAttribute("hidden", "true");
+        docFilesTrigger?.classList.remove("active");
+        docFilesTrigger?.setAttribute("aria-expanded", "false");
+      }
+      if (typeof toggleCagPopover === "function") {
+        toggleCagPopover(false);
+      }
+
+      const isHidden = strategyPopover.hasAttribute("hidden");
+      if (isHidden) {
+        strategyPopover.removeAttribute("hidden");
+        strategyTriggerBtn.classList.add("active");
+        strategyTriggerBtn.setAttribute("aria-expanded", "true");
+      } else {
+        strategyPopover.setAttribute("hidden", "true");
+        strategyTriggerBtn.classList.remove("active");
+        strategyTriggerBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    strategyOptionItems.forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const value = opt.dataset.value;
+        if (!value) return;
+
+        // Update hidden select for seamless API compatibility
+        if (strategyHiddenSelect) {
+          strategyHiddenSelect.value = value;
+          strategyHiddenSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+
+        // Update active class on options
+        strategyOptionItems.forEach((item) => {
+          const isSelected = item.dataset.value === value;
+          item.classList.toggle("selected", isSelected);
+          item.setAttribute("aria-selected", String(isSelected));
+        });
+
+        // Update trigger button label & badge
+        if (strategyTriggerLabel) {
+          if (value === "cag") {
+            strategyTriggerLabel.textContent = "CAG (Full Context)";
+          } else if (value === "sentence") {
+            strategyTriggerLabel.textContent = "Sentence-aware";
+          } else {
+            strategyTriggerLabel.textContent = "Paragraph-based";
+          }
+        }
+        if (strategyRecBadge) {
+          if (value === "cag") {
+            strategyRecBadge.textContent = "⚡ Zero Error";
+            strategyRecBadge.style.display = "inline-block";
+            strategyRecBadge.className = "strategy-rec-badge cag";
+          } else if (value === "sentence") {
+            strategyRecBadge.textContent = "Rec";
+            strategyRecBadge.style.display = "inline-block";
+            strategyRecBadge.className = "strategy-rec-badge";
+          } else {
+            strategyRecBadge.style.display = "none";
+          }
+        }
+
+        // Close popover
+        strategyPopover.setAttribute("hidden", "true");
+        strategyTriggerBtn.classList.remove("active");
+        strategyTriggerBtn.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (strategyWrapper && !strategyWrapper.contains(e.target)) {
+        strategyPopover.setAttribute("hidden", "true");
+        strategyTriggerBtn.classList.remove("active");
+        strategyTriggerBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !strategyPopover.hasAttribute("hidden")) {
+        strategyPopover.setAttribute("hidden", "true");
+        strategyTriggerBtn.classList.remove("active");
+        strategyTriggerBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+})();

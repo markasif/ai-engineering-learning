@@ -15,6 +15,7 @@ from shared.document_store import (
 from shared.session_store import (
     create_session,
     get_session,
+    list_sessions,
 )
 
 
@@ -77,6 +78,18 @@ class TestSessionIsolation:
         assert get_session(sid_b, tenant_id="tenant-b") is not None
         assert get_session(sid_a, tenant_id="tenant-b") is None
         assert get_session(sid_b, tenant_id="tenant-a") is None
+
+    def test_list_sessions_filters_by_tenant(self):
+        sid_a = create_session(tenant_id="tenant-a")
+        sid_b = create_session(tenant_id="tenant-b")
+
+        sessions_a = list_sessions(tenant_id="tenant-a")
+        sessions_b = list_sessions(tenant_id="tenant-b")
+
+        assert any(s.id == sid_a for s in sessions_a)
+        assert not any(s.id == sid_b for s in sessions_a)
+        assert any(s.id == sid_b for s in sessions_b)
+        assert not any(s.id == sid_a for s in sessions_b)
 
 
 class TestDefaultTenantBackcompat:

@@ -14,6 +14,7 @@ from app.core.rate_limit import rate_limit
 from app.schemas.chat import (
     ChatRequest,
     ChatResponse,
+    MultiTenantModeRequest,
     SessionSummary,
     SmartChatRequest,
     SmartChatResponse,
@@ -31,6 +32,7 @@ from shared.router import classify_query
 from shared.session_store import (
     add_message,
     create_session,
+    delete_session,
     get_session,
     list_sessions,
 )
@@ -109,10 +111,18 @@ async def new_session(tenant_id: str = Depends(get_tenant_id)) -> dict[str, str]
 
 
 @router.get("/sessions", response_model=list[SessionSummary], tags=["F3 · AI Memory"])
-async def sessions_list() -> list[SessionSummary]:
-    """List existing chat sessions."""
+async def sessions_list(tenant_id: str = Depends(get_tenant_id)) -> list[SessionSummary]:
+    """List existing chat sessions for the active tenant, pruning abandoned 0-message ghosts."""
     summaries = []
-    for s in list_sessions():
+    has_empty = False
+    for s in list_sessions(tenant_id=tenant_id):
+        # Keep all sessions with actual messages. For empty sessions (0 messages),
+        # only keep at most the single newest one so ghost sessions don't pile up.
+        if not s.messages:
+            if has_empty:
+                continue
+            has_empty = True
+
         first_user_msg = next((m.content for m in s.messages if m.role == "user"), "")
         title = (
             (first_user_msg[:60] + "…")
@@ -164,6 +174,16 @@ async def session_history(
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     return session.messages
+
+
+@router.delete("/sessions/{session_id}", tags=["F3 · AI Memory"])
+async def remove_session(
+    session_id: str, tenant_id: str = Depends(get_tenant_id)
+) -> dict[str, str]:
+    """Delete a chat session and all its associated message history."""
+    if not delete_session(session_id, tenant_id=tenant_id):
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
+    return {"deleted": session_id}
 
 
 @router.post(
@@ -239,11 +259,33 @@ async def smart_chat(
 async def tenant_info(tenant_id: str = Depends(get_tenant_id)) -> dict[str, Any]:
     """Retrieve tenant context and metadata."""
     from shared.document_store import list_documents
+    from shared.session_store import list_sessions
 
     return {
         "tenant_id": tenant_id,
         "multi_tenant_enabled": settings.enable_multi_tenant,
         "document_count": len(list_documents(tenant_id=tenant_id)),
+        "session_count": len(list_sessions(tenant_id=tenant_id)),
+    }
+
+
+@router.post("/tenant/mode", tags=["F6 · Smart Router"])
+async def set_multi_tenant_mode(
+    body: MultiTenantModeRequest,
+    tenant_id: str = Depends(get_tenant_id),
+) -> dict[str, Any]:
+    """Toggle or set multi-tenant isolation mode dynamically."""
+    from shared.document_store import list_documents
+    from shared.session_store import list_sessions
+
+    settings.enable_multi_tenant = body.enabled
+    effective_tenant = tenant_id if settings.enable_multi_tenant else "default"
+    return {
+        "multi_tenant_enabled": settings.enable_multi_tenant,
+        "tenant_id": effective_tenant,
+        "document_count": len(list_documents(tenant_id=effective_tenant)),
+        "session_count": len(list_sessions(tenant_id=effective_tenant)),
+        "message": f"Multi-tenant isolation is now {'enabled' if settings.enable_multi_tenant else 'disabled'}.",
     }
 
 

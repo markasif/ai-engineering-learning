@@ -17,22 +17,6 @@ TOOLS EXPOSED:
   get_weather(location: str) → mock weather data
   search_news(query: str, max_results: int) → mock news headlines
   get_exchange_rate(from_currency: str, to_currency: str) → mock FX rate
-
-These all return mock data. In a real integration you would replace the
-mock return values with actual API calls (OpenWeatherMap, NewsAPI, etc.).
-
-MCP SDK NOTE:
-  This server uses the official Python MCP SDK (package: "mcp").
-  The SDK handles the JSON-RPC protocol layer — you just define tools
-  with the @server.tool() decorator and return results as dicts or strings.
-
-  The same server code works with ANY MCP-compatible client:
-    - Our hand-rolled client (shared/mcp_client.py)
-    - Claude Desktop
-    - Cursor
-    - Google ADK's MCPToolset
-    - LangChain MCP adapters
-  This is the entire point of the MCP standard.
 """
 
 import asyncio
@@ -110,75 +94,86 @@ def _get_exchange_rate(from_currency: str, to_currency: str) -> dict:
 # =============================================================================
 
 if _MCP_AVAILABLE:
-    server = Server("bsb-demo-mcp-server")
 
-    @server.list_tools()
-    async def list_tools() -> list[mcp_types.Tool]:
-        return [
-            mcp_types.Tool(
-                name="get_weather",
-                description="Get the current weather for a location. Returns temperature, condition, and humidity.",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "City name or location (e.g. 'London', 'New York')",
+    async def list_tools_handler(ctx=None, params=None) -> mcp_types.ListToolsResult:
+        return mcp_types.ListToolsResult(
+            tools=[
+                mcp_types.Tool(
+                    name="get_weather",
+                    description="Get the current weather for a location. Returns temperature, condition, and humidity.",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "City name or location (e.g. 'London', 'New York')",
+                            },
                         },
+                        "required": ["location"],
                     },
-                    "required": ["location"],
-                },
-            ),
-            mcp_types.Tool(
-                name="search_news",
-                description="Search for recent news headlines about a topic.",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query (e.g. 'AI regulation', 'climate change')",
+                ),
+                mcp_types.Tool(
+                    name="search_news",
+                    description="Search for recent news headlines about a topic.",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search query (e.g. 'AI regulation', 'climate change')",
+                            },
+                            "max_results": {
+                                "type": "integer",
+                                "description": "Maximum number of results (1-5, default 3)",
+                                "default": 3,
+                            },
                         },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum number of results (1-5, default 3)",
-                            "default": 3,
-                        },
+                        "required": ["query"],
                     },
-                    "required": ["query"],
-                },
-            ),
-            mcp_types.Tool(
-                name="get_exchange_rate",
-                description="Get the current exchange rate between two currencies.",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "from_currency": {
-                            "type": "string",
-                            "description": "Source currency code (e.g. 'USD', 'EUR', 'GBP')",
+                ),
+                mcp_types.Tool(
+                    name="get_exchange_rate",
+                    description="Get the current exchange rate between two currencies.",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "from_currency": {
+                                "type": "string",
+                                "description": "Source currency code (e.g. 'USD', 'EUR', 'GBP')",
+                            },
+                            "to_currency": {
+                                "type": "string",
+                                "description": "Target currency code (e.g. 'USD', 'EUR', 'GBP')",
+                            },
                         },
-                        "to_currency": {
-                            "type": "string",
-                            "description": "Target currency code (e.g. 'USD', 'EUR', 'GBP')",
-                        },
+                        "required": ["from_currency", "to_currency"],
                     },
-                    "required": ["from_currency", "to_currency"],
-                },
-            ),
-        ]
+                ),
+            ]
+        )
 
-    @server.call_tool()
-    async def call_tool(name: str, arguments: dict) -> list[mcp_types.TextContent]:
+    async def call_tool_handler(ctx, params) -> mcp_types.CallToolResult:
+        name = getattr(params, "name", "")
+        arguments = getattr(params, "arguments", {}) or {}
         if name == "get_weather":
-            result = _get_weather(arguments["location"])
+            result = _get_weather(arguments.get("location", ""))
         elif name == "search_news":
-            result = _search_news(arguments["query"], arguments.get("max_results", 3))
+            result = _search_news(arguments.get("query", ""), arguments.get("max_results", 3))
         elif name == "get_exchange_rate":
-            result = _get_exchange_rate(arguments["from_currency"], arguments["to_currency"])
+            result = _get_exchange_rate(
+                arguments.get("from_currency", ""), arguments.get("to_currency", "")
+            )
         else:
             result = {"error": f"Unknown tool '{name}'"}
-        return [mcp_types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        return mcp_types.CallToolResult(
+            content=[mcp_types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        )
+
+    server = Server(
+        "bsb-demo-mcp-server",
+        on_list_tools=list_tools_handler,
+        on_call_tool=call_tool_handler,
+    )
 
     async def main():
         async with stdio_server() as (read_stream, write_stream):

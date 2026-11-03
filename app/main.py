@@ -106,12 +106,12 @@ def create_application() -> FastAPI:
         openapi_tags=OPENAPI_TAGS,
     )
 
-    # 1. CORS Middleware
+    # 1. CORS Middleware (Safe public demo & cloud deployment config)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 

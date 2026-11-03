@@ -93,11 +93,34 @@ def add_message(session_id: str, role: str, content: str) -> None:
     )
 
 
-def list_sessions() -> list[Session]:
+def list_sessions(tenant_id: str = "default") -> list[Session]:
     """
     Return all sessions, most recently created first.
 
-    The list is sorted by created_at descending so the sidebar shows the
-    newest conversation at the top.
+    When ENABLE_MULTI_TENANT=true, only returns sessions belonging to
+    the given tenant. When disabled, returns all sessions (existing behavior).
     """
-    return sorted(_store.values(), key=lambda s: s.created_at, reverse=True)
+    from shared.config import settings
+
+    sessions = _store.values()
+    if settings.enable_multi_tenant:
+        sessions = [s for s in sessions if s.tenant_id == tenant_id]
+    return sorted(sessions, key=lambda s: s.created_at, reverse=True)
+
+
+def delete_session(session_id: str, tenant_id: str = "default") -> bool:
+    """
+    Delete a session and all its stored messages.
+
+    When ENABLE_MULTI_TENANT=true, prevents deleting another tenant's session.
+    Returns True if successfully deleted, False if not found.
+    """
+    from shared.config import settings
+
+    session = _store.get(session_id)
+    if session is None:
+        return False
+    if settings.enable_multi_tenant and session.tenant_id != tenant_id:
+        return False
+    del _store[session_id]
+    return True

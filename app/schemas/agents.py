@@ -11,6 +11,7 @@ class AgentRequest(BaseModel):
 
 class PlanRequest(BaseModel):
     message: str = Field(..., description="High-level goal to decompose into execution steps")
+    session_id: str | None = Field(default=None, description="Optional existing session ID to associate with the task")
 
 
 class McpExecuteRequest(BaseModel):
