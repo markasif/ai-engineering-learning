@@ -52,7 +52,7 @@ applyTheme(currentTheme);
 // =============================================================================
 const BYOK_STORAGE_KEY = "askraggy_byok_key";
 let activeByokKey = localStorage.getItem(BYOK_STORAGE_KEY) || "";
-activeTenantId = activeTenantId || "";
+let activeTenantId = "";
 
 /**
  * Return headers object with content-type, active tenant ID, and optional BYOK key.
@@ -1341,10 +1341,8 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Load session list and tenant info on page load so the sidebar and pill populate immediately.
-loadTenantInfo();
-loadSessions();
-loadDocuments();
+// Initial data loads (loadSessions, loadDocuments, loadTenantInfo) are safely triggered
+// in initApp() at the end of the script after all DOM element references are initialized.
 
 // =============================================================================
 // Feature 4: Tab navigation (Chat | Documents)
@@ -4613,5 +4611,16 @@ function initByokSettings() {
   updateStatusDisplay();
 }
 
-document.addEventListener("DOMContentLoaded", initByokSettings);
-initByokSettings();
+function initApp() {
+  applyResponsivePlaceholders();
+  initByokSettings();
+  loadSessions();
+  loadDocuments();
+  loadTenantInfo();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}

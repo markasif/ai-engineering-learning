@@ -54,3 +54,4 @@ def test_byok_header_extraction():
     scope_empty = {"type": "http", "headers": []}
     req_empty = Request(scope_empty)
     assert get_user_api_key(req_empty) is None
+
