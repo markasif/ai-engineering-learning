@@ -124,3 +124,18 @@ def delete_session(session_id: str, tenant_id: str = "default") -> bool:
         return False
     del _store[session_id]
     return True
+
+
+def truncate_session_messages(session_id: str, keep_count: int, tenant_id: str = "default") -> bool:
+    """
+    Truncate a session's messages to keep only the first keep_count messages.
+    Used when editing an earlier message in the conversation.
+    """
+    session = get_session(session_id, tenant_id=tenant_id)
+    if session is None:
+        return False
+    if keep_count < 0:
+        keep_count = 0
+    session.messages = session.messages[:keep_count]
+    return True
+

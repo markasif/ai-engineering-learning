@@ -147,8 +147,246 @@ const chatInput      = document.getElementById("chat-input");
 const sendBtn        = document.getElementById("send-btn");
 const emptyState     = document.getElementById("empty-state");
 
+// =============================================================================
+// Generation Control & Abort Tracking (ChatGPT & Gemini style Stop button)
+// =============================================================================
+let activeChatAbortController = null;
+let activeDocAbortController = null;
+let activeAgentAbortController = null;
+
+const SEND_ICON_SVG = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+
+const STOP_ICON_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" ry="2.5"></rect></svg>`;
+
+/** Toggle send button between normal send mode and active Stop generating mode */
+function setButtonStopState(btn, isStop, defaultTitle = "Send message") {
+  if (!btn) return;
+  if (isStop) {
+    btn.classList.add("btn-circle-stop");
+    btn.disabled = false;
+    btn.title = "Stop generating (Esc)";
+    btn.setAttribute("aria-label", "Stop generating");
+    btn.innerHTML = STOP_ICON_SVG;
+  } else {
+    btn.classList.remove("btn-circle-stop");
+    btn.disabled = false;
+    btn.title = defaultTitle;
+    btn.setAttribute("aria-label", defaultTitle);
+    btn.innerHTML = SEND_ICON_SVG;
+  }
+}
+
+/** Render a clean "Generation stopped" notice badge inside an AI message */
+function appendStoppedNotice(context = "general") {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai stopped-notice-message";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Assistant";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble stopped-bubble";
+  bubble.innerHTML = `
+    <span class="stopped-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+      </svg>
+      Generation stopped
+    </span>
+  `;
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(bubble);
+
+  if (context === "doc") {
+    if (docMessageHistory) {
+      docMessageHistory.appendChild(wrapper);
+      docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
+    }
+  } else if (context === "agent") {
+    if (agentHistory) {
+      agentHistory.appendChild(wrapper);
+      agentHistory.scrollTop = agentHistory.scrollHeight;
+    }
+  } else {
+    if (messageHistory) {
+      messageHistory.appendChild(wrapper);
+      messageHistory.scrollTop = messageHistory.scrollHeight;
+    }
+  }
+}
+
+/**
+ * Global Escape key listener: stop any running generation immediately.
+ */
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (activeChatAbortController) {
+      e.preventDefault();
+      activeChatAbortController.abort();
+    }
+    if (activeDocAbortController) {
+      e.preventDefault();
+      activeDocAbortController.abort();
+    }
+    if (activeAgentAbortController) {
+      e.preventDefault();
+      activeAgentAbortController.abort();
+    }
+  }
+});
+
+// =============================================================================
+// Message Edit Functionality (ChatGPT & Gemini style inline message editor)
+// =============================================================================
+
+/** Start inline editing of an existing user message */
+function startEditMessage(msgWrapper, bubbleEl, originalText, contextType = "general") {
+  if (msgWrapper.querySelector(".user-inline-edit-box")) return;
+
+  const currentText = msgWrapper.dataset.rawText || bubbleEl.textContent.trim() || originalText;
+  bubbleEl.style.display = "none";
+  const actionsRow = msgWrapper.querySelector(".user-msg-actions");
+  if (actionsRow) actionsRow.style.display = "none";
+
+  const editBox = document.createElement("div");
+  editBox.className = "user-inline-edit-box";
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "user-inline-edit-input";
+  textarea.value = currentText;
+  textarea.rows = Math.min(6, Math.max(2, Math.ceil(currentText.length / 45)));
+
+  const buttonsRow = document.createElement("div");
+  buttonsRow.className = "user-inline-edit-buttons";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btn-edit-cancel";
+  cancelBtn.textContent = "Cancel";
+
+  const submitBtn = document.createElement("button");
+  submitBtn.type = "button";
+  submitBtn.className = "btn-edit-submit";
+  submitBtn.textContent = "Save & Submit";
+
+  buttonsRow.appendChild(cancelBtn);
+  buttonsRow.appendChild(submitBtn);
+
+  editBox.appendChild(textarea);
+  editBox.appendChild(buttonsRow);
+
+  msgWrapper.insertBefore(editBox, bubbleEl.nextSibling);
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  function cancelEdit() {
+    editBox.remove();
+    bubbleEl.style.display = "";
+    if (actionsRow) actionsRow.style.display = "";
+  }
+
+  cancelBtn.addEventListener("click", cancelEdit);
+
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    } else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitEdit();
+    }
+  });
+
+  async function submitEdit() {
+    const newText = textarea.value.trim();
+    if (!newText) return;
+    if (newText === currentText) {
+      cancelEdit();
+      return;
+    }
+
+    editBox.remove();
+    bubbleEl.textContent = newText;
+    msgWrapper.dataset.rawText = newText;
+    bubbleEl.style.display = "";
+    if (actionsRow) actionsRow.style.display = "";
+
+    if (contextType === "general") {
+      await handleGeneralChatEdit(msgWrapper, newText);
+    } else if (contextType === "doc") {
+      await handleDocChatEdit(msgWrapper, newText);
+    } else if (contextType === "agent") {
+      await handleAgentChatEdit(msgWrapper, newText);
+    }
+  }
+
+  submitBtn.addEventListener("click", submitEdit);
+}
+
+/** Handle saving & submitting an edited user message in General Chat */
+async function handleGeneralChatEdit(msgWrapper, newText) {
+  const children = Array.from(messageHistory.children).filter(el => el.classList.contains("message"));
+  const targetIndex = children.indexOf(msgWrapper);
+  if (targetIndex !== -1) {
+    children.slice(targetIndex + 1).forEach(el => el.remove());
+
+    if (currentSessionId) {
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+        await fetch(`${API_BASE}/api/sessions/${currentSessionId}/truncate`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ keep_count: targetIndex }),
+        });
+      } catch (e) {
+        console.warn("Could not truncate session history:", e);
+      }
+    }
+  }
+
+  await sendMessage(newText, msgWrapper);
+}
+
+/** Handle saving & submitting an edited user query in Document Chat */
+async function handleDocChatEdit(msgWrapper, newText) {
+  const children = Array.from(docMessageHistory.children).filter(el => el.classList.contains("message") || el.classList.contains("doc-qa-card"));
+  const targetIndex = children.indexOf(msgWrapper);
+  if (targetIndex !== -1) {
+    children.slice(targetIndex + 1).forEach(el => el.remove());
+  }
+  await sendDocMessage(newText, msgWrapper);
+}
+
+/** Handle saving & submitting an edited user query in Agent Chat */
+async function handleAgentChatEdit(msgWrapper, newText) {
+  const children = Array.from(agentHistory.children).filter(el => el.classList.contains("message"));
+  const targetIndex = children.indexOf(msgWrapper);
+  if (targetIndex !== -1) {
+    children.slice(targetIndex + 1).forEach(el => el.remove());
+
+    if (currentSessionId) {
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+        await fetch(`${API_BASE}/api/sessions/${currentSessionId}/truncate`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ keep_count: targetIndex }),
+        });
+      } catch (e) {
+        console.warn("Could not truncate agent session history:", e);
+      }
+    }
+  }
+  await runAgent(newText, msgWrapper);
+}
+
 /**
  * Append a message bubble to the conversation history.
+ * Adds an Edit button for user messages to allow editing prior prompts.
  *
  * @param {"user"|"ai"} role
  * @param {string} text
@@ -160,6 +398,10 @@ function appendMessage(role, text, isThinking = false) {
 
   const wrapper = document.createElement("div");
   wrapper.className = `message ${role}${isThinking ? " thinking" : ""}`;
+  wrapper.dataset.role = role;
+  if (role === "user" && text) {
+    wrapper.dataset.rawText = text;
+  }
 
   const label = document.createElement("span");
   label.className = "role-label";
@@ -181,6 +423,33 @@ function appendMessage(role, text, isThinking = false) {
 
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
+
+  // Attach Edit button on user messages (Gemini / ChatGPT style)
+  if (role === "user" && !isThinking) {
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "user-msg-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn-msg-edit";
+    editBtn.title = "Edit message";
+    editBtn.setAttribute("aria-label", "Edit message");
+    editBtn.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span>Edit</span>
+    `;
+
+    editBtn.addEventListener("click", () => {
+      startEditMessage(wrapper, bubble, wrapper.dataset.rawText || text, "general");
+    });
+
+    actionsRow.appendChild(editBtn);
+    wrapper.appendChild(actionsRow);
+  }
+
   messageHistory.appendChild(wrapper);
 
   // Keep the latest message in view.
@@ -189,16 +458,23 @@ function appendMessage(role, text, isThinking = false) {
   return wrapper;
 }
 
-/** Send the current input value to the appropriate chat endpoint. */
-async function sendMessage() {
-  const text = chatInput.value.trim();
+/** Send the current input value or edited text to the appropriate chat endpoint with abort capability. */
+async function sendMessage(overrideText = null, existingUserEl = null) {
+  const text = (overrideText ?? chatInput.value).trim();
   if (!text) return;
 
-  chatInput.value = "";
-  sendBtn.disabled = true;
+  if (!overrideText && chatInput) chatInput.value = "";
 
-  appendMessage("user", text);
+  let userEl = existingUserEl;
+  if (!userEl) {
+    userEl = appendMessage("user", text);
+  }
+
   const thinkingEl = appendMessage("ai", "", true);
+
+  // Activate Stop generation state
+  activeChatAbortController = new AbortController();
+  setButtonStopState(sendBtn, true, "Send message");
 
   const isStructured = structuredToggle?.checked ?? true;
   const isSmartMode = smartToggle?.checked ?? true;
@@ -206,7 +482,10 @@ async function sendMessage() {
   // Smart Mode requires a session. Auto-create one if none exists yet.
   if (isSmartMode && !currentSessionId) {
     try {
-      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST" });
+      const sRes = await fetch(`${API_BASE}/api/sessions`, {
+        method: "POST",
+        signal: activeChatAbortController.signal,
+      });
       if (sRes.ok) {
         const sData = await sRes.json();
         currentSessionId = sData.session_id;
@@ -239,6 +518,7 @@ async function sendMessage() {
       method: "POST",
       headers,
       body: JSON.stringify({ message: text }),
+      signal: activeChatAbortController.signal,
     });
 
     if (!response.ok) {
@@ -265,18 +545,32 @@ async function sendMessage() {
 
   } catch (err) {
     thinkingEl.remove();
-    appendMessage("ai", `Error: ${err.message}. Is the server running?`);
+    if (err.name === "AbortError") {
+      appendStoppedNotice("general");
+    } else {
+      appendMessage("ai", `Error: ${err.message}. Is the server running?`);
+    }
   } finally {
-    sendBtn.disabled = false;
+    activeChatAbortController = null;
+    setButtonStopState(sendBtn, false, "Send message");
     chatInput.focus();
   }
 }
 
-// Send on button click or Enter key.
-sendBtn.addEventListener("click", sendMessage);
+// Send on button click or Enter key (supports stopping while generating).
+sendBtn.addEventListener("click", () => {
+  if (activeChatAbortController) {
+    activeChatAbortController.abort();
+    activeChatAbortController = null;
+    return;
+  }
+  sendMessage();
+});
+
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
+    if (activeChatAbortController) return;
     sendMessage();
   }
 });
@@ -1757,6 +2051,35 @@ function appendDocChatMessage(role, text, isThinking = false) {
 
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
+
+  if (role === "user" && !isThinking) {
+    wrapper.dataset.role = "user";
+    wrapper.dataset.rawText = text;
+
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "user-msg-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn-msg-edit";
+    editBtn.title = "Edit message";
+    editBtn.setAttribute("aria-label", "Edit message");
+    editBtn.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span>Edit</span>
+    `;
+
+    editBtn.addEventListener("click", () => {
+      startEditMessage(wrapper, bubble, wrapper.dataset.rawText || text, "doc");
+    });
+
+    actionsRow.appendChild(editBtn);
+    wrapper.appendChild(actionsRow);
+  }
+
   docMessageHistory.appendChild(wrapper);
   docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
 
@@ -2031,7 +2354,7 @@ function appendDocAiResponse(data) {
 /**
  * Send query to Document Chat
  */
-async function sendDocMessage(customQuery = null) {
+async function sendDocMessage(customQuery = null, existingUserEl = null) {
   const query = (typeof customQuery === "string" ? customQuery : (docChatInput?.value || "")).trim();
   if (!query) return;
 
@@ -2040,11 +2363,18 @@ async function sendDocMessage(customQuery = null) {
     return;
   }
 
-  if (docChatInput) docChatInput.value = "";
-  if (docSendBtn) docSendBtn.disabled = true;
+  if (!customQuery && docChatInput) docChatInput.value = "";
 
-  appendDocChatMessage("user", query);
+  let userEl = existingUserEl;
+  if (!userEl) {
+    userEl = appendDocChatMessage("user", query);
+  }
+
   const thinkingEl = appendDocChatMessage("ai", "", true);
+
+  // Activate Stop generation state for Doc Chat
+  activeDocAbortController = new AbortController();
+  setButtonStopState(docSendBtn, true, "Ask document");
 
   const documentId = searchDocFilter?.value || activeDocumentId || null;
   const headers = { "Content-Type": "application/json" };
@@ -2063,6 +2393,7 @@ async function sendDocMessage(customQuery = null) {
         method: "POST",
         headers,
         body: JSON.stringify({ query, top_k: 6, document_id: documentId, mode }),
+        signal: activeDocAbortController.signal,
       });
       if (res.ok) {
         data = await res.json();
@@ -2070,12 +2401,13 @@ async function sendDocMessage(customQuery = null) {
     } catch {}
 
     // 2. Secondary alias endpoint: POST /api/search/ask
-    if (!data) {
+    if (!data && activeDocAbortController && !activeDocAbortController.signal.aborted) {
       try {
         const res = await fetch(`${API_BASE}/api/search/ask`, {
           method: "POST",
           headers,
           body: JSON.stringify({ query, top_k: 6, document_id: documentId }),
+          signal: activeDocAbortController.signal,
         });
         if (res.ok) {
           data = await res.json();
@@ -2084,13 +2416,14 @@ async function sendDocMessage(customQuery = null) {
     }
 
     // 3. Tertiary GET endpoint: GET /api/documents/ask?query=...
-    if (!data) {
+    if (!data && activeDocAbortController && !activeDocAbortController.signal.aborted) {
       try {
         const params = new URLSearchParams({ query });
         if (documentId) params.append("document_id", documentId);
         const res = await fetch(`${API_BASE}/api/documents/ask?${params.toString()}`, {
           method: "GET",
           headers,
+          signal: activeDocAbortController.signal,
         });
         if (res.ok) {
           data = await res.json();
@@ -2099,12 +2432,13 @@ async function sendDocMessage(customQuery = null) {
     }
 
     // 4. Fallback search endpoint: POST /api/search with plain-English synthesis
-    if (!data) {
+    if (!data && activeDocAbortController && !activeDocAbortController.signal.aborted) {
       try {
         const res = await fetch(`${API_BASE}/api/search`, {
           method: "POST",
           headers,
           body: JSON.stringify({ query, top_k: 5, document_id: documentId }),
+          signal: activeDocAbortController.signal,
         });
         if (res.ok) {
           const rawChunks = await res.json();
@@ -2131,18 +2465,32 @@ async function sendDocMessage(customQuery = null) {
     appendDocAiResponse(data);
   } catch (err) {
     thinkingEl.remove();
-    appendDocChatMessage("ai", `Error answering from document: ${err.message}`);
+    if (err.name === "AbortError") {
+      appendStoppedNotice("doc");
+    } else {
+      appendDocChatMessage("ai", `Error answering from document: ${err.message}`);
+    }
   } finally {
-    if (docSendBtn) docSendBtn.disabled = false;
+    activeDocAbortController = null;
+    setButtonStopState(docSendBtn, false, "Ask document");
     docChatInput?.focus();
   }
 }
 
-// Wire Document Chat events
-docSendBtn?.addEventListener("click", () => sendDocMessage());
+// Wire Document Chat events (supports stopping while generating)
+docSendBtn?.addEventListener("click", () => {
+  if (activeDocAbortController) {
+    activeDocAbortController.abort();
+    activeDocAbortController = null;
+    return;
+  }
+  sendDocMessage();
+});
+
 docChatInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
+    if (activeDocAbortController) return;
     sendDocMessage();
   }
 });
@@ -2399,16 +2747,46 @@ function agentAppendUser(text) {
   agentEmptyState?.remove();
   const wrapper = document.createElement("div");
   wrapper.className = "message user";
+  wrapper.dataset.role = "user";
+  wrapper.dataset.rawText = text;
+
   const label = document.createElement("span");
   label.className = "role-label";
   label.textContent = "You";
+
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.textContent = text;
+
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
+
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "user-msg-actions";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "btn-msg-edit";
+  editBtn.title = "Edit message";
+  editBtn.setAttribute("aria-label", "Edit message");
+  editBtn.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+    </svg>
+    <span>Edit</span>
+  `;
+
+  editBtn.addEventListener("click", () => {
+    startEditMessage(wrapper, bubble, wrapper.dataset.rawText || text, "agent");
+  });
+
+  actionsRow.appendChild(editBtn);
+  wrapper.appendChild(actionsRow);
+
   agentHistory.appendChild(wrapper);
   agentHistory.scrollTop = agentHistory.scrollHeight;
+  return wrapper;
 }
 
 /** Append a thinking indicator to the agent history. Returns the element. */
@@ -2537,19 +2915,33 @@ function agentAppendResponse(data) {
 }
 
 /** Send a message to the agent endpoint. */
-async function runAgent(overrideText = null) {
+async function runAgent(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? agentInput?.value)?.trim();
   if (!text) return;
 
   if (!overrideText && agentInput) agentInput.value = "";
-  if (agentSendBtn) agentSendBtn.disabled = true;
+
+  let userEl = existingUserEl;
+  if (!userEl) {
+    userEl = agentAppendUser(text);
+  }
+
+  const thinkingEl = agentAppendThinking();
+
+  // Activate Stop generation state for Agent Chat
+  activeAgentAbortController = new AbortController();
+  setButtonStopState(agentSendBtn, true, "Run agent");
 
   // Auto-provision session in background if none active
   if (!currentSessionId) {
     try {
       const headers = {};
       if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
-      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
+      const sRes = await fetch(`${API_BASE}/api/sessions`, {
+        method: "POST",
+        headers,
+        signal: activeAgentAbortController.signal,
+      });
       if (sRes.ok) {
         const sData = await sRes.json();
         currentSessionId = sData.session_id;
@@ -2561,12 +2953,10 @@ async function runAgent(overrideText = null) {
 
   if (!currentSessionId) {
     showToast("Unable to initialize session for agent.", "error");
-    if (agentSendBtn) agentSendBtn.disabled = false;
+    activeAgentAbortController = null;
+    setButtonStopState(agentSendBtn, false, "Run agent");
     return;
   }
-
-  agentAppendUser(text);
-  const thinkingEl = agentAppendThinking();
 
   const headers = { "Content-Type": "application/json" };
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
@@ -2574,7 +2964,12 @@ async function runAgent(overrideText = null) {
   try {
     const res = await fetch(
       `${API_BASE}/api/sessions/${currentSessionId}/agent/run`,
-      { method: "POST", headers, body: JSON.stringify({ message: text }) },
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message: text }),
+        signal: activeAgentAbortController.signal,
+      },
     );
 
     if (!res.ok) {
@@ -2588,20 +2983,37 @@ async function runAgent(overrideText = null) {
     loadSessions();  // update sidebar message count
   } catch (err) {
     thinkingEl.remove();
-    agentAppendResponse({
-      result: `Error: ${err.message}. Is the Feature 7 server running?`,
-      steps: [],
-      tools_used: [],
-    });
+    if (err.name === "AbortError") {
+      appendStoppedNotice("agent");
+    } else {
+      agentAppendResponse({
+        result: `Error: ${err.message}. Is the Feature 7 server running?`,
+        steps: [],
+        tools_used: [],
+      });
+    }
   } finally {
-    if (agentSendBtn) agentSendBtn.disabled = false;
+    activeAgentAbortController = null;
+    setButtonStopState(agentSendBtn, false, "Run agent");
     agentInput?.focus();
   }
 }
 
-agentSendBtn?.addEventListener("click", dispatchAgent);
+agentSendBtn?.addEventListener("click", () => {
+  if (activeAgentAbortController) {
+    activeAgentAbortController.abort();
+    activeAgentAbortController = null;
+    return;
+  }
+  dispatchAgent();
+});
+
 agentInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); dispatchAgent(); }
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (activeAgentAbortController) return;
+    dispatchAgent();
+  }
 });
 
 // Wire up example prompt buttons and chips.
@@ -2746,12 +3158,19 @@ function dispatchAgent() {
  *   3. Poll GET /api/agent/status/{task_id} every 1.5 s
  *   4. Update the card as steps complete; show result or error when done
  */
-async function runMultiStepAgent(overrideText = null) {
+async function runMultiStepAgent(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? agentInput?.value)?.trim();
   if (!text) return;
 
   if (!overrideText && agentInput) agentInput.value = "";
-  if (agentSendBtn) agentSendBtn.disabled = true;
+
+  let userEl = existingUserEl;
+  if (!userEl) {
+    userEl = agentAppendUser(text);
+  }
+
+  activeAgentAbortController = new AbortController();
+  setButtonStopState(agentSendBtn, true, "Run agent");
 
   // Auto-provision session in background if none active
   if (!currentSessionId) {
@@ -2802,7 +3221,8 @@ async function runMultiStepAgent(overrideText = null) {
       steps_completed: [],
     });
   } finally {
-    if (agentSendBtn) agentSendBtn.disabled = false;
+    activeAgentAbortController = null;
+    setButtonStopState(agentSendBtn, false, "Run agent");
     agentInput?.focus();
   }
 }
@@ -2927,8 +3347,21 @@ function updatePlanningCard(card, task) {
 async function pollTaskStatus(taskId, card) {
   return new Promise((resolve) => {
     const interval = setInterval(async () => {
+      if (activeAgentAbortController?.signal?.aborted) {
+        clearInterval(interval);
+        updatePlanningCard(card, {
+          status: "error",
+          error: "Task stopped by user.",
+          plan: null,
+          steps_completed: [],
+        });
+        resolve();
+        return;
+      }
       try {
-        const res = await fetch(`${API_BASE}/api/agent/status/${taskId}`);
+        const res = await fetch(`${API_BASE}/api/agent/status/${taskId}`, {
+          signal: activeAgentAbortController?.signal,
+        });
         if (!res.ok) return;  // keep polling on transient errors
         const task = await res.json();
         updatePlanningCard(card, task);

@@ -125,3 +125,28 @@ def test_tenant_mode_toggle_endpoint(client: TestClient):
     resp2 = client.post("/api/tenant/mode", json={"enabled": False})
     assert resp2.status_code == 200
     assert resp2.json().get("multi_tenant_enabled") is False
+
+
+def test_session_truncate_endpoint(client: TestClient):
+    s_resp = client.post("/api/sessions")
+    assert s_resp.status_code == 200
+    session_id = s_resp.json()["session_id"]
+
+    from shared.session_store import add_message
+    add_message(session_id, "user", "Message 1")
+    add_message(session_id, "assistant", "Answer 1")
+    add_message(session_id, "user", "Message 2")
+    add_message(session_id, "assistant", "Answer 2")
+
+    # Truncate to keep 2 messages
+    trunc_resp = client.post(f"/api/sessions/{session_id}/truncate", json={"keep_count": 2})
+    assert trunc_resp.status_code == 200
+    assert trunc_resp.json()["message_count"] == 2
+
+    # Check history
+    h_resp = client.get(f"/api/sessions/{session_id}/history")
+    assert h_resp.status_code == 200
+    history = h_resp.json()
+    assert len(history) == 2
+    assert history[0]["content"] == "Message 1"
+    assert history[1]["content"] == "Answer 1"

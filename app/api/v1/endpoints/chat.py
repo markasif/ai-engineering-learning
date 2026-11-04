@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from app.api.deps import get_tenant_id
 from app.core.config import settings
@@ -31,6 +32,7 @@ from shared.retrieval_memory import (
 from shared.router import classify_query
 from shared.session_store import (
     add_message,
+    truncate_session_messages,
     create_session,
     delete_session,
     get_session,
@@ -184,6 +186,25 @@ async def remove_session(
     if not delete_session(session_id, tenant_id=tenant_id):
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     return {"deleted": session_id}
+
+
+
+
+class TruncateSessionRequest(BaseModel):
+    keep_count: int = Field(default=0, ge=0, description="Number of earliest messages to keep in session history")
+
+
+@router.post("/sessions/{session_id}/truncate", tags=["F3 · AI Memory"])
+async def session_truncate(
+    session_id: str,
+    body: TruncateSessionRequest,
+    tenant_id: str = Depends(get_tenant_id),
+) -> dict[str, Any]:
+    """Truncate message history to an earlier point for editing previous messages."""
+    if not truncate_session_messages(session_id, body.keep_count, tenant_id=tenant_id):
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
+    session = get_session(session_id, tenant_id=tenant_id)
+    return {"status": "ok", "message_count": len(session.messages) if session else 0}
 
 
 @router.post(

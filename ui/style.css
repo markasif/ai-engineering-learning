@@ -8099,3 +8099,218 @@ input.modern-input-field:active,
   color: #ffffff !important;
   border-color: #10b981 !important;
 }
+
+
+/* =============================================================================
+   STOP CHAT GENERATION BUTTON & STOPPED NOTICE (Like ChatGPT & Gemini)
+   ============================================================================= */
+
+.btn-circle-send.btn-circle-stop {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
+  animation: pulseStop 1.8s infinite ease-in-out !important;
+  cursor: pointer !important;
+}
+
+.btn-circle-send.btn-circle-stop:hover {
+  background: #dc2626 !important;
+  transform: scale(1.08) !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.75) !important;
+}
+
+@keyframes pulseStop {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+  }
+}
+
+.stopped-bubble {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px dashed rgba(239, 68, 68, 0.35) !important;
+  color: #f87171 !important;
+  padding: 0.55rem 0.95rem !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  font-size: 0.85rem !important;
+}
+
+.stopped-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  font-weight: 500 !important;
+  color: #f87171 !important;
+}
+
+.stopped-badge svg {
+  display: block;
+}
+
+/* =============================================================================
+   USER MESSAGE EDIT FUNCTIONALITY (Like ChatGPT & Gemini)
+   ============================================================================= */
+
+.user-msg-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.35rem !important;
+  margin-top: 4px !important;
+  opacity: 0;
+  transition: opacity 0.18s ease !important;
+}
+
+.message.user:hover .user-msg-actions,
+.message.user:focus-within .user-msg-actions {
+  opacity: 1 !important;
+}
+
+@media (hover: none) {
+  .user-msg-actions {
+    opacity: 0.85 !important;
+  }
+}
+
+.btn-msg-edit {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: all 0.15s ease !important;
+  line-height: 1.4 !important;
+}
+
+.btn-msg-edit:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-msg-edit svg {
+  display: block;
+}
+
+[data-theme="light"] .btn-msg-edit {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-msg-edit:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-color: #10b981 !important;
+  color: #0f172a !important;
+}
+
+/* User Message Inline Edit Box */
+.user-inline-edit-box {
+  width: 100% !important;
+  max-width: 82% !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+  background: #1E2026 !important;
+  border: 1.5px solid #10b981 !important;
+  border-radius: 14px !important;
+  padding: 0.65rem 0.85rem !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="light"] .user-inline-edit-box {
+  background: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+.user-inline-edit-input {
+  width: 100% !important;
+  min-height: 54px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  resize: vertical !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="light"] .user-inline-edit-input {
+  color: #1c1917 !important;
+}
+
+.user-inline-edit-buttons {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.5rem !important;
+  padding-top: 0.35rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .user-inline-edit-buttons {
+  border-top-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.btn-edit-cancel {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 0.32rem 0.75rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-edit-cancel:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-edit-cancel {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-edit-cancel:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #1e293b !important;
+}
+
+.btn-edit-submit {
+  background: #10b981 !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 0.32rem 0.85rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-edit-submit:hover {
+  background: #059669 !important;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5) !important;
+}
