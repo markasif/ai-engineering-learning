@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=6.5.0" />
+  <link rel="stylesheet" href="style.css?v=6.6.0" />
 </head>
 
 <body>
@@ -40,19 +40,32 @@
       </div>
 
       <div class="header-right">
-        <div class="header-domain-badge">
-          <span class="domain-icon" aria-hidden="true">🏢</span>
+        <div class="header-domain-badge" title="Active Enterprise Domain">
+          <span class="domain-icon" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path>
+              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
+              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path>
+              <path d="M10 6h4"></path>
+              <path d="M10 10h4"></path>
+              <path d="M10 14h4"></path>
+              <path d="M10 18h4"></path>
+            </svg>
+          </span>
           <span class="domain-label">Domain:</span>
           <strong class="domain-value" id="header-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong>
         </div>
-        <div class="header-status">
-          <button id="sound-toggle-btn" class="btn-sound-toggle" type="button" aria-label="Toggle notification sounds"
-            title="Sound notifications active (Click to mute)">
-            <span id="sound-icon" aria-hidden="true">🔔</span>
-          </button>
-          <span class="status-pulse-dot" aria-hidden="true"></span>
-          <span class="status-pulse-text">System Ready</span>
-        </div>
+        <span class="header-v-divider" aria-hidden="true"></span>
+        <button id="sound-toggle-btn" class="btn-sound-toggle active" type="button" aria-label="Toggle notification sounds"
+          title="Sound notifications active (Click to mute)">
+          <span id="sound-icon" class="sound-icon" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+          </span>
+        </button>
       </div>
     </header>
 
@@ -894,7 +907,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=6.5.0"></script>
+  <script src="app.js?v=6.6.0"></script>
 </body>
 
 </html>

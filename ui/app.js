@@ -17,16 +17,24 @@ let soundNotificationsEnabled = localStorage.getItem("askraggy_sound") !== "fals
 const soundToggleBtn = document.getElementById("sound-toggle-btn");
 const soundIcon = document.getElementById("sound-icon");
 
+const SOUND_ON_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+
+const SOUND_MUTED_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+
 function updateSoundToggleUI() {
   if (!soundToggleBtn) return;
   if (soundNotificationsEnabled) {
     soundToggleBtn.classList.remove("muted");
+    soundToggleBtn.classList.add("active");
+    soundToggleBtn.setAttribute("aria-pressed", "true");
     soundToggleBtn.title = "Sound notifications active (Click to mute)";
-    if (soundIcon) soundIcon.textContent = "🔔";
+    if (soundIcon) soundIcon.innerHTML = SOUND_ON_SVG;
   } else {
     soundToggleBtn.classList.add("muted");
-    soundToggleBtn.title = "Sound notifications muted (Click to enable)";
-    if (soundIcon) soundIcon.textContent = "🔕";
+    soundToggleBtn.classList.remove("active");
+    soundToggleBtn.setAttribute("aria-pressed", "false");
+    soundToggleBtn.title = "Sound notifications muted (Click to unmute)";
+    if (soundIcon) soundIcon.innerHTML = SOUND_MUTED_SVG;
   }
 }
 

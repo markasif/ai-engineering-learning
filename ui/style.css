@@ -6442,68 +6442,82 @@ input.modern-input-field:active,
   opacity: 1 !important;
 }
 
-/* Header Right Side Badges */
+/* Header Right Side: Minimal Transparent Domain & Audio Toggle */
+.header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+/* Domain Display: Smaller, transparent to background, no box/card */
 .header-domain-badge {
-  font-size: 0.78rem !important;
-  color: #f4f4f5 !important;
+  font-size: 0.72rem !important;
+  color: #d4d4d8 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 0.42rem !important;
-  padding: 0.26rem 0.75rem !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 999px !important;
-  line-height: 1.3 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  transition: all 0.18s ease !important;
+  gap: 0.35rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  line-height: 1.2 !important;
+  transition: opacity 0.15s ease !important;
 }
 
 .header-domain-badge:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.4) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 0.85 !important;
 }
 
 .header-domain-badge .domain-icon {
-  font-size: 0.85rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #10b981 !important;
   line-height: 1 !important;
 }
 
+.header-domain-badge .domain-icon svg {
+  display: block;
+}
+
 .header-domain-badge .domain-label {
-  font-weight: 600 !important;
-  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  font-size: 0.68rem !important;
   text-transform: uppercase !important;
   letter-spacing: 0.04em !important;
-  color: #a1a1aa !important;
+  color: #71717a !important;
 }
 
 .header-domain-badge .domain-value {
-  font-weight: 700 !important;
-  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.72rem !important;
+  color: #e4e4e7 !important;
+  letter-spacing: 0.01em !important;
 }
 
-.header-status {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  padding: 0.24rem 0.65rem 0.24rem 0.45rem !important;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+/* Subtle vertical divider between Domain and Audio toggle */
+.header-v-divider {
+  width: 1px !important;
+  height: 14px !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  display: inline-block !important;
 }
 
+/* Minimal & Standard Mute/Unmute Icon Button */
 .btn-sound-toggle {
   background: transparent !important;
-  border: none !important;
-  color: #f4f4f5 !important;
-  padding: 0.15rem 0.35rem !important;
-  border-radius: 999px !important;
-  font-size: 0.82rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #a1a1aa !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -6512,23 +6526,39 @@ input.modern-input-field:active,
 }
 
 .btn-sound-toggle:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  transform: scale(1.1) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  transform: none !important;
 }
 
-.status-pulse-dot {
-  width: 7px !important;
-  height: 7px !important;
-  border-radius: 50% !important;
-  background: #10b981 !important;
-  box-shadow: 0 0 8px #10b981 !important;
-  animation: metricsPulse 2s infinite ease-in-out !important;
+.btn-sound-toggle.active,
+.btn-sound-toggle:not(.muted) {
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
 }
 
-.status-pulse-text {
-  font-size: 0.74rem !important;
-  font-weight: 700 !important;
-  color: #f4f4f5 !important;
+.btn-sound-toggle.muted {
+  color: #71717a !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.btn-sound-toggle .sound-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.btn-sound-toggle svg {
+  display: block;
+}
+
+/* Fully decommissioned "System Ready" pulse text & dot */
+.status-pulse-dot,
+.status-pulse-text,
+.header-status {
+  display: none !important;
 }
 
 /* 2. Inner Tab Navigation: Clean Design Without Underlines */
