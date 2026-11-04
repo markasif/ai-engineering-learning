@@ -6,9 +6,10 @@ import asyncio
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_user_api_key
+from app.core.rate_limit import rate_limit
 from app.schemas.documents import SearchRequest
 from shared.document_store import (
     delete_document,
@@ -474,12 +475,15 @@ def _synthesize_plain_english_summary(query: str, chunks: list[dict[str, Any]]) 
 @router.get("/documents/ask/", tags=["F5 · Find the Answer"])
 @router.get("/search/ask", tags=["F5 · Find the Answer"])
 @router.get("/search/ask/", tags=["F5 · Find the Answer"])
+@rate_limit("30/minute")
 async def ask_documents(
+    request: Request = None,  # type: ignore[assignment]
     req: SearchRequest | None = None,
     query: str | None = None,
     document_id: str | None = None,
     top_k: int = 6,
     tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
 ) -> dict[str, Any]:
     """
     Retrieve relevant chunks and synthesize a clear, human-readable answer
@@ -596,7 +600,8 @@ async def ask_documents(
                         {"role": "user", "content": user_prompt},
                     ],
                     temperature=0.1,
-                    max_tokens=2000,
+                    max_tokens=1500 if user_api_key else 500,
+                    api_key=user_api_key,
                 ),
                 timeout=30.0,
             )
@@ -702,7 +707,8 @@ async def ask_documents(
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
-                max_tokens=2000,
+                max_tokens=1500 if user_api_key else 500,
+                api_key=user_api_key,
             ),
             timeout=25.0,
         )

@@ -120,21 +120,43 @@ def _validate_fields(provider: str, required_settings: list[str]) -> None:
 _provider_cache: dict[tuple[str, str], LLMProvider] = {}
 
 
-def get_provider(role: str = "llm") -> LLMProvider:
+def get_provider(role: str = "llm", api_key: str | None = None) -> LLMProvider:
     """
-    Return the provider instance for the given role.
+    Return the provider instance for the given role. Supports BYOK (Bring Your Own Key) overrides.
 
     Args:
         role: "llm" (default) for chat/agents/RAG.
               "voice" for STT/TTS (Feature 10 Part A).
               "vlm"   for image analysis (Feature 10 Part B).
-              Voice and VLM roles fall back to LLM_PROVIDER if their specific
-              provider env vars (VOICE_PROVIDER / VLM_PROVIDER) are not set.
+        api_key: Optional custom API key override (e.g. from user BYOK header).
+                 Groq keys (gsk_...) automatically route to Groq LPU inference.
+                 OpenAI keys (sk-...) route to OpenAI gpt-4o-mini.
 
     Results are cached per (role, provider_name) — switching providers in
     .env and restarting the server picks up the new value on the first call.
     Call get_provider.cache_clear() in tests to force re-instantiation.
     """
+    if api_key and role == "llm":
+        key_stripped = api_key.strip()
+        if key_stripped.startswith("gsk_"):
+            from shared.providers.groq_provider import GroqProvider
+            return GroqProvider(api_key=key_stripped, model=settings.groq_model or "llama-3.3-70b-versatile")
+        elif key_stripped.startswith("sk-") and not key_stripped.startswith("sk-ant-"):
+            from shared.providers.openai_provider import OpenAIProvider
+            return OpenAIProvider(api_key=key_stripped, model="gpt-4o-mini")
+        elif settings.llm_provider == "custom":
+            from shared.providers.openai_provider import OpenAIProvider
+            return OpenAIProvider(
+                api_key=key_stripped,
+                base_url=settings.custom_base_url,
+                model=settings.custom_model,
+            )
+        elif settings.llm_provider == "groq":
+            from shared.providers.groq_provider import GroqProvider
+            return GroqProvider(api_key=key_stripped)
+        else:
+            from shared.providers.openai_provider import OpenAIProvider
+            return OpenAIProvider(api_key=key_stripped)
     if role == "voice":
         provider_name = settings.effective_voice_provider().lower().strip()
     elif role == "vlm":

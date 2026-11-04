@@ -23,6 +23,7 @@ async def call_llm(
     max_tokens: int = 1000,
     tools: list[dict] | None = None,
     response_format: dict | None = None,
+    api_key: str | None = None,
     **kwargs,
 ) -> LLMResponse:
     """
@@ -49,7 +50,7 @@ async def call_llm(
           .model       — which model was used
           .raw         — the original provider response dict, for debugging
     """
-    provider = get_provider("llm")
+    provider = get_provider("llm", api_key=api_key)
     return await provider.chat(
         messages=messages,
         temperature=temperature,

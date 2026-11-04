@@ -48,6 +48,70 @@ themeToggleBtn?.addEventListener("click", () => {
 applyTheme(currentTheme);
 
 // =============================================================================
+// BYOK (Bring Your Own Key) & Centralized Request Headers
+// =============================================================================
+const BYOK_STORAGE_KEY = "askraggy_byok_key";
+let activeByokKey = localStorage.getItem(BYOK_STORAGE_KEY) || "";
+activeTenantId = activeTenantId || "";
+
+/**
+ * Return headers object with content-type, active tenant ID, and optional BYOK key.
+ * @param {Record<string, string>} extraHeaders
+ * @returns {Record<string, string>}
+ */
+function getAuthHeaders(extraHeaders = {}) {
+  const headers = { "Content-Type": "application/json", ...extraHeaders };
+  if (activeTenantId) {
+    headers["X-Tenant-ID"] = activeTenantId;
+  }
+  const key = (activeByokKey || localStorage.getItem(BYOK_STORAGE_KEY) || "").trim();
+  if (key) {
+    headers["X-User-API-Key"] = key;
+  }
+  return headers;
+}
+
+/**
+ * Render a high-visibility, friendly rate-limit notice in the chat when shared demo quota is reached.
+ * @param {"chat"|"doc"|"agent"} containerType
+ */
+function renderRateLimitNotice(containerType = "chat") {
+  const cardHtml = `
+    <div class="rate-limit-card" role="alert" style="margin: 0.85rem 0; padding: 1.15rem 1.25rem; border-radius: 12px; border: 1px solid rgba(224, 86, 36, 0.4); background: rgba(224, 86, 36, 0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; color: #ff8c66;">
+          <span style="font-size: 1.15rem;">⚠️</span>
+          <span>Free Demo Quota Reached</span>
+        </div>
+        <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(224,86,36,0.2); color: #ffab91; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Rate Limited</span>
+      </div>
+      <p style="margin: 0 0 0.85rem 0; font-size: 0.86rem; color: var(--color-silver, #b0b4ba); line-height: 1.5;">
+        AskRaggy is currently experiencing high public demo traffic. The shared demo quota has been reached for this minute.
+      </p>
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-sm btn-cream" onclick="switchTab('admin'); const inp = document.getElementById('byok-key-input'); if(inp) setTimeout(() => { inp.scrollIntoView({behavior: 'smooth', block: 'center'}); inp.focus(); }, 250);" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; cursor: pointer;">
+          <span>⚙️</span> Add Free Key in Settings
+        </button>
+        <span style="font-size: 0.8rem; color: var(--color-pistache, #a8b89e);">
+          Takes 10 seconds · 100% free at <strong>console.groq.com</strong>
+        </span>
+      </div>
+    </div>
+  `;
+
+  if (containerType === "chat") {
+    chatMessages?.insertAdjacentHTML("beforeend", cardHtml);
+    chatMessages?.scrollTo({ top: chatMessages.scrollHeight, behavior: "smooth" });
+  } else if (containerType === "doc") {
+    docChatMessages?.insertAdjacentHTML("beforeend", cardHtml);
+    docChatMessages?.scrollTo({ top: docChatMessages.scrollHeight, behavior: "smooth" });
+  } else if (containerType === "agent") {
+    agentMessages?.insertAdjacentHTML("beforeend", cardHtml);
+    agentMessages?.scrollTo({ top: agentMessages.scrollHeight, behavior: "smooth" });
+  }
+}
+
+// =============================================================================
 // Audio Notification Chime (Web Audio API)
 // =============================================================================
 let audioNotificationCtx = null;
@@ -509,9 +573,8 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     endpoint = "/api/chat";
   }
 
-  // Build headers — include X-Tenant-ID if a custom tenant is set.
-  const headers = { "Content-Type": "application/json" };
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  // Build headers — includes X-Tenant-ID and BYOK X-User-API-Key if set
+  const headers = getAuthHeaders();
 
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -522,6 +585,12 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        thinkingEl.remove();
+        renderRateLimitNotice("chat");
+        playNotificationSound();
+        return;
+      }
       const err = await response.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${response.status}`);
     }
@@ -547,6 +616,8 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     thinkingEl.remove();
     if (err.name === "AbortError") {
       appendStoppedNotice("general");
+    } else if (err.message && (err.message.includes("429") || err.message.toLowerCase().includes("rate limit"))) {
+      renderRateLimitNotice("chat");
     } else {
       appendMessage("ai", `Error: ${err.message}. Is the server running?`);
     }
@@ -2394,8 +2465,7 @@ async function sendDocMessage(customQuery = null, existingUserEl = null) {
   setButtonStopState(docSendBtn, true, "Ask document");
 
   const documentId = searchDocFilter?.value || activeDocumentId || null;
-  const headers = { "Content-Type": "application/json" };
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  const headers = getAuthHeaders();
 
   try {
     let data = null;
@@ -2414,6 +2484,10 @@ async function sendDocMessage(customQuery = null, existingUserEl = null) {
       });
       if (res.ok) {
         data = await res.json();
+      } else if (res.status === 429) {
+        thinkingEl.remove();
+        renderRateLimitNotice("doc");
+        return;
       }
     } catch {}
 
@@ -2536,7 +2610,7 @@ searchInput?.addEventListener("keydown", (e) => {
 // =============================================================================
 
 /** The active X-Tenant-ID header value. Empty string = no custom tenant. */
-let activeTenantId = "";
+activeTenantId = activeTenantId || "";
 let isMultiTenantEnabled = false;
 
 const tenantIdInput           = document.getElementById("tenant-id-input");
@@ -2975,8 +3049,7 @@ async function runAgent(overrideText = null, existingUserEl = null) {
     return;
   }
 
-  const headers = { "Content-Type": "application/json" };
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  const headers = getAuthHeaders();
 
   try {
     const res = await fetch(
@@ -2990,6 +3063,11 @@ async function runAgent(overrideText = null, existingUserEl = null) {
     );
 
     if (!res.ok) {
+      if (res.status === 429) {
+        thinkingEl.remove();
+        renderRateLimitNotice("agent");
+        return;
+      }
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${res.status}`);
     }
@@ -4435,3 +4513,105 @@ function applyResponsivePlaceholders() {
 window.addEventListener("resize", applyResponsivePlaceholders);
 document.addEventListener("DOMContentLoaded", applyResponsivePlaceholders);
 applyResponsivePlaceholders();
+
+// =============================================================================
+// BYOK (Bring Your Own Key) Settings UI Manager
+// =============================================================================
+function initByokSettings() {
+  const byokInput = document.getElementById("byok-key-input");
+  const byokSaveBtn = document.getElementById("byok-save-btn");
+  const byokClearBtn = document.getElementById("byok-clear-btn");
+  const byokToggleVisBtn = document.getElementById("byok-toggle-visibility-btn");
+  const byokStatusCard = document.getElementById("byok-status-card");
+  const byokHeaderBadge = document.getElementById("byok-header-badge");
+
+  function updateStatusDisplay() {
+    const savedKey = (activeByokKey || localStorage.getItem(BYOK_STORAGE_KEY) || "").trim();
+    if (byokInput) {
+      byokInput.value = savedKey;
+    }
+
+    if (savedKey) {
+      const isGroq = savedKey.startsWith("gsk_");
+      const isOpenAI = savedKey.startsWith("sk-");
+      const providerLabel = isGroq ? "Groq LPU (Ultra-Fast)" : (isOpenAI ? "OpenAI Platform" : "Custom Provider");
+      const maskedKey = savedKey.length > 10 ? `${savedKey.slice(0, 4)}••••${savedKey.slice(-4)}` : "••••••••";
+
+      if (byokStatusCard) {
+        byokStatusCard.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <span style="color: var(--color-pistache, #a8b89e); font-weight: 600;">Active Custom Key:</span>
+              <strong style="color: var(--color-warm-white, #f0ede6); margin-left: 0.35rem;">${providerLabel}</strong>
+              <code style="display: inline-block; margin-left: 0.5rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); font-size: 0.78rem; color: var(--color-silver, #b0b4ba);">${maskedKey}</code>
+            </div>
+            <span class="admin-card-badge" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; border-color: rgba(46, 204, 113, 0.3);">
+              Bypassing Rate Limits
+            </span>
+          </div>
+        `;
+      }
+      if (byokHeaderBadge) {
+        byokHeaderBadge.textContent = "Custom Key Active";
+        byokHeaderBadge.style.color = "#2ecc71";
+        byokHeaderBadge.style.borderColor = "rgba(46, 204, 113, 0.3)";
+      }
+    } else {
+      if (byokStatusCard) {
+        byokStatusCard.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <span style="color: var(--color-silver, #b0b4ba);">Current Mode:</span>
+              <strong style="color: var(--color-warm-white, #f0ede6); margin-left: 0.35rem;">Shared Demo Tier</strong>
+              <span style="font-size: 0.78rem; color: var(--color-silver, #b0b4ba); margin-left: 0.5rem;">(Subject to shared public rate limits)</span>
+            </div>
+            <span class="admin-card-badge" style="background: rgba(255, 255, 255, 0.05); color: var(--color-silver, #b0b4ba);">
+              Shared Demo
+            </span>
+          </div>
+        `;
+      }
+      if (byokHeaderBadge) {
+        byokHeaderBadge.textContent = "Optional · Unlimited";
+        byokHeaderBadge.style.color = "";
+        byokHeaderBadge.style.borderColor = "";
+      }
+    }
+  }
+
+  byokSaveBtn?.addEventListener("click", () => {
+    const val = (byokInput?.value || "").trim();
+    if (!val) {
+      showToast("Please enter an API key to save.", "info");
+      return;
+    }
+    activeByokKey = val;
+    localStorage.setItem(BYOK_STORAGE_KEY, val);
+    updateStatusDisplay();
+    showToast("Custom API key saved! You now have unlimited demo access.", "success");
+  });
+
+  byokClearBtn?.addEventListener("click", () => {
+    activeByokKey = "";
+    localStorage.removeItem(BYOK_STORAGE_KEY);
+    if (byokInput) byokInput.value = "";
+    updateStatusDisplay();
+    showToast("Custom API key removed. Switched back to shared demo tier.", "info");
+  });
+
+  byokToggleVisBtn?.addEventListener("click", () => {
+    if (!byokInput) return;
+    if (byokInput.type === "password") {
+      byokInput.type = "text";
+      byokToggleVisBtn.textContent = "🙈";
+    } else {
+      byokInput.type = "password";
+      byokToggleVisBtn.textContent = "👁️";
+    }
+  });
+
+  updateStatusDisplay();
+}
+
+document.addEventListener("DOMContentLoaded", initByokSettings);
+initByokSettings();

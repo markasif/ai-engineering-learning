@@ -163,6 +163,7 @@ async def run_agent(
         tools=_TOOL_SCHEMAS,
         temperature=0.3,  # lower temperature for tool selection
         max_tokens=1000,
+        api_key=api_key,
     )
 
     steps: list[dict] = []
@@ -305,6 +306,7 @@ async def run_agent_with_mcp(
         tools=combined_schemas,
         temperature=0.3,
         max_tokens=1000,
+        api_key=api_key,
     )
 
     steps: list[dict] = []
@@ -365,7 +367,7 @@ async def run_agent_with_mcp(
         )
 
     # Call 2: synthesize final answer.
-    second_response = await call_llm(messages=messages, temperature=0.7, max_tokens=1000)
+    second_response = await call_llm(messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key)
     answer = second_response.content or ""
     add_message(session_id, "user", message)
     add_message(session_id, "assistant", answer)

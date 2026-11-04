@@ -830,6 +830,45 @@
                   </div>
                 </div>
 
+                <!-- ── Card 1B: Custom LLM API Key (BYOK — Bring Your Own Key) ── -->
+                <div class="admin-card admin-section" id="byok-panel-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🔑</span>
+                      <h3 class="admin-section-title">Custom LLM Key (BYOK)</h3>
+                      <span class="admin-card-badge" id="byok-header-badge">Optional · Unlimited</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      Testing high volume or visiting from LinkedIn? Use your own free Groq API key (<code>console.groq.com</code> — no credit card needed) or OpenAI key to bypass shared demo rate limits. Keys are stored safely in your browser only.
+                    </p>
+                  </div>
+
+                  <div class="admin-tenant-row byok-input-row" style="margin-top: 0.75rem;">
+                    <div style="position: relative; flex: 1; display: flex;">
+                      <input type="password" id="byok-key-input" class="admin-input" placeholder="Paste your free Groq key (gsk_...) or OpenAI key (sk-...)" style="width: 100%; padding-right: 2.5rem;" autocomplete="off" />
+                      <button type="button" id="byok-toggle-visibility-btn" class="btn btn-ghost btn-sm" title="Show / Hide API Key" style="position: absolute; right: 0.25rem; top: 50%; transform: translateY(-50%); padding: 0.35rem 0.5rem; color: var(--color-silver, #b0b4ba);">
+                        👁️
+                      </button>
+                    </div>
+                    <button type="button" id="byok-save-btn" class="btn btn-primary btn-sm">Save Key</button>
+                    <button type="button" id="byok-clear-btn" class="btn btn-ghost btn-sm">Reset</button>
+                  </div>
+
+                  <div class="tenant-quick-pills" style="margin-top: 0.6rem;">
+                    <span class="quick-pill-label">Get free key:</span>
+                    <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="quick-tenant-pill" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
+                      ⚡ Free Groq Console (Instant) ↗
+                    </a>
+                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="quick-tenant-pill" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
+                      🤖 OpenAI Platform ↗
+                    </a>
+                  </div>
+
+                  <div id="byok-status-card" class="admin-info-card" style="margin-top: 0.75rem;">
+                    <!-- populated by JS -->
+                  </div>
+                </div>
+
                 <!-- ── Card 2: Tenant identity & dynamic multi-tenant toggle ── -->
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">

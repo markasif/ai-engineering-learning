@@ -47,11 +47,13 @@ class GroqProvider(OpenAIProvider):
     to OpenAI — no translation layer needed.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
+        key = api_key if api_key is not None else settings.groq_api_key
+        mod = model if model is not None else (settings.groq_model or "llama-3.3-70b-versatile")
         super().__init__(
-            api_key=settings.groq_api_key,
+            api_key=key,
             base_url="https://api.groq.com/openai/v1",
-            model=settings.groq_model,
+            model=mod,
         )
         self._provider_name = "groq"
 

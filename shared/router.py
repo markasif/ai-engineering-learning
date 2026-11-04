@@ -79,7 +79,7 @@ _QUICK_GREETINGS = {
 }
 
 
-async def classify_query(query: str) -> dict:
+async def classify_query(query: str, api_key: str | None = None) -> dict:
     """
     Classify whether a query needs document retrieval and how to retrieve.
 
@@ -116,6 +116,7 @@ async def classify_query(query: str) -> dict:
         ],
         temperature=0.1,
         response_format={"type": "json_object"},
+        api_key=api_key,
     )
 
     try:

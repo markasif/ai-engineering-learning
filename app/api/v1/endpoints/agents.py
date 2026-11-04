@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_user_api_key
 from app.core.rate_limit import rate_limit
 from app.schemas.agents import AgentRequest, McpExecuteRequest, PlanRequest
 from shared.agent import run_agent_with_mcp
@@ -25,13 +25,14 @@ async def agent_run(
     session_id: str,
     body: AgentRequest,
     tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
 ) -> dict[str, Any]:
     """Execute ReAct tool-calling agent with local and MCP registered tools."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     return await run_agent_with_mcp(
-        message=body.message, session_id=session_id, tenant_id=tenant_id
+        message=body.message, session_id=session_id, tenant_id=tenant_id, api_key=user_api_key
     )
 
 

@@ -9845,3 +9845,40 @@ body.drawer-open {
     z-index: 1050 !important;
   }
 }
+
+
+/* =============================================================================
+   BYOK & Rate Limiting Card Styles
+   ============================================================================= */
+.rate-limit-card {
+  animation: fadeIn 0.25s ease-out;
+}
+
+[data-theme="dark"] .rate-limit-card {
+  background: rgba(224, 86, 36, 0.09) !important;
+  border-color: rgba(224, 86, 36, 0.4) !important;
+}
+
+[data-theme="light"] .rate-limit-card {
+  background: #fff5f2 !important;
+  border-color: #ffd0c2 !important;
+  box-shadow: 0 4px 14px rgba(224, 86, 36, 0.1) !important;
+}
+
+[data-theme="light"] .rate-limit-card p {
+  color: #4b5563 !important;
+}
+
+.byok-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .byok-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

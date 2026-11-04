@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_user_api_key
 from app.core.config import settings
 from app.core.rate_limit import rate_limit
 from app.schemas.chat import (
@@ -78,7 +78,11 @@ def _build_context_block(chunks: list[dict[str, Any]]) -> str:
 
 @router.post("/chat", response_model=ChatResponse, tags=["F1 · Hello AI"])
 @rate_limit("60/minute")
-async def chat(request: Request, body: ChatRequest) -> ChatResponse:
+async def chat(
+    request: Request,
+    body: ChatRequest,
+    user_api_key: str | None = Depends(get_user_api_key),
+) -> ChatResponse:
     """Basic chat endpoint — rate limited to 60 requests per minute per IP."""
     messages = [
         {
@@ -87,13 +91,17 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
         },
         {"role": "user", "content": body.message},
     ]
-    result = await call_llm(messages)
+    result = await call_llm(messages, api_key=user_api_key)
     return ChatResponse(response=result.content or "")
 
 
 @router.post("/chat/structured", response_model=StructuredResponse, tags=["F2 · Prompt Mastery"])
 @rate_limit("60/minute")
-async def chat_structured(request: Request, body: ChatRequest) -> StructuredResponse:
+async def chat_structured(
+    request: Request,
+    body: ChatRequest,
+    user_api_key: str | None = Depends(get_user_api_key),
+) -> StructuredResponse:
     """Structured JSON-mode chat — rate limited to 60 requests per minute per IP."""
     result = await call_llm(
         [
@@ -102,6 +110,7 @@ async def chat_structured(request: Request, body: ChatRequest) -> StructuredResp
         ],
         temperature=0.3,
         response_format={"type": "json_object"},
+        api_key=user_api_key,
     )
     return _parse_structured(result.content or "")
 
@@ -145,23 +154,32 @@ async def sessions_list(tenant_id: str = Depends(get_tenant_id)) -> list[Session
 @router.post(
     "/sessions/{session_id}/chat", response_model=StructuredResponse, tags=["F3 · AI Memory"]
 )
+@rate_limit("30/minute")
 async def session_chat(
+    request: Request,
     session_id: str,
-    request: ChatRequest,
+    body: ChatRequest,
     tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
 ) -> StructuredResponse:
     """Chat within a specific session maintaining conversation context window."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
 
+    window_size = CONTEXT_WINDOW_SIZE if user_api_key else 6
     messages: list[dict[str, Any]] = [{"role": "system", "content": _STRUCTURED_SYSTEM_PROMPT}]
-    for msg in session.messages[-CONTEXT_WINDOW_SIZE:]:
+    for msg in session.messages[-window_size:]:
         messages.append({"role": msg.role, "content": msg.content})
-    messages.append({"role": "user", "content": request.message})
+    messages.append({"role": "user", "content": body.message})
 
-    add_message(session_id, "user", request.message)
-    result = await call_llm(messages, temperature=0.3, response_format={"type": "json_object"})
+    add_message(session_id, "user", body.message)
+    result = await call_llm(
+        messages,
+        temperature=0.3,
+        response_format={"type": "json_object"},
+        api_key=user_api_key,
+    )
     structured = _parse_structured(result.content or "")
     add_message(session_id, "assistant", structured.answer)
     return structured
@@ -212,17 +230,20 @@ async def session_truncate(
     response_model=SmartChatResponse,
     tags=["F6 · Smart Router"],
 )
+@rate_limit("30/minute")
 async def smart_chat(
+    request: Request,
     session_id: str,
-    request: SmartChatRequest,
+    body: SmartChatRequest,
     tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
 ) -> SmartChatResponse:
     """Smart router: dynamically chooses LLM, RAG, or Hybrid retrieval based on query classification."""
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
 
-    classification = await classify_query(request.message)
+    classification = await classify_query(body.message, api_key=user_api_key)
     chunks_used: list[dict[str, Any]] = []
     source = "llm"
     retrieval_method = "none"
@@ -230,12 +251,12 @@ async def smart_chat(
 
     high_confidence = classification["confidence"] > 0.6
     if high_confidence and classification["needs_retrieval"]:
-        chunks_used = vector_search(request.message, top_k=5, tenant_id=tenant_id)
+        chunks_used = vector_search(body.message, top_k=5, tenant_id=tenant_id)
         source = "rag"
         retrieval_method = "vector"
         system_prompt = _SMART_RAG_SYSTEM_PROMPT
     elif not high_confidence:
-        chunks_used = vector_search(request.message, top_k=3, tenant_id=tenant_id)
+        chunks_used = vector_search(body.message, top_k=3, tenant_id=tenant_id)
         source = "hybrid"
         retrieval_method = "vector"
         system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
@@ -245,16 +266,19 @@ async def smart_chat(
         if digest and digest.summary:
             system_prompt += f"\n\nContext about this user's history: {digest.summary}"
 
+    window_size = CONTEXT_WINDOW_SIZE if user_api_key else 6
+    max_tokens = 1000 if user_api_key else 400
+
     messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
     if chunks_used:
         messages.append({"role": "system", "content": _build_context_block(chunks_used)})
-    for msg in session.messages[-CONTEXT_WINDOW_SIZE:]:
+    for msg in session.messages[-window_size:]:
         messages.append({"role": msg.role, "content": msg.content})
-    messages.append({"role": "user", "content": request.message})
+    messages.append({"role": "user", "content": body.message})
 
-    result = await call_llm(messages)
+    result = await call_llm(messages, max_tokens=max_tokens, api_key=user_api_key)
     answer = result.content or ""
-    add_message(session_id, "user", request.message)
+    add_message(session_id, "user", body.message)
     add_message(session_id, "assistant", answer)
 
     if chunks_used and settings.enable_long_term_context:
@@ -262,7 +286,7 @@ async def smart_chat(
         log_retrieval(
             session_id=session_id,
             tenant_id=tenant_id,
-            query=request.message,
+            query=body.message,
             chunk_ids=chunk_ids,
             retrieval_method=retrieval_method,
         )
