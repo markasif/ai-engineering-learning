@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=6.8.0" />
+  <link rel="stylesheet" href="style.css?v=6.9.0" />
+  <script>
+    (function() {
+      var saved = localStorage.getItem("askraggy_theme") || "dark";
+      document.documentElement.setAttribute("data-theme", saved);
+    })();
+  </script>
 </head>
 
 <body>
@@ -40,6 +46,7 @@
       </div>
 
       <div class="header-right">
+        <!-- Enterprise Domain Capsule -->
         <div class="header-domain-badge" title="Active Enterprise Domain">
           <span class="domain-icon" aria-hidden="true">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -55,7 +62,34 @@
           <span class="domain-label">Domain:</span>
           <strong class="domain-value" id="header-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong>
         </div>
+
+        <!-- System Ready Pill -->
+        <div class="header-status-pill" title="System Operational &amp; Model Connected">
+          <span class="status-pulse-dot" aria-hidden="true"></span>
+          <span class="status-pulse-text">System Ready</span>
+        </div>
+
         <span class="header-v-divider" aria-hidden="true"></span>
+
+        <!-- Theme Toggle Button (Dark / Light Mode) -->
+        <button id="theme-toggle-btn" class="btn-theme-toggle" type="button" aria-label="Toggle dark/light theme"
+          title="Switch to Light Mode">
+          <span id="theme-icon" class="theme-icon" aria-hidden="true">
+            <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
+        </button>
+
+        <!-- Sound Toggle Button -->
         <button id="sound-toggle-btn" class="btn-sound-toggle active" type="button" aria-label="Toggle notification sounds"
           title="Sound notifications active (Click to mute)">
           <span id="sound-icon" class="sound-icon" aria-hidden="true">
@@ -66,6 +100,13 @@
             </svg>
           </span>
         </button>
+
+        <span class="header-v-divider" aria-hidden="true"></span>
+
+        <!-- Circular User Profile Badge "JD" -->
+        <div class="header-user-badge" title="Enterprise Administrator: John Doe (JD)" aria-label="User profile John Doe">
+          <span class="user-avatar-initials">JD</span>
+        </div>
       </div>
     </header>
 
@@ -907,7 +948,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=6.8.0"></script>
+  <script src="app.js?v=6.9.0"></script>
 </body>
 
 </html>
