@@ -72,10 +72,10 @@ html, body {
   position: relative;
 }
 
-/* --- Header (Above navbar - Premium Obsidian Black Header) --- */
+/* --- Header (Above navbar - Sophisticated Dark Forest Green-to-Black Gradient) --- */
 .site-header {
-  background: #0a0a0a;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(to right, #062e1e 0%, #0a1e15 50%, #080b09 100%);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.16);
   color: #ffffff;
   padding: 0.55rem 1.35rem;
   min-height: 52px;
@@ -6308,12 +6308,12 @@ input.modern-input-field:active,
    Matches the New Chat button green; "Ask" in white, "Raggy" in black like image
    ============================================================================= */
 
-/* 1. Top Navbar: Sleek Shadcn Obsidian Black with Green Raggy & Visible Text */
+/* 1. Top Navbar: Sophisticated Dark Forest Green-to-Black Gradient */
 .site-header {
-  background: #0a0a0a !important;
+  background: linear-gradient(to right, #062e1e 0%, #0a1e15 50%, #080b09 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.18) !important;
   padding: 0.55rem 1.35rem !important;
   min-height: 52px !important;
   display: flex !important;
