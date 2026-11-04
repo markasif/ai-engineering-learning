@@ -5,7 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=7.3.2" />
+  <!-- Favicon and Brand Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=7.4.0" />
+  <link rel="shortcut icon" href="favicon.ico?v=7.4.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.4.0" />
+  <link rel="stylesheet" href="style.css?v=7.4.0" />
   <script>
     (function() {
       var saved = localStorage.getItem("askraggy_theme") || "dark";
@@ -111,6 +115,12 @@
       <aside class="sidebar" id="session-sidebar" aria-label="Conversation history">
         <div class="sidebar-header">
           <span class="sidebar-title">Chats</span>
+          <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close past chats drawer" title="Close chats">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <nav id="session-list" class="session-list" aria-label="Past sessions">
           <p class="sidebar-empty">No sessions yet.<br>Click <strong>New Chat</strong> to start.</p>
@@ -1015,7 +1025,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=7.3.2"></script>
+  <script src="app.js?v=7.4.0"></script>
 </body>
 
 </html>

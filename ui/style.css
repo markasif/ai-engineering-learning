@@ -96,7 +96,7 @@ html, body {
 
 /* Mobile Sidebar Drawer Toggle Button */
 .btn-mobile-sidebar {
-  display: none !important;
+  display: none;
   align-items: center;
   gap: 0.35rem;
   background: rgba(0, 0, 0, 0.04);
@@ -4825,8 +4825,10 @@ textarea:focus,
 }
 
 .main-content {
-  height: calc(100% - 44px) !important;
-  max-height: calc(100% - 44px) !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: 100% !important;
   overflow: hidden !important;
   padding: 0.35rem 1.75rem 0.65rem !important;
   gap: 0 !important;
@@ -8686,4 +8688,659 @@ input.modern-input-field:active,
   border: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
+}
+
+
+/* =============================================================================
+   COMPREHENSIVE RESPONSIVE DESIGN SYSTEM (DESKTOP, TABLET & MOBILE)
+   Fixes layout breaking, enables smooth off-canvas drawer on tablet & mobile,
+   and preserves desktop design completely intact.
+   ============================================================================= */
+
+/* --- Close Button in Sidebar Header --- */
+.sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.18s ease;
+  line-height: 1;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .sidebar-close-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #57534e;
+}
+
+[data-theme="light"] .sidebar-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+}
+
+/* --- Backdrop Overlay for Drawer --- */
+.sidebar-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 999 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+.sidebar-backdrop[hidden] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body.drawer-open {
+  overflow: hidden !important;
+}
+
+/* =============================================================================
+   1. DESKTOP SCREENS (> 992px)
+   Strictly preserve existing desktop layout and hide mobile controls
+   ============================================================================= */
+@media (min-width: 993px) {
+  .btn-mobile-sidebar {
+    display: none !important;
+  }
+
+  .sidebar-close-btn {
+    display: none !important;
+  }
+
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  .sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 250px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    transform: none !important;
+    box-shadow: none !important;
+    display: flex !important;
+    z-index: 20 !important;
+  }
+
+  .main-wrapper {
+    flex: 1 1 0% !important;
+    width: calc(100% - 250px) !important;
+  }
+}
+
+/* =============================================================================
+   2. TABLET SCREENS (769px to 992px)
+   Off-canvas sidebar drawer gives full screen width to chat and agent tasks
+   ============================================================================= */
+@media (max-width: 992px) and (min-width: 769px) {
+  .btn-mobile-sidebar {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    padding: 0.32rem 0.65rem !important;
+    border-radius: 8px !important;
+    font-size: 0.78rem !important;
+    cursor: pointer !important;
+  }
+
+  [data-theme="light"] .btn-mobile-sidebar {
+    background: #f5f0e6 !important;
+    border: 1.5px solid #e0d6c5 !important;
+    color: #1c1917 !important;
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex !important;
+  }
+
+  /* Off-canvas sidebar drawer */
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: 290px !important;
+    max-width: 80vw !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0) !important;
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  .main-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Header adjustments on tablet */
+  .site-header {
+    padding: 0.45rem 1rem !important;
+    min-height: 48px !important;
+  }
+
+  .site-header .org-name {
+    display: none !important;
+  }
+
+  .header-domain-badge .domain-label {
+    display: none !important;
+  }
+
+  .header-domain-badge {
+    max-width: 175px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Inner Navigation */
+  .tab-nav-inner {
+    padding: 0 1rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .tab-btn {
+    padding: 0.38rem 0.8rem !important;
+    font-size: 0.84rem !important;
+  }
+
+  /* Main Workspace */
+  .main-content {
+    padding: 0.35rem 1.25rem 0.65rem !important;
+  }
+
+  .hero-heading {
+    font-size: 1.45rem !important;
+  }
+
+  .hero-desc {
+    font-size: 0.82rem !important;
+    max-width: 600px !important;
+  }
+
+  .clean-prompt-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    max-width: 100% !important;
+  }
+
+  .clean-prompt-card {
+    padding: 0.5rem 0.65rem !important;
+  }
+
+  .modern-chat-box {
+    max-width: 820px !important;
+    width: 100% !important;
+  }
+
+  .message.user-message .message-bubble {
+    max-width: 78% !important;
+  }
+
+  .message.assistant-message .message-bubble {
+    max-width: 88% !important;
+  }
+}
+
+/* =============================================================================
+   3. MOBILE SCREENS (<= 768px)
+   Complete native app-style responsiveness for phones and small viewports
+   ============================================================================= */
+@media (max-width: 768px) {
+  /* Site Header Compact */
+  .site-header {
+    padding: 0.35rem 0.65rem !important;
+    min-height: 46px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .header-brand {
+    gap: 0.35rem !important;
+    min-width: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-mobile-sidebar {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    padding: 0.28rem 0.5rem !important;
+    border-radius: 8px !important;
+    font-size: 0.74rem !important;
+    cursor: pointer !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+  }
+
+  [data-theme="light"] .btn-mobile-sidebar {
+    background: #f5f0e6 !important;
+    border: 1.5px solid #e0d6c5 !important;
+    color: #1c1917 !important;
+  }
+
+  .brand-logo-img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .brand-logo-mark {
+    margin-right: 0.15rem !important;
+  }
+
+  .course-title {
+    font-size: 1rem !important;
+  }
+
+  .brand-enterprise-badge,
+  .site-header .org-name,
+  .header-v-divider {
+    display: none !important;
+  }
+
+  .header-right {
+    gap: 0.35rem !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    justify-content: flex-end !important;
+  }
+
+  .header-domain-badge .domain-label {
+    display: none !important;
+  }
+
+  .header-domain-badge {
+    max-width: 130px !important;
+    font-size: 0.68rem !important;
+    padding: 0.2rem 0.45rem !important;
+    border-radius: 999px !important;
+  }
+
+  .header-domain-badge .domain-value {
+    max-width: 95px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+  }
+
+  .btn-theme-toggle,
+  .btn-sound-toggle,
+  [data-theme="dark"] .btn-theme-toggle,
+  [data-theme="dark"] .btn-sound-toggle {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Off-canvas mobile sidebar drawer */
+  .sidebar-close-btn {
+    display: inline-flex !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0) !important;
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.55) !important;
+  }
+
+  [data-theme="dark"] .sidebar {
+    background: #1C1F26 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  [data-theme="light"] .sidebar {
+    background: #f5f0e6 !important;
+    border-right: 1.5px solid var(--color-pistache, #e0d6c5) !important;
+  }
+
+  .main-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Inner Tab Navigation on Mobile */
+  .tab-nav {
+    padding: 0.2rem 0 !important;
+  }
+
+  .tab-nav-inner {
+    padding: 0 0.5rem !important;
+    gap: 0.35rem !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .tab-nav-inner::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .tab-nav-tabs {
+    display: flex !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .tab-btn {
+    padding: 0.32rem 0.55rem !important;
+    font-size: 0.78rem !important;
+    gap: 0.25rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Document & Agent Top Controls on Mobile */
+  .tab-nav-doc-controls,
+  .tab-nav-agent-controls {
+    flex-shrink: 0 !important;
+    gap: 0.35rem !important;
+  }
+
+  .strategy-trigger-btn {
+    padding: 0.22rem 0.45rem !important;
+    font-size: 0.70rem !important;
+    max-width: 125px !important;
+  }
+
+  .strategy-trigger-label {
+    max-width: 80px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .doc-manager-trigger {
+    padding: 0.22rem 0.45rem !important;
+    font-size: 0.70rem !important;
+    max-width: 100px !important;
+  }
+
+  .doc-manager-label {
+    max-width: 65px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .agent-mode-switcher-pill {
+    padding: 2px !important;
+  }
+
+  .agent-mode-btn {
+    padding: 0.22rem 0.45rem !important;
+    font-size: 0.70rem !important;
+  }
+
+  /* Main Workspace Content on Mobile */
+  .main-content {
+    padding: 0.2rem 0.5rem 0.4rem !important;
+  }
+
+  /* Empty State / Welcome Hero */
+  .welcome-clean {
+    max-width: 100% !important;
+    padding: 0.15rem 0.25rem !important;
+  }
+
+  .hero-orb {
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 auto 0.2rem auto !important;
+  }
+
+  .hero-clean-logo {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .hero-heading {
+    font-size: 1.15rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  .hero-desc {
+    font-size: 0.74rem !important;
+    line-height: 1.35 !important;
+    margin-bottom: 0.35rem !important;
+    max-width: 95% !important;
+  }
+
+  /* Prompt Cards Grid: Clean Single-Column Stack */
+  .clean-prompt-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .clean-prompt-card {
+    padding: 0.45rem 0.65rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    text-align: left !important;
+  }
+
+  .clean-prompt-icon {
+    font-size: 1rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .clean-prompt-title {
+    font-size: 0.80rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .clean-prompt-desc {
+    display: block !important;
+    font-size: 0.70rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 240px !important;
+    opacity: 0.75 !important;
+  }
+
+  /* Guidance note cards */
+  .doc-upload-hint-box,
+  .agent-multistep-note-card {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .agent-multistep-note-title {
+    font-size: 0.82rem !important;
+  }
+
+  /* Message History Stream */
+  .message-history {
+    padding: 0.4rem 0.25rem !important;
+  }
+
+  .message.user-message .message-bubble {
+    max-width: 88% !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  .message.assistant-message .message-bubble {
+    max-width: 95% !important;
+    padding: 0.65rem 0.85rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  /* Chat Input Container: Docked cleanly without overflow */
+  .modern-chat-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 14px !important;
+    padding: 0.35rem 0.65rem 0.3rem !important;
+    margin: 0 !important;
+  }
+
+  /* 16px font-size prevents iOS Safari auto-zoom on focus */
+  #chat-input,
+  #doc-chat-input,
+  #agent-input,
+  .modern-input-field {
+    font-size: 16px !important;
+    padding: 0.15rem 0 !important;
+  }
+
+  .modern-chat-toolbar {
+    padding-top: 0.2rem !important;
+    gap: 0.35rem !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+  }
+
+  .toolbar-left-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.3rem !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+  }
+
+  .toolbar-pill-toggle {
+    padding: 0.2rem 0.38rem !important;
+    font-size: 0.68rem !important;
+    gap: 0.25rem !important;
+    white-space: nowrap !important;
+  }
+
+  .toolbar-pill-toggle span:last-child {
+    font-size: 0.68rem !important;
+  }
+
+  .toolbar-right-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-camera-upload,
+  [data-theme="dark"] .btn-camera-upload {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .btn-circle-send,
+  [data-theme="dark"] .btn-circle-send {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .btn-doc-attach,
+  [data-theme="dark"] .btn-doc-attach {
+    padding: 0.2rem 0.45rem !important;
+    font-size: 0.70rem !important;
+  }
+
+  /* Settings / Admin Panel on Mobile */
+  .admin-panel-container {
+    padding: 0.75rem 0.5rem 2rem !important;
+    gap: 0.85rem !important;
+  }
+
+  .admin-card {
+    padding: 0.85rem 0.85rem !important;
+    border-radius: 12px !important;
+  }
+
+  .admin-main-title {
+    font-size: 1.15rem !important;
+  }
+
+  .admin-section-title {
+    font-size: 0.95rem !important;
+  }
+
+  /* Popover Dialogs on Mobile */
+  .strategy-popover,
+  .doc-manager-popover,
+  .mcp-services-popover {
+    max-width: 92vw !important;
+    width: 320px !important;
+  }
+}
+
+/* =============================================================================
+   4. EXTRA-SMALL PHONES (<= 480px)
+   ============================================================================= */
+@media (max-width: 480px) {
+  .mobile-toggle-text {
+    display: none !important;
+  }
+
+  .btn-mobile-sidebar {
+    padding: 0.28rem 0.38rem !important;
+  }
+
+  .header-domain-badge {
+    max-width: 105px !important;
+  }
+
+  .header-domain-badge .domain-value {
+    max-width: 75px !important;
+  }
+
+  .clean-prompt-desc {
+    max-width: 180px !important;
+  }
+
+  .toolbar-pill-toggle {
+    padding: 0.18rem 0.3rem !important;
+    font-size: 0.65rem !important;
+  }
 }

@@ -1120,7 +1120,7 @@ async function createNewSession() {
     const currentMsgCount = document.querySelectorAll("#message-history .message").length;
     if (currentMsgCount === 0) {
       clearChat();
-      if (window.innerWidth <= 768) toggleMobileSidebar(true);
+      if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
       if (chatInput) chatInput.focus();
       return;
     }
@@ -1137,7 +1137,7 @@ async function createNewSession() {
     currentSessionId = data.session_id;
     clearChat();
     setActiveSession(currentSessionId);
-    if (window.innerWidth <= 768) toggleMobileSidebar(true);
+    if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
     await loadSessions();
     chatInput.focus();
   } catch (err) {
@@ -1170,7 +1170,7 @@ async function switchToSession(sessionId) {
     });
 
     setActiveSession(sessionId);
-    if (window.innerWidth <= 768) toggleMobileSidebar(true);
+    if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
     chatInput.focus();
   } catch (err) {
     appendMessage("ai", `Could not load session: ${err.message}`);
@@ -1238,20 +1238,37 @@ messageHistory?.addEventListener("click", (e) => {
 const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
 const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 const sessionSidebar = document.getElementById("session-sidebar");
+const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
 
 function toggleMobileSidebar(forceClose = false) {
   if (!sessionSidebar) return;
   if (forceClose) {
     sessionSidebar.classList.remove("sidebar-open");
-    if (sidebarBackdrop) sidebarBackdrop.hidden = true;
+    if (sidebarBackdrop) {
+      sidebarBackdrop.hidden = true;
+      sidebarBackdrop.classList.remove("visible");
+    }
+    document.body.classList.remove("drawer-open");
     return;
   }
   const isOpen = sessionSidebar.classList.toggle("sidebar-open");
-  if (sidebarBackdrop) sidebarBackdrop.hidden = !isOpen;
+  if (sidebarBackdrop) {
+    sidebarBackdrop.hidden = !isOpen;
+    sidebarBackdrop.classList.toggle("visible", isOpen);
+  }
+  document.body.classList.toggle("drawer-open", isOpen);
 }
 
 mobileSidebarToggle?.addEventListener("click", () => toggleMobileSidebar());
 sidebarBackdrop?.addEventListener("click", () => toggleMobileSidebar(true));
+sidebarCloseBtn?.addEventListener("click", () => toggleMobileSidebar(true));
+
+// Auto-close drawer on Escape key press
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && sessionSidebar?.classList.contains("sidebar-open")) {
+    toggleMobileSidebar(true);
+  }
+});
 
 // Load session list and tenant info on page load so the sidebar and pill populate immediately.
 loadTenantInfo();
@@ -1346,7 +1363,7 @@ tabButtons.forEach((btn) => {
 
 sidebarAdminBtn?.addEventListener("click", () => {
   switchTab("admin");
-  if (window.innerWidth <= 768) toggleMobileSidebar(true);
+  if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
 });
 
 btnAdminBackChat?.addEventListener("click", () => {
