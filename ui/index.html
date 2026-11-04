@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
   <!-- Favicon and Brand Icons -->
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=7.5.0" />
-  <link rel="shortcut icon" href="favicon.ico?v=7.5.0" />
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.5.0" />
-  <link rel="stylesheet" href="style.css?v=7.5.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=7.6.0" />
+  <link rel="shortcut icon" href="favicon.ico?v=7.6.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.6.0" />
+  <link rel="stylesheet" href="style.css?v=7.6.0" />
   <script>
     (function() {
       var saved = localStorage.getItem("askraggy_theme") || "dark";
@@ -399,9 +399,9 @@
                           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Employee Directory</strong>
+                      <strong class="clean-prompt-title">Directory</strong>
                     </div>
-                    <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
+                    <span class="clean-prompt-desc">Staff, roles &amp; teams</span>
                   </button>
                   <button type="button" class="clean-prompt-card welcome-chip"
                     data-query="How does leave approval work and what is our PTO policy?">
@@ -417,9 +417,9 @@
                           <path d="M16 14h.01"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Leave &amp; PTO Approvals</strong>
+                      <strong class="clean-prompt-title">Leave &amp; PTO</strong>
                     </div>
-                    <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
+                    <span class="clean-prompt-desc">Balances &amp; approvals</span>
                   </button>
                   <button type="button" class="clean-prompt-card welcome-chip"
                     data-query="What is the policy for expense reimbursement claims under $100?">
@@ -529,9 +529,9 @@
                           <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Summarize Document</strong>
+                      <strong class="clean-prompt-title">Summarize</strong>
                     </div>
-                    <span class="clean-prompt-desc">Extract core findings, key takeaways, and executive summary.</span>
+                    <span class="clean-prompt-desc">Key points &amp; takeaways</span>
                   </button>
                   <button type="button" class="clean-prompt-card doc-prompt-chip"
                     data-query="What are the key requirements, compliance rules, and policies?">
@@ -542,9 +542,9 @@
                           <path d="m9 12 2 2 4-4"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Key Policies &amp; Rules</strong>
+                      <strong class="clean-prompt-title">Policies</strong>
                     </div>
-                    <span class="clean-prompt-desc">Inspect specific requirements, eligibility, and guidelines.</span>
+                    <span class="clean-prompt-desc">Rules &amp; guidelines</span>
                   </button>
                   <button type="button" class="clean-prompt-card doc-prompt-chip"
                     data-query="What important dates, deadlines, or metrics are mentioned?">
@@ -556,9 +556,9 @@
                           <line x1="6" y1="20" x2="6" y2="14"></line>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Dates &amp; Metrics</strong>
+                      <strong class="clean-prompt-title">Metrics &amp; Dates</strong>
                     </div>
-                    <span class="clean-prompt-desc">Extract deadlines, numerical metrics, and referenced entities.</span>
+                    <span class="clean-prompt-desc">Deadlines &amp; key figures</span>
                   </button>
 
                   <!-- Transparent Guidance Note below taking the space of the 3 cards above it -->
@@ -584,7 +584,7 @@
             <div class="modern-chat-box" id="doc-modern-chat-box">
               <label for="doc-chat-input" class="sr-only">Ask your document</label>
               <input type="text" id="doc-chat-input" class="modern-input-field"
-                placeholder="Attach or drop a document (.pdf, .docx, .txt) to ask questions…" autocomplete="off" />
+                placeholder="Ask your document…" autocomplete="off" />
               <select id="search-doc-filter" class="search-doc-filter" style="display: none;">
                 <option value="">All documents</option>
               </select>
@@ -674,9 +674,9 @@
                           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Engineering Staff Directory</strong>
+                      <strong class="clean-prompt-title">Staff Directory</strong>
                     </div>
-                    <span class="clean-prompt-desc">All department staff members, roles &amp; managers</span>
+                    <span class="clean-prompt-desc">Department roles &amp; leads</span>
                   </button>
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="Show all pending leave requests for HR review">
@@ -692,9 +692,9 @@
                           <path d="M16 14h.01"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Leave &amp; PTO Agent</strong>
+                      <strong class="clean-prompt-title">Leave Agent</strong>
                     </div>
-                    <span class="clean-prompt-desc">Pending requests &amp; balance approvals</span>
+                    <span class="clean-prompt-desc">Review &amp; approve PTO</span>
                   </button>
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="Submit an expense claim of $85 for team client lunch at Starbucks">
@@ -706,11 +706,11 @@
                           <path d="M16 16h2"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Expense Compliance Agent</strong>
+                      <strong class="clean-prompt-title">Expense Agent</strong>
                     </div>
-                    <span class="clean-prompt-desc">Reimbursements &amp; $100 policy checks</span>
+                    <span class="clean-prompt-desc">Claims &amp; $100 policy checks</span>
                   </button>
-                  <button type="button" class="clean-prompt-card agent-prompt-chip"
+                  <button type="button" class="clean-prompt-card agent-prompt-chip agent-card-desktop-only"
                     data-prompt="Check pending leave requests, verify employee PTO balance, and approve LV-2026-001">
                     <div class="clean-prompt-header">
                       <span class="clean-prompt-icon" aria-hidden="true">
@@ -746,7 +746,7 @@
             <div class="modern-chat-box">
               <label for="agent-input" class="sr-only">Agent message</label>
               <input type="text" id="agent-input" class="modern-input-field"
-                placeholder="Ask anything (e.g. Look up an employee, check department staff, approve leave, submit expense)…"
+                placeholder="Ask agent anything…"
                 autocomplete="off" />
               <div class="modern-chat-toolbar">
                 <div class="toolbar-left-group">
@@ -1025,7 +1025,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=7.5.0"></script>
+  <script src="app.js?v=7.6.0"></script>
 </body>
 
 </html>

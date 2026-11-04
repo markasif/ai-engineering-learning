@@ -948,9 +948,9 @@ function renderEmptyChatState() {
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
             </span>
-            <strong class="clean-prompt-title">Employee Directory</strong>
+            <strong class="clean-prompt-title">Directory</strong>
           </div>
-          <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
+          <span class="clean-prompt-desc">Staff, roles &amp; teams</span>
         </button>
         <button type="button" class="clean-prompt-card welcome-chip"
           data-query="How does leave approval work and what is our PTO policy?">
@@ -966,9 +966,9 @@ function renderEmptyChatState() {
                 <path d="M16 14h.01"></path>
               </svg>
             </span>
-            <strong class="clean-prompt-title">Leave &amp; PTO Approvals</strong>
+            <strong class="clean-prompt-title">Leave &amp; PTO</strong>
           </div>
-          <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
+          <span class="clean-prompt-desc">Balances &amp; approvals</span>
         </button>
         <button type="button" class="clean-prompt-card welcome-chip"
           data-query="What is the policy for expense reimbursement claims under $100?">
@@ -980,9 +980,9 @@ function renderEmptyChatState() {
                 <path d="M16 16h2"></path>
               </svg>
             </span>
-            <strong class="clean-prompt-title">Expense Compliance</strong>
+            <strong class="clean-prompt-title">Expenses</strong>
           </div>
-          <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
+          <span class="clean-prompt-desc">Receipts &amp; policy caps</span>
         </button>
       </div>
     </div>
@@ -4420,3 +4420,18 @@ function updateStrategyAdvisory() {
 }
 
 })();
+
+// Manage responsive concise placeholders for mobile and tablet
+function applyResponsivePlaceholders() {
+  const isCompact = window.innerWidth <= 992;
+  const chatInputEl = document.getElementById("chat-input");
+  const docInputEl = document.getElementById("doc-chat-input");
+  const agentInputEl = document.getElementById("agent-input");
+  if (chatInputEl) chatInputEl.placeholder = "Ask me anything…";
+  if (docInputEl) docInputEl.placeholder = isCompact ? "Ask your document…" : "Attach or drop a document (.pdf, .docx, .txt) to ask questions…";
+  if (agentInputEl) agentInputEl.placeholder = isCompact ? "Ask agent anything…" : "Ask anything (e.g. Look up an employee, check department staff, approve leave, submit expense)…";
+}
+
+window.addEventListener("resize", applyResponsivePlaceholders);
+document.addEventListener("DOMContentLoaded", applyResponsivePlaceholders);
+applyResponsivePlaceholders();
