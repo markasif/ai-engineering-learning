@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=6.9.0" />
+  <link rel="stylesheet" href="style.css?v=7.0.0" />
   <script>
     (function() {
       var saved = localStorage.getItem("askraggy_theme") || "dark";
@@ -393,27 +393,50 @@
                 <div class="clean-prompt-grid" role="region" aria-label="Suggested prompts">
                   <button type="button" class="clean-prompt-card welcome-chip"
                     data-query="Who are the staff members and reporting managers in Engineering?">
-                    <span class="clean-prompt-icon">👥</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Employee Directory</strong>
-                      <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
                     </div>
+                    <span class="clean-prompt-desc">Look up staff profiles, department roles, and reporting managers.</span>
                   </button>
                   <button type="button" class="clean-prompt-card welcome-chip"
                     data-query="How does leave approval work and what is our PTO policy?">
-                    <span class="clean-prompt-icon">🌴</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                          <line x1="16" y1="2" x2="16" y2="6"></line>
+                          <line x1="8" y1="2" x2="8" y2="6"></line>
+                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                          <path d="M8 14h.01"></path>
+                          <path d="M12 14h.01"></path>
+                          <path d="M16 14h.01"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Leave &amp; PTO Approvals</strong>
-                      <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
                     </div>
+                    <span class="clean-prompt-desc">Check employee balances, holidays, and pending approvals.</span>
                   </button>
                   <button type="button" class="clean-prompt-card welcome-chip"
                     data-query="What is the policy for expense reimbursement claims under $100?">
-                    <span class="clean-prompt-icon">💳</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                          <line x1="1" y1="10" x2="23" y2="10"></line>
+                          <path d="M16 16h2"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Expense Compliance</strong>
-                      <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
                     </div>
+                    <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
                   </button>
                 </div>
               </div>
@@ -499,32 +522,58 @@
                 <div class="clean-prompt-grid" id="doc-prompt-grid" role="region" aria-label="Document suggested prompts">
                   <button type="button" class="clean-prompt-card doc-prompt-chip"
                     data-query="Summarize the key points of this document">
-                    <span class="clean-prompt-icon">📄</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                          <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Summarize Document</strong>
-                      <span class="clean-prompt-desc">Extract core findings, key takeaways, and executive summary.</span>
                     </div>
+                    <span class="clean-prompt-desc">Extract core findings, key takeaways, and executive summary.</span>
                   </button>
                   <button type="button" class="clean-prompt-card doc-prompt-chip"
                     data-query="What are the key requirements, compliance rules, and policies?">
-                    <span class="clean-prompt-icon">🔍</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                          <path d="m9 12 2 2 4-4"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Key Policies &amp; Rules</strong>
-                      <span class="clean-prompt-desc">Inspect specific requirements, eligibility, and guidelines.</span>
                     </div>
+                    <span class="clean-prompt-desc">Inspect specific requirements, eligibility, and guidelines.</span>
                   </button>
                   <button type="button" class="clean-prompt-card doc-prompt-chip"
                     data-query="What important dates, deadlines, or metrics are mentioned?">
-                    <span class="clean-prompt-icon">📊</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="20" x2="18" y2="10"></line>
+                          <line x1="12" y1="20" x2="12" y2="4"></line>
+                          <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Dates &amp; Metrics</strong>
-                      <span class="clean-prompt-desc">Extract deadlines, numerical metrics, and referenced entities.</span>
                     </div>
+                    <span class="clean-prompt-desc">Extract deadlines, numerical metrics, and referenced entities.</span>
                   </button>
 
                   <!-- Transparent Guidance Note below taking the space of the 3 cards above it -->
                   <div class="doc-upload-hint-box" id="doc-upload-hint" role="note" aria-label="Document upload guidance">
-                    <span class="doc-hint-icon" aria-hidden="true">📄</span>
+                    <span class="doc-hint-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                      </svg>
+                    </span>
                     <div class="doc-hint-text">
                       <strong>No documents uploaded yet</strong>
                       <span>Click <em>Attach file</em> or drag &amp; drop a PDF, DOCX, or TXT file into the chat bar below to start.</span>
@@ -619,35 +668,66 @@
                 <div class="clean-prompt-grid" role="region" aria-label="Available Specialized Agents">
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="List all staff members and roles in the Engineering department">
-                    <span class="clean-prompt-icon">👥</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Engineering Staff Directory</strong>
-                      <span class="clean-prompt-desc">All department staff members, roles &amp; managers</span>
                     </div>
+                    <span class="clean-prompt-desc">All department staff members, roles &amp; managers</span>
                   </button>
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="Show all pending leave requests for HR review">
-                    <span class="clean-prompt-icon">🌴</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                          <line x1="16" y1="2" x2="16" y2="6"></line>
+                          <line x1="8" y1="2" x2="8" y2="6"></line>
+                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                          <path d="M8 14h.01"></path>
+                          <path d="M12 14h.01"></path>
+                          <path d="M16 14h.01"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Leave &amp; PTO Agent</strong>
-                      <span class="clean-prompt-desc">Pending requests &amp; balance approvals</span>
                     </div>
+                    <span class="clean-prompt-desc">Pending requests &amp; balance approvals</span>
                   </button>
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="Submit an expense claim of $85 for team client lunch at Starbucks">
-                    <span class="clean-prompt-icon">💳</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                          <line x1="1" y1="10" x2="23" y2="10"></line>
+                          <path d="M16 16h2"></path>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Expense Compliance Agent</strong>
-                      <span class="clean-prompt-desc">Reimbursements &amp; $100 policy checks</span>
                     </div>
+                    <span class="clean-prompt-desc">Reimbursements &amp; $100 policy checks</span>
                   </button>
                   <button type="button" class="clean-prompt-card agent-prompt-chip"
                     data-prompt="Check pending leave requests, verify employee PTO balance, and approve LV-2026-001">
-                    <span class="clean-prompt-icon">🔄</span>
-                    <div class="clean-prompt-content">
+                    <div class="clean-prompt-header">
+                      <span class="clean-prompt-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="16 3 21 3 21 8"></polyline>
+                          <line x1="4" y1="20" x2="21" y2="3"></line>
+                          <polyline points="21 16 21 21 16 21"></polyline>
+                          <line x1="15" y1="15" x2="21" y2="21"></line>
+                          <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                      </span>
                       <strong class="clean-prompt-title">Multi-Step Workflow Agent</strong>
-                      <span class="clean-prompt-desc">Multi-tool plan-and-execute automation</span>
                     </div>
+                    <span class="clean-prompt-desc">Multi-tool plan-and-execute automation</span>
                   </button>
                   <!-- Transparent Guidance Note taking space of the two cards above it -->
                   <div class="agent-multistep-note-card" role="note" aria-label="Multi-Step Workflow Guidance">
@@ -948,7 +1028,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=6.9.0"></script>
+  <script src="app.js?v=7.0.0"></script>
 </body>
 
 </html>
