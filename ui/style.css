@@ -6509,38 +6509,46 @@ input.modern-input-field:active,
   display: inline-block !important;
 }
 
-/* Minimal & Standard Mute/Unmute Icon Button */
+/* Minimal & Standard Mute/Unmute Icon Button with High-Visibility Warm Cream Background */
 .btn-sound-toggle {
-  background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  color: #a1a1aa !important;
-  width: 28px !important;
-  height: 28px !important;
+  background: var(--color-almond, #f5f0e6) !important;
+  border: 1.5px solid var(--color-pistache, #e0d6c5) !important;
+  color: #1c1917 !important;
+  width: 30px !important;
+  height: 30px !important;
   padding: 0 !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  transition: all 0.18s ease !important;
 }
 
 .btn-sound-toggle:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: #ffffff !important;
-  transform: none !important;
+  background: #ffffff !important;
+  border-color: var(--color-matcha, #10b981) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+  transform: translateY(-1px) !important;
 }
 
 .btn-sound-toggle.active,
 .btn-sound-toggle:not(.muted) {
-  color: #10b981 !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #059669 !important; /* rich vibrant emerald green on cream */
+  border-color: rgba(16, 185, 129, 0.5) !important;
 }
 
 .btn-sound-toggle.muted {
-  color: #71717a !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #78716c !important; /* rich warm stone gray on cream */
+  border-color: var(--color-pistache, #e0d6c5) !important;
+  background: #ede6d8 !important; /* slightly deeper cream when muted */
+}
+
+.btn-sound-toggle.muted:hover {
+  background: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: #a8a29e !important;
 }
 
 .btn-sound-toggle .sound-icon {
