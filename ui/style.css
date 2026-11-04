@@ -8582,3 +8582,82 @@ input.modern-input-field:active,
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }
+
+
+/* =============================================================================
+   INPUT BOX UPLOAD / ATTACH BUTTONS: WARM CREAM IN DARK THEME
+   High-visibility cream styling (#f5f0e6) matching mute and theme toggles
+   ============================================================================= */
+
+/* 1. Camera / Image Upload button in Chat Input Box */
+[data-theme="dark"] .btn-camera-upload,
+[data-theme="dark"] label[for="image-input"].btn-camera-upload,
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload,
+[data-theme="dark"] .modern-chat-box .btn-camera-upload {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .btn-camera-upload svg,
+[data-theme="dark"] label[for="image-input"].btn-camera-upload svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload svg {
+  color: #1c1917 !important;
+  stroke: #1c1917 !important;
+}
+
+[data-theme="dark"] .btn-camera-upload:hover,
+[data-theme="dark"] label[for="image-input"].btn-camera-upload:hover,
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover {
+  background: #ffffff !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
+  transform: scale(1.06) !important;
+}
+
+[data-theme="dark"] .btn-camera-upload:hover svg,
+[data-theme="dark"] label[for="image-input"].btn-camera-upload:hover svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover svg {
+  color: #059669 !important;
+  stroke: #059669 !important;
+}
+
+/* 2. Document Attach / Upload Button in Document Input Box */
+[data-theme="dark"] .btn-doc-attach,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach,
+[data-theme="dark"] .modern-chat-box .btn-doc-attach {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .btn-doc-attach svg,
+[data-theme="dark"] .btn-doc-attach span,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach span {
+  color: #1c1917 !important;
+  stroke: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .btn-doc-attach:hover,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach:hover {
+  background: #ffffff !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-theme="dark"] .btn-doc-attach:hover svg,
+[data-theme="dark"] .btn-doc-attach:hover span,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach:hover svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-doc-attach:hover span {
+  color: #059669 !important;
+  stroke: #059669 !important;
+}
