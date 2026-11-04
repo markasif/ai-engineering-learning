@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AskRaggy · Enterprise Knowledge &amp; Intelligence Platform</title>
-  <link rel="stylesheet" href="style.css?v=6.3.0" />
+  <link rel="stylesheet" href="style.css?v=6.4.0" />
 </head>
 
 <body>
@@ -27,7 +27,7 @@
 
 <!-- Official AskRaggy 3D Origami/Ribbon Logo Image -->
         <div class="brand-logo-mark" title="AskRaggy Enterprise Intelligence">
-          <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="brand-logo-img" width="36" height="36" />
+          <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="brand-logo-img" width="36" height="36" />
         </div>
 
         <div class="titles">
@@ -117,17 +117,18 @@
             <div class="tab-nav-doc-controls" id="tab-nav-doc-controls" style="display: none;">
               <!-- Chunking Strategy Custom Dropdown (Sentence-aware / Paragraph-based) -->
               <div class="strategy-dropdown-wrapper" id="strategy-dropdown-wrapper">
-                <button type="button" class="strategy-trigger-btn" id="strategy-trigger-btn" aria-haspopup="listbox" aria-expanded="false" title="Document chunking strategy for vector ingestion">
-                  <span class="strategy-trigger-icon" aria-hidden="true">✂️</span>
-                  <span class="strategy-trigger-label" id="strategy-trigger-label">Sentence-aware</span>
-                  <span class="strategy-rec-badge" id="strategy-rec-badge">Rec</span>
+                <button type="button" class="strategy-trigger-btn" id="strategy-trigger-btn" aria-haspopup="listbox" aria-expanded="false" title="Document retrieval strategy (Auto, CAG, or RAG)">
+                  <span class="strategy-trigger-icon" aria-hidden="true">🧠</span>
+                  <span class="strategy-trigger-label" id="strategy-trigger-label">Auto (Adaptive)</span>
+                  <span class="strategy-rec-badge auto" id="strategy-rec-badge">Smart</span>
                   <span class="strategy-trigger-chevron" aria-hidden="true">▾</span>
                 </button>
 
                 <!-- Hidden select preserved for DOM API compatibility with ingestion scripts -->
                 <select id="strategy-select" class="strategy-hidden-select" style="display: none;" aria-hidden="true" tabindex="-1">
-                  <option value="sentence" selected>Sentence-aware (recommended)</option>
-                  <option value="paragraph">Paragraph-based</option>
+                  <option value="auto" selected>Auto (Adaptive Routing)</option>
+                  <option value="sentence">Sentence-aware (recommended RAG)</option>
+                  <option value="paragraph">Paragraph-based (RAG)</option>
                   <option value="cag">CAG Full-Context Mode</option>
                 </select>
 
@@ -135,22 +136,43 @@
                 <div class="strategy-popover" id="strategy-popover" role="listbox" aria-label="Chunking strategies" hidden>
                   <div class="strategy-popover-header">
                     <div class="strategy-popover-title-row">
-                      <span class="strategy-popover-tag">RAG Ingestion</span>
-                      <strong class="strategy-popover-title">Chunking Strategy</strong>
+                      <span class="strategy-popover-tag">Smart Ingestion</span>
+                      <strong class="strategy-popover-title">Retrieval &amp; Chunking Strategy</strong>
                     </div>
-                    <p class="strategy-popover-subtitle">Controls how uploaded documents are partitioned into vector chunks.</p>
+                    <p class="strategy-popover-subtitle">Controls whether documents are sliced into vector chunks (RAG) or analyzed whole (CAG).</p>
                   </div>
 
                   <div class="strategy-options-list">
-                    <!-- Option 1: Sentence-aware (Default / Recommended) -->
-                    <button type="button" class="strategy-option-item selected" role="option" data-value="sentence" aria-selected="true" id="strategy-opt-sentence">
+                    <!-- Option 0: Auto (Adaptive Routing - Default) -->
+                    <button type="button" class="strategy-option-item selected" role="option" data-value="auto" aria-selected="true" id="strategy-opt-auto">
+                      <div class="strategy-option-icon-box">
+                        <span class="strategy-option-icon">🧠</span>
+                      </div>
+                      <div class="strategy-option-content">
+                        <div class="strategy-option-header">
+                          <strong class="strategy-option-name">Auto (Adaptive Routing)</strong>
+                          <span class="strategy-option-badge auto">Smart</span>
+                        </div>
+                        <p class="strategy-option-desc">
+                          Intelligently routes files: small documents (&lt;50 pages) use CAG for 100% full context; large documents (&gt;50 pages) use RAG for efficient vector search.
+                        </p>
+                      </div>
+                      <div class="strategy-option-check" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </button>
+
+                    <!-- Option 1: Sentence-aware (Recommended RAG) -->
+                    <button type="button" class="strategy-option-item" role="option" data-value="sentence" aria-selected="false" id="strategy-opt-sentence">
                       <div class="strategy-option-icon-box">
                         <span class="strategy-option-icon">✂️</span>
                       </div>
                       <div class="strategy-option-content">
                         <div class="strategy-option-header">
-                          <strong class="strategy-option-name">Sentence-aware</strong>
-                          <span class="strategy-option-badge rec">Recommended</span>
+                          <strong class="strategy-option-name">Sentence-aware (RAG)</strong>
+                          <span class="strategy-option-badge rec">Vector Search</span>
                         </div>
                         <p class="strategy-option-desc">
                           Splits on sentence boundaries with contextual sliding windows. Highest citation accuracy for questions, compliance rules, and data lookups.
@@ -304,7 +326,7 @@
             <div class="message-history" id="message-history" role="log" aria-live="polite" aria-label="Conversation">
               <div class="empty-state welcome-clean" id="empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
                 
                 <h1 class="hero-heading">How can I assist you today?</h1>
@@ -403,12 +425,15 @@
               <span class="grounding-pill">100% Document Grounded</span>
             </div>
 
+            <!-- Real-Time Strategy Advisory Banner (Detects Large vs. Small Documents) -->
+            <div id="doc-strategy-advisory" class="doc-strategy-advisory" style="display: none;" role="status"></div>
+
             <!-- Message history -->
             <div class="message-history doc-message-history" id="doc-message-history" role="log" aria-live="polite"
               aria-label="Document Conversation">
               <div class="empty-state welcome-clean" id="doc-empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
 
                 <h2 class="hero-heading">How can I assist you today?</h2>
@@ -528,7 +553,7 @@
             <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
               <div class="empty-state welcome-clean" id="agent-empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="askraggy-logo-mark.png?v=6.3.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
 
                 <h2 class="hero-heading">How can I assist you today?</h2>
@@ -869,7 +894,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=6.3.0"></script>
+  <script src="app.js?v=6.4.0"></script>
 </body>
 
 </html>

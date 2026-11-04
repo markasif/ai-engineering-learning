@@ -1234,6 +1234,7 @@ async function loadDocuments() {
 
     currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
+    updateStrategyAdvisory();
 
     // Select active document: prioritize explicitly active doc (e.g. freshly uploaded),
     // otherwise default to the latest uploaded document so older files never interfere!
@@ -1252,6 +1253,7 @@ async function loadDocuments() {
       if (groundingTitle) groundingTitle.textContent = `Grounded in: ${activeDocName}`;
       if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${activeDocName}" with verified source citations.`;
     }
+    updateStrategyAdvisory();
 
     if (documentChatSection) {
       documentChatSection.style.display = "flex";
@@ -1496,6 +1498,7 @@ async function loadSearchDocumentFilter(preloadedDocs = null) {
     const docs = Array.isArray(preloadedDocs) ? preloadedDocs : await (await fetch(`${API_BASE}/api/documents`)).json();
     currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
+    updateStrategyAdvisory();
 
     readyDocs.forEach((d) => {
       const opt = document.createElement("option");
@@ -1848,6 +1851,14 @@ function appendDocAiResponse(data) {
   const summarySection = document.createElement("div");
   summarySection.className = "doc-summary-section";
 
+  // If auto-routed by the backend, display the intelligent routing badge
+  if (data && data.auto_routed && data.reason) {
+    const routeTag = document.createElement("div");
+    routeTag.className = "doc-auto-route-badge";
+    routeTag.innerHTML = `🧠 <strong>Adaptive Routing:</strong> ${escapeHtml(data.reason)}`;
+    summarySection.appendChild(routeTag);
+  }
+
   const summaryHeader = document.createElement("div");
   summaryHeader.className = "doc-summary-header";
   const badgeTitle = isCag
@@ -1906,6 +1917,38 @@ function appendDocAiResponse(data) {
     bubble.appendChild(evidenceDrawer);
   }
 
+  // If backend returned an advisory warning (e.g. large file on CAG)
+  if (data && data.warning) {
+    const warnBox = document.createElement("div");
+    warnBox.className = "doc-cag-warning-alert";
+    warnBox.innerHTML = `
+      <span>${escapeHtml(data.warning)}</span>
+      <button type="button" class="btn-advisory-action amber btn-switch-rag-inline">Switch to RAG</button>
+    `;
+    warnBox.querySelector(".btn-switch-rag-inline")?.addEventListener("click", () => {
+      const sentenceOpt = document.getElementById("strategy-opt-sentence");
+      if (sentenceOpt) sentenceOpt.click();
+      showToast("Switched to RAG (Sentence-aware) for large document retrieval!", "info");
+    });
+    bubble.appendChild(warnBox);
+  }
+
+  // If backend returned an optimization tip (e.g. small file on RAG)
+  if (data && data.tip) {
+    const tipBox = document.createElement("div");
+    tipBox.className = "doc-cag-tip-alert";
+    tipBox.innerHTML = `
+      <span>${escapeHtml(data.tip)}</span>
+      <button type="button" class="btn-advisory-action green btn-switch-cag-inline">Switch to CAG</button>
+    `;
+    tipBox.querySelector(".btn-switch-cag-inline")?.addEventListener("click", () => {
+      const cagOpt = document.getElementById("strategy-opt-cag");
+      if (cagOpt) cagOpt.click();
+      showToast("Switched to CAG (Full Context) for 100% full-document visibility!", "success");
+    });
+    bubble.appendChild(tipBox);
+  }
+
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
   docMessageHistory.appendChild(wrapper);
@@ -1940,10 +1983,9 @@ async function sendDocMessage(customQuery = null) {
   try {
     let data = null;
 
-    // Check if CAG (Cache-Augmented Generation) Full-Context mode is active
-    const currentStrategy = strategySelect?.value || "sentence";
-    const isCagMode = currentStrategy === "cag";
-    const mode = isCagMode ? "cag" : "rag";
+    // Resolve retrieval mode (auto adaptive, cag, or rag)
+    const currentStrategy = strategySelect?.value || "auto";
+    const mode = currentStrategy;
 
     // 1. Primary endpoint: POST /api/documents/ask
     try {
@@ -3728,7 +3770,9 @@ document.addEventListener("keydown", (e) => {
 
         // Update trigger button label & badge
         if (strategyTriggerLabel) {
-          if (value === "cag") {
+          if (value === "auto") {
+            strategyTriggerLabel.textContent = "Auto (Adaptive)";
+          } else if (value === "cag") {
             strategyTriggerLabel.textContent = "CAG (Full Context)";
           } else if (value === "sentence") {
             strategyTriggerLabel.textContent = "Sentence-aware";
@@ -3737,7 +3781,11 @@ document.addEventListener("keydown", (e) => {
           }
         }
         if (strategyRecBadge) {
-          if (value === "cag") {
+          if (value === "auto") {
+            strategyRecBadge.textContent = "Smart";
+            strategyRecBadge.style.display = "inline-block";
+            strategyRecBadge.className = "strategy-rec-badge auto";
+          } else if (value === "cag") {
             strategyRecBadge.textContent = "⚡ Zero Error";
             strategyRecBadge.style.display = "inline-block";
             strategyRecBadge.className = "strategy-rec-badge cag";
@@ -3749,6 +3797,8 @@ document.addEventListener("keydown", (e) => {
             strategyRecBadge.style.display = "none";
           }
         }
+
+        updateStrategyAdvisory();
 
         // Close popover
         strategyPopover.setAttribute("hidden", "true");
@@ -3773,5 +3823,80 @@ document.addEventListener("keydown", (e) => {
       }
     });
   }
+
+/**
+ * Real-time Document Size Detection & Strategy Advisory
+ * Inspects active document page/character size and shows warning/tips based on selected strategy.
+ */
+function updateStrategyAdvisory() {
+  const advisoryEl = document.getElementById("doc-strategy-advisory");
+  if (!advisoryEl) return;
+
+  if (!currentDocsCache || !currentDocsCache.length) {
+    advisoryEl.style.display = "none";
+    return;
+  }
+
+  const targetDocId = searchDocFilter?.value || activeDocumentId || (currentDocsCache[0] ? currentDocsCache[0].id : null);
+  const doc = currentDocsCache.find((d) => d.id === targetDocId) || currentDocsCache[0];
+  if (!doc) {
+    advisoryEl.style.display = "none";
+    return;
+  }
+
+  const currentStrat = strategySelect?.value || "auto";
+  const pages = doc.page_count || 1;
+  const chars = doc.char_count || 0;
+  const isLarge = !doc.cag_eligible || pages > 50 || chars > 120000;
+
+  if (currentStrat === "cag" && isLarge) {
+    advisoryEl.className = "doc-strategy-advisory amber";
+    advisoryEl.style.display = "flex";
+    advisoryEl.innerHTML = `
+      <div class="doc-strategy-advisory-content">
+        <span class="doc-strategy-advisory-icon">⚠️</span>
+        <span class="doc-strategy-advisory-text">
+          <strong>Large Document Notice (${pages} pages):</strong> CAG is optimized for files &lt;50 pages. Switching to RAG is recommended.
+        </span>
+      </div>
+      <button type="button" class="btn-advisory-action amber" id="btn-advisory-switch-rag">Switch to RAG</button>
+    `;
+    advisoryEl.querySelector("#btn-advisory-switch-rag")?.addEventListener("click", () => {
+      const opt = document.getElementById("strategy-opt-sentence");
+      if (opt) opt.click();
+      showToast("Switched to RAG (Sentence-aware) for large document retrieval!", "info");
+    });
+  } else if ((currentStrat === "sentence" || currentStrat === "paragraph") && !isLarge && pages <= 25) {
+    advisoryEl.className = "doc-strategy-advisory green";
+    advisoryEl.style.display = "flex";
+    advisoryEl.innerHTML = `
+      <div class="doc-strategy-advisory-content">
+        <span class="doc-strategy-advisory-icon">✨</span>
+        <span class="doc-strategy-advisory-text">
+          <strong>Optimal for CAG (${pages} page${pages !== 1 ? "s" : ""}):</strong> This file is compact. You can use CAG for 100% full-document visibility with zero retrieval errors.
+        </span>
+      </div>
+      <button type="button" class="btn-advisory-action green" id="btn-advisory-switch-cag">Switch to CAG</button>
+    `;
+    advisoryEl.querySelector("#btn-advisory-switch-cag")?.addEventListener("click", () => {
+      const opt = document.getElementById("strategy-opt-cag");
+      if (opt) opt.click();
+      showToast("Switched to CAG (Full Context) for zero-error retrieval!", "success");
+    });
+  } else if (currentStrat === "auto") {
+    advisoryEl.className = "doc-strategy-advisory blue";
+    advisoryEl.style.display = "flex";
+    advisoryEl.innerHTML = `
+      <div class="doc-strategy-advisory-content">
+        <span class="doc-strategy-advisory-icon">🧠</span>
+        <span class="doc-strategy-advisory-text">
+          <strong>Adaptive Routing Active:</strong> "${escapeHtml(doc.filename)}" (${pages} page${pages !== 1 ? "s" : ""}) will use <strong>${isLarge ? "🔍 RAG Vector Search" : "⚡ CAG Full Context"}</strong>.
+        </span>
+      </div>
+    `;
+  } else {
+    advisoryEl.style.display = "none";
+  }
+}
 
 })();

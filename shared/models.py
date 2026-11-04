@@ -158,9 +158,24 @@ class Document(BaseModel):
         description=(
             "Which chunking strategy was used during ingestion. "
             "One of: 'sentence' (sentence-aware fixed-size, default), "
-            "'paragraph' (paragraph-based), 'page' (one chunk per PDF page). "
+            "'paragraph' (paragraph-based), 'page' (one chunk per PDF page), 'cag' (full context). "
             "Stored so the UI can display it and future re-ingestion can reproduce the same split."
         ),
+    )
+
+    page_count: int = Field(
+        default=1,
+        description="Number of pages in the document. 1 for single-page files or plain text.",
+    )
+
+    char_count: int = Field(
+        default=0,
+        description="Total character count of extracted text.",
+    )
+
+    cag_eligible: bool = Field(
+        default=True,
+        description="Whether the document is small enough (<50 pages, <120k chars) for optimal CAG retrieval.",
     )
 
     tenant_id: str = Field(

@@ -7005,3 +7005,144 @@ input.modern-input-field:active,
   padding: 0.15rem 0.55rem;
   margin-bottom: 0.45rem;
 }
+
+/* Strategy Advisory Banner (Detects Large vs Small Documents) */
+.doc-strategy-advisory {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  margin: 0.35rem 1.25rem 0.15rem;
+  box-sizing: border-box;
+  animation: popoverFadeIn 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.doc-strategy-advisory.amber {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #92400e !important;
+}
+
+.doc-strategy-advisory.green {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #065f46 !important;
+}
+
+.doc-strategy-advisory.blue {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #1e40af !important;
+}
+
+.doc-strategy-advisory-content {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-strategy-advisory-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.doc-strategy-advisory-text {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.doc-strategy-advisory-text strong {
+  font-weight: 700;
+}
+
+.btn-advisory-action {
+  border: none;
+  border-radius: 999px;
+  padding: 0.22rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.btn-advisory-action.amber {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.btn-advisory-action.amber:hover {
+  background: #b45309;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+}
+
+.btn-advisory-action.green {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.btn-advisory-action.green:hover {
+  background: #059669;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+}
+
+.strategy-option-badge.auto {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #2563eb !important;
+  font-weight: 700 !important;
+}
+
+.strategy-rec-badge.auto {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Chat bubble alerts for CAG warnings and adaptive routing */
+.doc-cag-warning-alert {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.doc-cag-tip-alert {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  color: #064e3b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.doc-auto-route-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  margin-bottom: 0.45rem;
+}

@@ -59,10 +59,12 @@ async def upload_document(
                 detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB)."
             )
 
-        def _process() -> int:
+        def _process() -> tuple[int, int, int]:
             text = extract_text(file_bytes, filename)
             save_document_text(doc.id, text)
             pages = extract_pages(file_bytes, filename)
+            page_count = len(pages) if pages else 1
+            char_count = len(text)
             chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
 
             for cd in chunk_dicts:
@@ -82,10 +84,17 @@ async def upload_document(
                 [{"filename": filename, "chunk_index": cd["chunk_index"]} for cd in chunk_dicts],
                 tenant_id=tenant_id,
             )
-            return len(chunk_dicts)
+            return len(chunk_dicts), page_count, char_count
 
-        chunk_count = await asyncio.to_thread(_process)
-        update_document(doc.id, status="ready", chunk_count=chunk_count, chunking_strategy=strategy)
+        chunk_count, page_count, char_count = await asyncio.to_thread(_process)
+        update_document(
+            doc.id,
+            status="ready",
+            chunk_count=chunk_count,
+            chunking_strategy=strategy,
+            page_count=page_count,
+            char_count=char_count,
+        )
     except Exception as exc:
         update_document(doc.id, status="error", chunk_count=0, chunking_strategy=strategy)
         raise HTTPException(status_code=422, detail=str(exc))
@@ -486,44 +495,81 @@ async def ask_documents(
     q = q.strip()
     doc_id = (req.document_id if req else document_id) or None
     k = (req.top_k if req and req.top_k else top_k) or 6
-    mode = (req.mode if req and req.mode else None) or "rag"
-    mode = mode.lower().strip()
+    req_mode = (req.mode if req and req.mode else None) or "auto"
+    req_mode = req_mode.lower().strip()
 
     if not q:
         return {
             "answer": "Please ask a question about your uploaded document.",
             "evidence": [],
             "total_matches": 0,
-            "mode": mode,
+            "mode": req_mode,
         }
+
+    # If document_id is not specified, default to the most recently uploaded ready document
+    if not doc_id:
+        tenant_docs = list_documents(tenant_id=tenant_id)
+        ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
+        if ready_tenant_docs:
+            doc_id = ready_tenant_docs[0].id
+
+    # Retrieve target document metadata & size metrics
+    target_doc = get_document(doc_id, tenant_id=tenant_id) if doc_id else None
+    target_filename = target_doc.filename if target_doc else "Uploaded Document"
+    raw_doc_text = get_document_text(doc_id) if doc_id else ""
+    page_count = getattr(target_doc, "page_count", 1) if target_doc else 1
+    char_count = getattr(target_doc, "char_count", len(raw_doc_text or "")) if target_doc else len(raw_doc_text or "")
+    if char_count == 0 and raw_doc_text:
+        char_count = len(raw_doc_text)
+
+    # Architectural threshold: <= 50 pages and <= 120,000 characters is optimal for CAG
+    is_cag_optimal = bool(page_count <= 50 and char_count <= 120_000)
+
+    # Resolve Effective Mode (Adaptive Auto vs Forced CAG vs Forced RAG)
+    auto_routed = False
+    auto_route_reason = None
+    warning_msg = None
+    tip_msg = None
+
+    if req_mode == "auto":
+        auto_routed = True
+        if is_cag_optimal:
+            effective_mode = "cag"
+            auto_route_reason = f"Document is compact ({page_count} page{'s' if page_count != 1 else ''}, {char_count:,} chars) — auto-routed to CAG for 100% full-document visibility."
+        else:
+            effective_mode = "rag"
+            auto_route_reason = f"Document is large ({page_count} pages, {char_count:,} chars) — auto-routed to RAG (Sentence-aware) for efficient vector search."
+    else:
+        effective_mode = req_mode
+
+    # Generate intelligent size advisory warning / tip
+    if effective_mode == "cag" and not is_cag_optimal:
+        warning_msg = (
+            f"⚠️ Large Document Notice: This document has {page_count} pages ({char_count:,} characters). "
+            f"CAG is optimized for files <50 pages. We recommend switching to RAG (Sentence-aware) "
+            f"for faster retrieval and lower token consumption."
+        )
+    elif effective_mode in ("rag", "sentence", "paragraph") and is_cag_optimal and page_count <= 25:
+        tip_msg = (
+            f"✨ Optimal for CAG: This file is only {page_count} page{'s' if page_count != 1 else ''} ({char_count:,} characters). "
+            f"You can switch to CAG (Full Context) for 100% full-document visibility with zero retrieval errors."
+        )
 
     # =========================================================================
     # CAG (Cache-Augmented Generation) Full-Context Inference Pipeline
     # Bypasses vector DB search; loads the entire document directly into the LLM.
     # =========================================================================
-    if mode == "cag":
-        target_filename = "Uploaded Document"
-        full_text = None
-        if doc_id:
-            target_doc = get_document(doc_id, tenant_id=tenant_id)
-            if target_doc:
-                target_filename = target_doc.filename
-            full_text = get_document_text(doc_id)
-
-        if not full_text:
-            tenant_docs = list_documents(tenant_id=tenant_id)
-            ready_docs = [d for d in tenant_docs if d.status == "ready"]
-            if ready_docs:
-                doc_id = ready_docs[0].id
-                target_filename = ready_docs[0].filename
-                full_text = get_document_text(doc_id)
-
+    if effective_mode == "cag":
+        full_text = raw_doc_text
         if not full_text:
             return {
                 "answer": OUT_OF_DOMAIN_MESSAGE,
                 "evidence": [],
                 "total_matches": 0,
                 "mode": "cag",
+                "page_count": page_count,
+                "char_count": char_count,
+                "is_large_doc": not is_cag_optimal,
             }
 
         # Safe limit up to 150,000 chars (~35,000 tokens)
@@ -562,6 +608,10 @@ async def ask_documents(
                         "evidence": [],
                         "total_matches": 0,
                         "mode": "cag",
+                        "page_count": page_count,
+                        "char_count": char_count,
+                        "is_large_doc": not is_cag_optimal,
+                        "warning": warning_msg,
                     }
                 answer = "Based on the full document context: " + truncated_text[:500]
         except Exception:
@@ -572,13 +622,20 @@ async def ask_documents(
             "evidence": [
                 {
                     "filename": target_filename,
-                    "text": f"⚡ Cache-Augmented Generation (CAG): Full document ({len(full_text):,} characters) pre-cached in context with 100% visibility.",
+                    "text": f"⚡ Cache-Augmented Generation (CAG): Full document ({page_count} pages, {len(full_text):,} characters) pre-cached in context with 100% visibility.",
                     "chunk_index": 0,
                     "document_id": doc_id,
                 }
             ],
             "total_matches": 1,
             "mode": "cag",
+            "page_count": page_count,
+            "char_count": char_count,
+            "is_large_doc": not is_cag_optimal,
+            "auto_routed": auto_routed,
+            "reason": auto_route_reason,
+            "warning": warning_msg,
+            "tip": tip_msg,
         }
 
     if not q:
@@ -680,6 +737,13 @@ async def ask_documents(
         "evidence": sanitized_evidence,
         "total_matches": len(chunks),
         "mode": "rag",
+        "page_count": page_count,
+        "char_count": char_count,
+        "is_large_doc": not is_cag_optimal,
+        "auto_routed": auto_routed,
+        "reason": auto_route_reason,
+        "warning": warning_msg,
+        "tip": tip_msg,
     }
 
 

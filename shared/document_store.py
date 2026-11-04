@@ -72,18 +72,28 @@ def update_document(
     status: str,
     chunk_count: int,
     chunking_strategy: str = "sentence",
+    page_count: int | None = None,
+    char_count: int | None = None,
 ) -> None:
-    """Update a document's status, chunk_count, and chunking_strategy after processing."""
+    """Update a document's status, chunk_count, chunking_strategy, and size metrics."""
     doc = _documents.get(doc_id)
     if doc is None:
         return
-    _documents[doc_id] = doc.model_copy(
-        update={
-            "status": status,
-            "chunk_count": chunk_count,
-            "chunking_strategy": chunking_strategy,
-        }
-    )
+    updates: dict = {
+        "status": status,
+        "chunk_count": chunk_count,
+        "chunking_strategy": chunking_strategy,
+    }
+    if page_count is not None:
+        updates["page_count"] = page_count
+    if char_count is not None:
+        updates["char_count"] = char_count
+
+    effective_pages = page_count if page_count is not None else getattr(doc, "page_count", 1)
+    effective_chars = char_count if char_count is not None else getattr(doc, "char_count", 0)
+    updates["cag_eligible"] = bool(effective_pages <= 50 and effective_chars <= 120_000)
+
+    _documents[doc_id] = doc.model_copy(update=updates)
 
 
 def get_document(doc_id: str, tenant_id: str = "default") -> Document | None:

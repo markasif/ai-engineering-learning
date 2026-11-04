@@ -11,6 +11,7 @@ from shared.document_store import (
     save_chunk,
     save_document,
     save_document_text,
+    update_document,
 )
 from shared.ingestion import CHUNKING_STRATEGIES
 from shared.models import Chunk, Document
@@ -65,8 +66,8 @@ async def test_ask_documents_cag_mode():
     doc_id = doc.id
     raw_text = "NeoIntelli allows 25 days of annual leave. Approval is required from department managers."
     save_document_text(doc_id, raw_text)
+    update_document(doc_id, status="ready", chunk_count=1, page_count=3, char_count=len(raw_text))
 
-    # Mock call_llm
     mock_llm_response = AsyncMock()
     mock_llm_response.content = "According to the full document, employees receive **25 days of annual leave**."
 
@@ -82,5 +83,74 @@ async def test_ask_documents_cag_mode():
         assert "25 days of annual leave" in res["answer"]
         assert len(res["evidence"]) == 1
         assert "Cache-Augmented Generation" in res["evidence"][0]["text"]
+        assert res["is_large_doc"] is False
 
     delete_document(doc_id, tenant_id="default")
+
+
+@pytest.mark.asyncio
+async def test_large_document_cag_warning():
+    """Verify querying a large document (>50 pages) in CAG mode generates an advisory warning recommending RAG."""
+    doc = save_document("giant_manual.pdf", tenant_id="default")
+    doc_id = doc.id
+    raw_text = "Manual content " * 1000
+    save_document_text(doc_id, raw_text)
+    update_document(doc_id, status="ready", chunk_count=100, page_count=120, char_count=len(raw_text))
+
+    mock_llm_response = AsyncMock()
+    mock_llm_response.content = "Answer based on manual."
+
+    with patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)):
+        req = SearchRequest(
+            query="What is section 5?",
+            document_id=doc_id,
+            mode="cag",
+        )
+        res = await ask_documents(req=req, tenant_id="default")
+
+        assert res["mode"] == "cag"
+        assert res["is_large_doc"] is True
+        assert res["warning"] is not None
+        assert "Large Document Notice" in res["warning"]
+        assert "RAG (Sentence-aware)" in res["warning"]
+
+    delete_document(doc_id, tenant_id="default")
+
+
+@pytest.mark.asyncio
+async def test_auto_adaptive_routing_small_vs_large():
+    """Verify Auto mode intelligently routes small documents to CAG and large documents to RAG."""
+    # 1. Small document -> CAG
+    doc_small = save_document("brief.pdf", tenant_id="default")
+    raw_small = "Brief policy on remote work."
+    save_document_text(doc_small.id, raw_small)
+    update_document(doc_small.id, status="ready", chunk_count=1, page_count=2, char_count=len(raw_small))
+
+    mock_llm_response = AsyncMock()
+    mock_llm_response.content = "Remote work allowed 3 days."
+
+    with patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)):
+        req = SearchRequest(query="Remote work policy?", document_id=doc_small.id, mode="auto")
+        res_small = await ask_documents(req=req, tenant_id="default")
+        assert res_small["mode"] == "cag"
+        assert res_small["auto_routed"] is True
+        assert "auto-routed to CAG" in res_small["reason"]
+
+    delete_document(doc_small.id, tenant_id="default")
+
+    # 2. Large document -> RAG
+    doc_large = save_document("encyclopedia.pdf", tenant_id="default")
+    raw_large = "Encyclopedia content."
+    save_document_text(doc_large.id, raw_large)
+    update_document(doc_large.id, status="ready", chunk_count=150, page_count=85, char_count=150_000)
+
+    # Mock vector_search
+    with patch("app.api.v1.endpoints.documents.vector_search", return_value=[{"text": "Sample excerpt", "document_id": doc_large.id}]):
+        with patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)):
+            req = SearchRequest(query="Deep topic?", document_id=doc_large.id, mode="auto")
+            res_large = await ask_documents(req=req, tenant_id="default")
+            assert res_large["mode"] == "rag"
+            assert res_large["auto_routed"] is True
+            assert "auto-routed to RAG" in res_large["reason"]
+
+    delete_document(doc_large.id, tenant_id="default")
