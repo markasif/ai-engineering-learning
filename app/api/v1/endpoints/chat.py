@@ -29,6 +29,7 @@ from shared.retrieval_memory import (
     get_recent_retrievals,
     log_retrieval,
 )
+from shared.document_store import list_documents
 from shared.router import classify_query
 from shared.session_store import (
     add_message,
@@ -249,17 +250,30 @@ async def smart_chat(
     retrieval_method = "none"
     system_prompt = _SMART_SYSTEM_PROMPT
 
+    active_docs = list_documents(tenant_id=tenant_id)
+    ready_doc_ids = {d.id for d in active_docs if d.status == "ready"}
+
     high_confidence = classification["confidence"] > 0.6
-    if high_confidence and classification["needs_retrieval"]:
-        chunks_used = vector_search(body.message, top_k=5, tenant_id=tenant_id)
-        source = "rag"
-        retrieval_method = "vector"
-        system_prompt = _SMART_RAG_SYSTEM_PROMPT
-    elif not high_confidence:
-        chunks_used = vector_search(body.message, top_k=3, tenant_id=tenant_id)
-        source = "hybrid"
-        retrieval_method = "vector"
-        system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+    if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
+        raw_chunks = vector_search(body.message, top_k=5, tenant_id=tenant_id)
+        chunks_used = [
+            c for c in raw_chunks
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+        ]
+        if chunks_used:
+            source = "rag"
+            retrieval_method = "vector"
+            system_prompt = _SMART_RAG_SYSTEM_PROMPT
+    elif ready_doc_ids and not high_confidence:
+        raw_chunks = vector_search(body.message, top_k=3, tenant_id=tenant_id)
+        chunks_used = [
+            c for c in raw_chunks
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+        ]
+        if chunks_used:
+            source = "hybrid"
+            retrieval_method = "vector"
+            system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
 
     if settings.enable_long_term_context:
         digest = get_current_digest(tenant_id)
