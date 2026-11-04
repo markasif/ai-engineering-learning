@@ -7579,10 +7579,13 @@ input.modern-input-field:active,
   color: #ffffff !important;
 }
 
-/* --- Inner Navigation (Tabs): Exactly same Slate-Navy color (#1E222B) as Chat --- */
+/* --- Inner Navigation (Tabs): Exactly same Slate-Navy color (#1E222B) as Chat without bottom border --- */
+.tab-nav,
 [data-theme="dark"] .tab-nav {
   background: #1E222B !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .tab-btn {
@@ -7746,9 +7749,14 @@ input.modern-input-field:active,
   color: #94a3b8 !important; /* Silver placeholder text */
 }
 
+/* Remove horizontal border below Ask me anything input placeholder */
+.chat-input-footer,
+.modern-chat-toolbar,
 [data-theme="dark"] .chat-input-footer,
 [data-theme="dark"] .modern-chat-toolbar {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-top: none !important;
+  border: none !important;
+  padding-top: 0.15rem !important;
 }
 
 [data-theme="dark"] .toolbar-pill-toggle,
@@ -8313,4 +8321,264 @@ input.modern-input-field:active,
 .btn-edit-submit:hover {
   background: #059669 !important;
   box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5) !important;
+}
+
+
+/* =============================================================================
+   REFINED USER FIXES: STRATEGY DROPDOWN, SETTINGS, AGENT WORKFLOW & SWITCHER
+   ============================================================================= */
+
+/* Profile Picture: decommissioned from header */
+.header-user-badge,
+[data-theme="dark"] .header-user-badge {
+  display: none !important;
+}
+
+/* 1. Document Chunking Strategy Dropdown & Popover: Crisp White Background like No Files dropdown */
+.strategy-trigger-btn,
+[data-theme="dark"] .strategy-trigger-btn {
+  background: #ffffff !important;
+  border: 1px solid #e0d6c5 !important;
+  border-radius: 999px !important;
+  color: #1c1917 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+.strategy-trigger-btn:hover,
+[data-theme="dark"] .strategy-trigger-btn:hover,
+.strategy-trigger-btn.active,
+[data-theme="dark"] .strategy-trigger-btn.active,
+.strategy-trigger-btn[aria-expanded="true"],
+[data-theme="dark"] .strategy-trigger-btn[aria-expanded="true"] {
+  background: #fdfcfb !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+}
+
+.strategy-trigger-label,
+[data-theme="dark"] .strategy-trigger-label {
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+.strategy-trigger-chevron,
+[data-theme="dark"] .strategy-trigger-chevron {
+  color: #78716c !important;
+}
+
+/* Strategy Dropdown Popover: Crisp White Background */
+.strategy-popover,
+[data-theme="dark"] .strategy-popover {
+  background: #ffffff !important;
+  border: 1px solid #e0d6c5 !important;
+  border-radius: 14px !important;
+  color: #1c1917 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.strategy-popover-header,
+[data-theme="dark"] .strategy-popover-header {
+  border-bottom: 1px solid #eee7db !important;
+}
+
+.strategy-popover-tag,
+[data-theme="dark"] .strategy-popover-tag {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #059669 !important;
+}
+
+.strategy-popover-title,
+[data-theme="dark"] .strategy-popover-title {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+.strategy-popover-subtitle,
+[data-theme="dark"] .strategy-popover-subtitle {
+  color: #78716c !important;
+}
+
+.strategy-option-item,
+[data-theme="dark"] .strategy-option-item {
+  background: #ffffff !important;
+  border: 1px solid transparent !important;
+  color: #1c1917 !important;
+}
+
+.strategy-option-item:hover,
+[data-theme="dark"] .strategy-option-item:hover {
+  background: #f7f5f0 !important;
+  border-color: #e5dfd5 !important;
+}
+
+.strategy-option-item.selected,
+[data-theme="dark"] .strategy-option-item.selected {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+.strategy-option-name,
+[data-theme="dark"] .strategy-option-name {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+.strategy-option-desc,
+[data-theme="dark"] .strategy-option-desc {
+  color: #57534e !important;
+}
+
+.strategy-option-check,
+[data-theme="dark"] .strategy-option-check {
+  color: #059669 !important;
+}
+
+/* CAG Pill & Popover matching white style */
+.cag-btn,
+[data-theme="dark"] .cag-btn {
+  background: #ffffff !important;
+  border: 1px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+}
+
+.cag-popover,
+[data-theme="dark"] .cag-popover {
+  background: #ffffff !important;
+  border: 1px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
+}
+
+.cag-popover .cag-main-heading,
+[data-theme="dark"] .cag-popover .cag-main-heading {
+  color: #1c1917 !important;
+}
+
+.cag-popover .cag-text,
+[data-theme="dark"] .cag-popover .cag-text {
+  color: #44403c !important;
+}
+
+.cag-card-point,
+[data-theme="dark"] .cag-card-point {
+  background: #faf7f2 !important;
+  border: 1px solid #eee7db !important;
+  color: #292524 !important;
+}
+
+/* 2. Document Upload Guidance Note in Dark Mode */
+[data-theme="dark"] .doc-upload-hint-box {
+  background: #232732 !important;
+  border: 1.5px dashed rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .doc-upload-hint-box:hover {
+  background: #282f3d !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme="dark"] .doc-upload-hint-box .doc-hint-text strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .doc-upload-hint-box .doc-hint-text span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .doc-upload-hint-box .doc-hint-text span em {
+  color: #34d399 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .doc-upload-hint-box .doc-hint-icon {
+  color: #10b981 !important;
+}
+
+/* 3. Settings Button in Sidebar & Settings Panel in Dark Mode */
+[data-theme="dark"] .btn-sidebar-admin {
+  background: #232732 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .btn-sidebar-admin:hover {
+  background: #2d3340 !important;
+  color: #ffffff !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="dark"] .btn-sidebar-admin.active {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .btn-sidebar-admin.active .admin-label,
+[data-theme="dark"] .btn-sidebar-admin.active .admin-icon {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-sidebar-admin.active .tenant-pill {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure Settings / Admin Panel has dark background, never white */
+[data-theme="dark"] #admin-panel,
+[data-theme="dark"] .admin-modern-panel,
+[data-theme="dark"] .admin-panel-container {
+  background: #1E222B !important;
+  background-color: #1E222B !important;
+  color: #ffffff !important;
+}
+
+/* 4. Agent Multi-Step Workflow Guidance Card in Dark Mode */
+[data-theme="dark"] .agent-multistep-note-card {
+  background: #232732 !important;
+  border: 1.5px dashed rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .agent-multistep-note-card:hover {
+  background: #282f3d !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme="dark"] .agent-multistep-note-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .agent-multistep-note-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .agent-multistep-note-desc strong {
+  color: #34d399 !important;
+  font-weight: 600 !important;
+}
+
+/* 5. Quick vs. Multi-step switcher buttons in Dark Mode */
+[data-theme="dark"] .agent-mode-switcher-pill {
+  background: #1C1F26 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn.active {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }
