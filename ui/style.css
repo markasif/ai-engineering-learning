@@ -7329,13 +7329,20 @@ input.modern-input-field:active,
 }
 
 .btn-theme-toggle:hover,
-.btn-sound-toggle:hover,
-[data-theme="dark"] .btn-theme-toggle:hover,
-[data-theme="dark"] .btn-sound-toggle:hover {
+.btn-sound-toggle:hover {
   background: #ffffff !important;
   border-color: #10b981 !important;
   color: #059669 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-theme="dark"] .btn-theme-toggle:hover,
+[data-theme="dark"] .btn-sound-toggle:hover {
+  background: #faf7f2 !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -8344,14 +8351,14 @@ input.modern-input-field:active,
   display: none !important;
 }
 
-/* 1. Document Chunking Strategy Dropdown & Popover: Crisp White Background like No Files dropdown */
+/* 1. Document Chunking Strategy Dropdown & Popover: Warm Cream Background in Dark Mode */
 .strategy-trigger-btn,
 [data-theme="dark"] .strategy-trigger-btn {
-  background: #ffffff !important;
-  border: 1px solid #e0d6c5 !important;
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
   border-radius: 999px !important;
   color: #1c1917 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
 }
 
 .strategy-trigger-btn:hover,
@@ -8360,9 +8367,9 @@ input.modern-input-field:active,
 [data-theme="dark"] .strategy-trigger-btn.active,
 .strategy-trigger-btn[aria-expanded="true"],
 [data-theme="dark"] .strategy-trigger-btn[aria-expanded="true"] {
-  background: #fdfcfb !important;
+  background: #faf7f2 !important;
   border-color: #10b981 !important;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
 }
 
 .strategy-trigger-label,
@@ -8376,25 +8383,26 @@ input.modern-input-field:active,
   color: #78716c !important;
 }
 
-/* Strategy Dropdown Popover: Crisp White Background */
+/* Strategy Dropdown Popover: Warm Cream Background */
 .strategy-popover,
 [data-theme="dark"] .strategy-popover {
-  background: #ffffff !important;
-  border: 1px solid #e0d6c5 !important;
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
   border-radius: 14px !important;
   color: #1c1917 !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 .strategy-popover-header,
 [data-theme="dark"] .strategy-popover-header {
-  border-bottom: 1px solid #eee7db !important;
+  border-bottom: 1px solid #e5ded2 !important;
 }
 
 .strategy-popover-tag,
 [data-theme="dark"] .strategy-popover-tag {
-  background: rgba(16, 185, 129, 0.12) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
   color: #059669 !important;
+  font-weight: 600 !important;
 }
 
 .strategy-popover-title,
@@ -8405,26 +8413,26 @@ input.modern-input-field:active,
 
 .strategy-popover-subtitle,
 [data-theme="dark"] .strategy-popover-subtitle {
-  color: #78716c !important;
+  color: #57534e !important;
 }
 
 .strategy-option-item,
 [data-theme="dark"] .strategy-option-item {
-  background: #ffffff !important;
+  background: #f5f0e6 !important;
   border: 1px solid transparent !important;
   color: #1c1917 !important;
 }
 
 .strategy-option-item:hover,
 [data-theme="dark"] .strategy-option-item:hover {
-  background: #f7f5f0 !important;
-  border-color: #e5dfd5 !important;
+  background: #eae3d5 !important;
+  border-color: #d6ccbd !important;
 }
 
 .strategy-option-item.selected,
 [data-theme="dark"] .strategy-option-item.selected {
-  background: rgba(16, 185, 129, 0.1) !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
 }
 
 .strategy-option-name,
@@ -8443,20 +8451,20 @@ input.modern-input-field:active,
   color: #059669 !important;
 }
 
-/* CAG Pill & Popover matching white style */
+/* CAG Pill & Popover matching cream style */
 .cag-btn,
 [data-theme="dark"] .cag-btn {
-  background: #ffffff !important;
-  border: 1px solid #e0d6c5 !important;
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
 }
 
 .cag-popover,
 [data-theme="dark"] .cag-popover {
-  background: #ffffff !important;
-  border: 1px solid #e0d6c5 !important;
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
 }
 
 .cag-popover .cag-main-heading,
@@ -8472,7 +8480,7 @@ input.modern-input-field:active,
 .cag-card-point,
 [data-theme="dark"] .cag-card-point {
   background: #faf7f2 !important;
-  border: 1px solid #eee7db !important;
+  border: 1px solid #e5ded2 !important;
   color: #292524 !important;
 }
 
@@ -8621,7 +8629,7 @@ input.modern-input-field:active,
 [data-theme="dark"] .btn-camera-upload:hover,
 [data-theme="dark"] label[for="image-input"].btn-camera-upload:hover,
 [data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover {
-  background: #ffffff !important;
+  background: #faf7f2 !important;
   border-color: #10b981 !important;
   color: #059669 !important;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
@@ -8657,7 +8665,7 @@ input.modern-input-field:active,
 
 [data-theme="dark"] .btn-doc-attach:hover,
 [data-theme="dark"] .modern-chat-toolbar .btn-doc-attach:hover {
-  background: #ffffff !important;
+  background: #faf7f2 !important;
   border-color: #10b981 !important;
   color: #059669 !important;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
@@ -9343,4 +9351,194 @@ body.drawer-open {
     padding: 0.18rem 0.3rem !important;
     font-size: 0.65rem !important;
   }
+}
+
+
+/* =============================================================================
+   ALL DROPDOWNS, POPOVERS & DIALOGS IN DARK MODE: WARM CREAM (#f5f0e6)
+   Replaces all harsh white surfaces with high-visibility, elegant warm cream
+   ============================================================================= */
+
+/* 1. "No files" / Document Manager Dropdown Trigger & Popover */
+[data-theme="dark"] .doc-manager-trigger,
+[data-theme="dark"] #doc-files-trigger {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .doc-manager-trigger:hover,
+[data-theme="dark"] .doc-manager-trigger.active,
+[data-theme="dark"] #doc-files-trigger:hover,
+[data-theme="dark"] #doc-files-trigger.active {
+  background: #faf7f2 !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+}
+
+[data-theme="dark"] .doc-manager-label {
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .doc-manager-chevron {
+  color: #78716c !important;
+}
+
+[data-theme="dark"] .doc-manager-popover {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .doc-manager-popover-header {
+  border-bottom: 1px solid #e5ded2 !important;
+}
+
+[data-theme="dark"] .doc-popover-title,
+[data-theme="dark"] .doc-manager-title {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .doc-manager-empty {
+  color: #57534e !important;
+}
+
+[data-theme="dark"] .doc-manager-empty strong {
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .doc-manager-item,
+[data-theme="dark"] .doc-item-row {
+  background: #faf7f2 !important;
+  border: 1px solid #e5ded2 !important;
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .doc-item-name {
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .doc-item-meta {
+  color: #78716c !important;
+}
+
+/* 2. MCP Connected Services Pill & Popover (Agent Tab) */
+[data-theme="dark"] .modern-chat-toolbar .mcp-services-toggle {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .modern-chat-toolbar .mcp-services-toggle:hover,
+[data-theme="dark"] .modern-chat-toolbar .mcp-services-toggle[aria-expanded="true"] {
+  background: #faf7f2 !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+}
+
+[data-theme="dark"] .modern-chat-toolbar .mcp-services-toggle .mcp-services-label {
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .modern-chat-toolbar .mcp-services-popover {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .mcp-services-popover-header {
+  border-bottom: 1px solid #e5ded2 !important;
+}
+
+[data-theme="dark"] .mcp-popover-title {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .mcp-popover-desc {
+  color: #57534e !important;
+}
+
+[data-theme="dark"] .mcp-server-item,
+[data-theme="dark"] .mcp-server-card {
+  background: #faf7f2 !important;
+  border: 1px solid #e5ded2 !important;
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .mcp-server-name {
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .mcp-server-desc {
+  color: #57534e !important;
+}
+
+/* 3. Modal Dialogs in Dark Mode: Warm Cream Background */
+[data-theme="dark"] .modal-dialog,
+[data-theme="dark"] .modal-content {
+  background: #f5f0e6 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom: 1px solid #e5ded2 !important;
+}
+
+[data-theme="dark"] .modal-title {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .modal-subtitle {
+  color: #57534e !important;
+}
+
+[data-theme="dark"] .modal-body {
+  color: #292524 !important;
+}
+
+[data-theme="dark"] .modal-body strong {
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .modal-hint {
+  color: #78716c !important;
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top: 1px solid #e5ded2 !important;
+}
+
+[data-theme="dark"] .modal-close-btn {
+  color: #78716c !important;
+}
+
+[data-theme="dark"] .modal-close-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+[data-theme="dark"] .modal-footer .btn-secondary {
+  background: #e5ded2 !important;
+  border: 1px solid #d6ccbd !important;
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .modal-footer .btn-secondary:hover {
+  background: #ded5c7 !important;
+  color: #000000 !important;
 }
