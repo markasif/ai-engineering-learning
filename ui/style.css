@@ -1004,7 +1004,7 @@ html, body {
 .tab-nav {
   width: 100%;
   flex-shrink: 0;
-  background: var(--color-almond);
+  background: transparent;
   z-index: 20;
 }
 
@@ -6573,7 +6573,7 @@ input.modern-input-field:active,
 .tab-nav {
   width: 100% !important;
   flex-shrink: 0 !important;
-  background: var(--color-almond, #f5f0e6) !important;
+  background: transparent !important;
   border: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -7579,10 +7579,18 @@ input.modern-input-field:active,
   color: #ffffff !important;
 }
 
-/* --- Inner Navigation (Tabs): Exactly same Slate-Navy color (#1E222B) as Chat without bottom border --- */
+/* --- Inner Navigation (Tabs): Fully transparent to its background for ALL themes --- */
 .tab-nav,
-[data-theme="dark"] .tab-nav {
-  background: #1E222B !important;
+.tab-nav-inner,
+.tab-nav-tabs,
+[data-theme="light"] .tab-nav,
+[data-theme="light"] .tab-nav-inner,
+[data-theme="light"] .tab-nav-tabs,
+[data-theme="dark"] .tab-nav,
+[data-theme="dark"] .tab-nav-inner,
+[data-theme="dark"] .tab-nav-tabs {
+  background: transparent !important;
+  background-color: transparent !important;
   border: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -8660,4 +8668,22 @@ input.modern-input-field:active,
 [data-theme="dark"] .modern-chat-toolbar .btn-doc-attach:hover span {
   color: #059669 !important;
   stroke: #059669 !important;
+}
+
+
+/* --- Inner Navbar: Fully Transparent to Background in All Themes --- */
+.tab-nav,
+.tab-nav-inner,
+.tab-nav-tabs,
+[data-theme="light"] .tab-nav,
+[data-theme="light"] .tab-nav-inner,
+[data-theme="light"] .tab-nav-tabs,
+[data-theme="dark"] .tab-nav,
+[data-theme="dark"] .tab-nav-inner,
+[data-theme="dark"] .tab-nav-tabs {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
