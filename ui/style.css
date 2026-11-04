@@ -6333,24 +6333,60 @@ input.modern-input-field:active,
   gap: 0.85rem !important;
 }
 
-/* Mobile Sidebar Drawer Toggle Button */
-.btn-mobile-sidebar {
+/* Mobile Sidebar Drawer Toggle Button in Dark Mode */
+[data-theme="dark"] .btn-mobile-sidebar {
   color: #f4f4f5 !important;
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
 }
 
-.btn-mobile-sidebar:hover {
+[data-theme="dark"] .btn-mobile-sidebar:hover {
   background: rgba(255, 255, 255, 0.15) !important;
   border-color: var(--color-matcha, #10b981) !important;
 }
 
-.btn-mobile-sidebar svg {
+[data-theme="dark"] .btn-mobile-sidebar svg,
+[data-theme="dark"] .btn-mobile-sidebar svg line {
   stroke: #f4f4f5 !important;
 }
 
-.mobile-toggle-text {
+[data-theme="dark"] .mobile-toggle-text {
   color: #f4f4f5 !important;
+}
+
+/* Mobile Sidebar Drawer Toggle Button in Light Mode - High Contrast Black */
+[data-theme="light"] .btn-mobile-sidebar,
+[data-theme="light"] #mobile-sidebar-toggle {
+  color: #1a1d24 !important;
+  background: #f5f0e6 !important;
+  border: 1.5px solid #dfd7c7 !important;
+}
+
+[data-theme="light"] .btn-mobile-sidebar:hover,
+[data-theme="light"] #mobile-sidebar-toggle:hover {
+  background: #ece5d6 !important;
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .btn-mobile-sidebar svg,
+[data-theme="light"] #mobile-sidebar-toggle svg,
+[data-theme="light"] .btn-mobile-sidebar svg line,
+[data-theme="light"] #mobile-sidebar-toggle svg line {
+  stroke: #1a1d24 !important;
+  color: #1a1d24 !important;
+}
+
+[data-theme="light"] .btn-mobile-sidebar:hover svg,
+[data-theme="light"] #mobile-sidebar-toggle:hover svg,
+[data-theme="light"] .btn-mobile-sidebar:hover svg line,
+[data-theme="light"] #mobile-sidebar-toggle:hover svg line {
+  stroke: #10b981 !important;
+}
+
+[data-theme="light"] .mobile-toggle-text {
+  color: #1a1d24 !important;
+  font-weight: 700 !important;
 }
 
 /* Official AskRaggy 3D Origami/Ribbon Logo Mark */
@@ -9173,8 +9209,9 @@ body.drawer-open {
   .clean-prompt-card {
     padding: 0.45rem 0.65rem !important;
     display: flex !important;
-    align-items: center !important;
-    gap: 0.5rem !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.2rem !important;
     text-align: left !important;
   }
 
@@ -9764,11 +9801,24 @@ body.drawer-open {
   }
 
   .tab-nav-doc-controls {
-    display: flex !important;
     align-items: center !important;
     gap: 0.3rem !important;
     flex-wrap: nowrap !important;
     flex-shrink: 0 !important;
+  }
+
+  /* Keep controls hidden when tab is not active on mobile */
+  .tab-nav-doc-controls[style*="display: none"],
+  .tab-nav-agent-controls[style*="display: none"] {
+    display: none !important;
+  }
+
+  /* Remove CAG button and explainer completely on mobile */
+  #cag-wrapper,
+  .cag-wrapper,
+  .cag-btn,
+  .cag-popover {
+    display: none !important;
   }
 
   /* Compact matching cream capsules */
@@ -9816,7 +9866,6 @@ body.drawer-open {
   }
 
   .tab-nav-agent-controls {
-    display: flex !important;
     align-items: center !important;
     flex-shrink: 0 !important;
   }
@@ -9880,5 +9929,44 @@ body.drawer-open {
   .byok-input-row {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* Ensure card descriptions are strictly placed below the heading across all screens */
+.clean-prompt-card,
+#documents-panel .clean-prompt-card,
+#chat-panel .clean-prompt-card,
+#agent-panel .clean-prompt-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+
+.clean-prompt-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  width: 100% !important;
+}
+
+.clean-prompt-desc {
+  display: block !important;
+  width: 100% !important;
+  margin-top: 0.15rem !important;
+}
+
+/* Ensure mobile navbar hides document controls when in chat or agent tab */
+@media (max-width: 992px) {
+  .tab-nav-doc-controls[style*="none"] {
+    display: none !important;
+  }
+  .tab-nav-agent-controls[style*="none"] {
+    display: none !important;
+  }
+  #cag-wrapper,
+  .cag-wrapper,
+  .cag-btn {
+    display: none !important;
   }
 }

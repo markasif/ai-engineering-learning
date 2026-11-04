@@ -527,7 +527,7 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? chatInput.value).trim();
   if (!text) return;
 
-  if (!overrideText && chatInput) chatInput.value = "";
+  if (chatInput) chatInput.value = "";
 
   let userEl = existingUserEl;
   if (!userEl) {
@@ -1293,8 +1293,7 @@ messageHistory?.addEventListener("click", (e) => {
   if (chip && chip.dataset.query) {
     const query = chip.dataset.query;
     if (chatInput) {
-      chatInput.value = query;
-      chatInput.focus();
+      chatInput.value = "";
     }
     sendMessage(query);
     return;
@@ -2449,7 +2448,7 @@ async function sendDocMessage(customQuery = null, existingUserEl = null) {
     return;
   }
 
-  if (!customQuery && docChatInput) docChatInput.value = "";
+  if (docChatInput) docChatInput.value = "";
 
   let userEl = existingUserEl;
   if (!userEl) {
@@ -2588,6 +2587,7 @@ docChatInput?.addEventListener("keydown", (e) => {
 document.addEventListener("click", (e) => {
   const chip = e.target.closest(".doc-prompt-chip");
   if (chip && chip.dataset.query) {
+    if (docChatInput) docChatInput.value = "";
     sendDocMessage(chip.dataset.query);
   }
 });
@@ -3008,7 +3008,7 @@ async function runAgent(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? agentInput?.value)?.trim();
   if (!text) return;
 
-  if (!overrideText && agentInput) agentInput.value = "";
+  if (agentInput) agentInput.value = "";
 
   let userEl = existingUserEl;
   if (!userEl) {
@@ -3119,10 +3119,17 @@ document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn
       ""
     );
     if (agentInput) {
-      agentInput.value = promptText;
-      agentInput.focus();
+      agentInput.value = "";
     }
-    dispatchAgent();
+    if (agentMode === "quick" && isComplexMultiStepQuery(promptText)) {
+      showMultiStepModal(promptText);
+      return;
+    }
+    if (agentMode === "multistep") {
+      runMultiStepAgent(promptText);
+    } else {
+      runAgent(promptText);
+    }
   });
 });
 
@@ -3255,7 +3262,7 @@ async function runMultiStepAgent(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? agentInput?.value)?.trim();
   if (!text) return;
 
-  if (!overrideText && agentInput) agentInput.value = "";
+  if (agentInput) agentInput.value = "";
 
   let userEl = existingUserEl;
   if (!userEl) {
