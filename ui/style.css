@@ -5958,12 +5958,14 @@ input.modern-input-field:active,
   font-weight: 600 !important;
 }
 
-@media (max-width: 768px) {
-  .agent-multistep-note-card,
-  .doc-upload-hint-box {
-    grid-column: span 1 !important;
-    padding: 0.45rem 0.65rem !important;
-  }
+.doc-hint-desc-mobile,
+.agent-multistep-desc-mobile {
+  display: none !important;
+}
+
+.doc-hint-desc-desktop,
+.agent-multistep-desc-desktop {
+  display: block;
 }
 
 
@@ -9857,56 +9859,33 @@ body.drawer-open {
   }
 
   /* 2. CHAT CARDS: Strictly 3 columns in a row on mobile, compact text */
-  #chat-panel .clean-prompt-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.3rem !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  #chat-panel .clean-prompt-grid .clean-prompt-card {
-    grid-column: auto !important;
-    padding: 0.35rem 0.42rem !important;
-  }
-
-  /* 3. DOCUMENT CARDS: Strictly 3 cards in a row on mobile */
-  #documents-panel .clean-prompt-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.35rem !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  #documents-panel .clean-prompt-grid .clean-prompt-card {
-    grid-column: auto !important;
-    padding: 0.35rem 0.42rem !important;
-  }
-
-  /* Guidance note below taking the full 3 cards space */
-  #documents-panel #doc-upload-hint,
-  .doc-upload-hint-box {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    margin-top: 0.35rem !important;
-    padding: 0.45rem 0.65rem !important;
-  }
-
-  /* 4. AGENT CARDS: Strictly 3 cards in a row on mobile (hide 4th desktop-only card) */
+  #chat-panel .clean-prompt-grid,
+  #documents-panel .clean-prompt-grid,
   #agent-panel .clean-prompt-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.35rem !important;
     width: 100% !important;
     max-width: 100% !important;
+    align-items: stretch !important;
   }
 
+  /* 3. PROMPT CARDS: Unified row alignment on mobile */
+  .clean-prompt-card,
+  #chat-panel .clean-prompt-grid .clean-prompt-card,
+  #documents-panel .clean-prompt-grid .clean-prompt-card,
   #agent-panel .clean-prompt-grid .clean-prompt-card {
     grid-column: auto !important;
-    padding: 0.35rem 0.42rem !important;
+    padding: 0.40rem 0.42rem !important;
+    min-height: 52px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 0.12rem !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
   }
 
   #agent-panel .clean-prompt-grid .agent-card-desktop-only,
@@ -9914,7 +9893,54 @@ body.drawer-open {
     display: none !important;
   }
 
-  /* Agent multi-step note below taking the full 3 cards space */
+  /* REMOVE ICONS FROM PROMPT CARDS ON MOBILE */
+  .clean-prompt-icon {
+    display: none !important;
+  }
+
+  /* Headings on exact same horizontal line for all cards */
+  .clean-prompt-header {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 1.15rem !important;
+    min-height: 1.15rem !important;
+    max-height: 1.15rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .clean-prompt-title {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    line-height: 1.15rem !important;
+    height: 1.15rem !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Descriptions below heading on exact same horizontal line for all cards */
+  .clean-prompt-desc {
+    font-size: 0.62rem !important;
+    line-height: 1.15rem !important;
+    height: 1.15rem !important;
+    opacity: 0.75 !important;
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100% !important;
+    margin: 0 !important;
+    margin-top: 0.10rem !important;
+  }
+
+  /* 4. GUIDANCE NOTES: Upload hint and Multi-step note taking full 3 cards space */
+  #documents-panel #doc-upload-hint,
+  .doc-upload-hint-box,
   #agent-panel .agent-multistep-note-card {
     grid-column: 1 / -1 !important;
     width: 100% !important;
@@ -9922,53 +9948,61 @@ body.drawer-open {
     box-sizing: border-box !important;
     margin-top: 0.35rem !important;
     padding: 0.45rem 0.65rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    border-radius: 10px !important;
+    gap: 0.15rem !important;
   }
 
-  /* 5. REMOVE ICONS FROM PROMPT CARDS ON MOBILE */
-  .clean-prompt-icon {
+  .doc-upload-hint-box .doc-hint-icon,
+  .agent-multistep-note-icon {
     display: none !important;
   }
 
-  /* 6. Short, non-crowded cards on mobile */
-  .clean-prompt-card {
-    padding: 0.35rem 0.42rem !important;
-    min-height: auto !important;
+  .doc-upload-hint-box .doc-hint-text,
+  .agent-multistep-note-content,
+  .agent-multistep-note-body {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
     text-align: left !important;
     gap: 0.12rem !important;
-    border-radius: 10px !important;
-  }
-
-  .clean-prompt-header {
-    display: block !important;
     width: 100% !important;
-    margin: 0 !important;
   }
 
-  .clean-prompt-title {
-    font-size: 0.72rem !important;
+  .doc-upload-hint-box .doc-hint-text strong,
+  .agent-multistep-note-title {
+    font-size: 0.74rem !important;
     font-weight: 700 !important;
-    line-height: 1.15 !important;
-    margin: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+    color: #1c1917 !important;
     display: block !important;
+  }
+
+  .doc-hint-desc-desktop,
+  .agent-multistep-desc-desktop {
+    display: none !important;
+  }
+
+  .doc-hint-desc-mobile,
+  .agent-multistep-desc-mobile {
+    display: block !important;
+    font-size: 0.65rem !important;
+    line-height: 1.3 !important;
+    color: #57534e !important;
     width: 100% !important;
   }
 
-  .clean-prompt-desc {
-    font-size: 0.62rem !important;
-    line-height: 1.2 !important;
-    opacity: 0.75 !important;
-    display: block !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    width: 100% !important;
-    margin-top: 0.1rem !important;
+  [data-theme="dark"] .doc-upload-hint-box .doc-hint-text strong,
+  [data-theme="dark"] .agent-multistep-note-title {
+    color: #faf5ee !important;
+  }
+
+  [data-theme="dark"] .doc-hint-desc-mobile,
+  [data-theme="dark"] .agent-multistep-desc-mobile {
+    color: #cbd5e1 !important;
   }
 
   /* 7. Shorter Headings and Descriptions on Mobile */
@@ -10135,23 +10169,23 @@ body.drawer-open {
 #documents-panel .clean-prompt-card,
 #chat-panel .clean-prompt-card,
 #agent-panel .clean-prompt-card {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  text-align: left !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .clean-prompt-header {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.45rem !important;
-  width: 100% !important;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
 }
 
 .clean-prompt-desc {
-  display: block !important;
-  width: 100% !important;
-  margin-top: 0.15rem !important;
+  display: block;
+  width: 100%;
+  margin-top: 0.15rem;
 }
 
 /* Ensure mobile navbar hides document controls when in chat or agent tab */
