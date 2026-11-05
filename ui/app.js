@@ -2021,26 +2021,32 @@ function formatMarkdownToHtml(markdown) {
   let inTable = false;
   let tableHeaders = [];
   let tableRows = [];
+  let hasDelimiter = false;
 
   function flushTable() {
     if (!inTable) return;
-    let tHtml = '<div class="table-container"><table class="rich-table">';
-    if (tableHeaders.length > 0) {
-      tHtml += '<thead><tr>';
-      tableHeaders.forEach(h => { tHtml += `<th>${h}</th>`; });
-      tHtml += '</tr></thead>';
+    if (tableRows.length === 0 && !hasDelimiter) {
+      output.push(`<p class="md-paragraph">${tableHeaders.join(" | ")}</p>`);
+    } else {
+      let tHtml = '<div class="table-container"><table class="rich-table">';
+      if (tableHeaders.length > 0) {
+        tHtml += '<thead><tr>';
+        tableHeaders.forEach(h => { tHtml += `<th>${h}</th>`; });
+        tHtml += '</tr></thead>';
+      }
+      tHtml += '<tbody>';
+      tableRows.forEach(row => {
+        tHtml += '<tr>';
+        row.forEach(cell => { tHtml += `<td>${cell}</td>`; });
+        tHtml += '</tr>';
+      });
+      tHtml += '</tbody></table></div>';
+      output.push(tHtml);
     }
-    tHtml += '<tbody>';
-    tableRows.forEach(row => {
-      tHtml += '<tr>';
-      row.forEach(cell => { tHtml += `<td>${cell}</td>`; });
-      tHtml += '</tr>';
-    });
-    tHtml += '</tbody></table></div>';
-    output.push(tHtml);
     inTable = false;
     tableHeaders = [];
     tableRows = [];
+    hasDelimiter = false;
   }
 
   function flushList() {
@@ -2053,13 +2059,27 @@ function formatMarkdownToHtml(markdown) {
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i].trim();
 
-    // Markdown Table Detection (e.g. | col1 | col2 |)
-    if (line.startsWith("|") && line.endsWith("|")) {
+    // Markdown Table Detection (handles | col1 | col2 |, col1 | col2, and tab-separated)
+    let isTableLine = false;
+    let isDelimiter = false;
+    let cells = [];
+
+    if (line.includes("|")) {
+      const clean = line.replace(/^\|/, "").replace(/\|$/, "");
+      cells = clean.split("|").map(c => c.trim());
+      isDelimiter = cells.every(c => /^[\-:\s]+$/.test(c));
+      isTableLine = true;
+    } else if (line.includes("\t")) {
+      cells = line.split("\t").map(c => c.trim()).filter(c => c.length > 0);
+      if (cells.length >= 2) {
+        isTableLine = true;
+      }
+    }
+
+    if (isTableLine) {
       flushList();
-      const cells = line.slice(1, -1).split("|").map(c => c.trim());
-      // Check if delimiter row like |---|---|
-      const isDelimiter = cells.every(c => /^[\-:\s]+$/.test(c));
       if (isDelimiter) {
+        hasDelimiter = true;
         continue;
       }
       if (!inTable) {

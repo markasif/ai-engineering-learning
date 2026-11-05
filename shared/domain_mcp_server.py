@@ -483,6 +483,53 @@ async def submit_expense_claim(
     }
 
 
+async def get_expense_claims(
+    employee_name: str | None = None,
+    status: str | None = None,
+) -> dict[str, Any]:
+    """Retrieve expense reimbursement claims, optionally filtered by employee name or approval status."""
+    url, key = _get_supabase_config()
+
+    if url and key:
+        try:
+            params: dict[str, Any] = {"select": "*"}
+            if status and status.strip():
+                params["status"] = f"ilike.*{status.strip()}*"
+            if employee_name and employee_name.strip():
+                params["employee_name"] = f"ilike.*{employee_name.strip()}*"
+
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(
+                    f"{url}/rest/v1/expenses",
+                    params=params,
+                    headers=_get_supabase_headers(key),
+                )
+                if resp.status_code == 200:
+                    records = resp.json()
+                    if records:
+                        return {
+                            "count": len(records),
+                            "expenses": records,
+                            "source": "Supabase PostgreSQL Database",
+                        }
+        except Exception:
+            pass
+
+    records = list(MOCK_EXPENSES)
+    if employee_name and employee_name.strip():
+        q = employee_name.strip().lower()
+        records = [r for r in records if q in r["employee_name"].lower()]
+    if status and status.strip():
+        s = status.strip().lower()
+        records = [r for r in records if s in r["status"].lower()]
+
+    return {
+        "count": len(records),
+        "expenses": records,
+        "source": "Finance & Expense System (In-Memory Database)",
+    }
+
+
 # Backward compatibility helpers
 def _search_domain_records(query: str, limit: int = 5) -> dict[str, Any]:
     domain = settings.effective_domain()
@@ -592,6 +639,26 @@ if _MCP_AVAILABLE:
                     },
                 ),
                 mcp_types.Tool(
+                    name="get_expense_claims",
+                    description=(
+                        "Retrieve employee business expense reimbursement claims from the database. "
+                        "Optionally filter by employee name or approval status ('Pending Review', 'Approved')."
+                    ),
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "employee_name": {
+                                "type": "string",
+                                "description": "Optional: Filter expense claims for a specific employee name.",
+                            },
+                            "status": {
+                                "type": "string",
+                                "description": "Optional: Filter by approval status ('Pending Review', 'Approved').",
+                            },
+                        },
+                    },
+                ),
+                mcp_types.Tool(
                     name="submit_expense_claim",
                     description=(
                         "Submit an employee business expense reimbursement claim. Automatically applies policy checks: "
@@ -664,6 +731,11 @@ if _MCP_AVAILABLE:
         elif name == "update_leave_status":
             result = await update_leave_status(
                 arguments.get("request_code", ""), arguments.get("status", "Approved")
+            )
+        elif name == "get_expense_claims":
+            result = await get_expense_claims(
+                employee_name=arguments.get("employee_name"),
+                status=arguments.get("status"),
             )
         elif name == "submit_expense_claim":
             result = await submit_expense_claim(
