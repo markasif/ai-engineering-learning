@@ -57,7 +57,7 @@ async def upload_document(
         if len(file_bytes) > MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=413,
-                detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB)."
+                detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB).",
             )
 
         def _process() -> tuple[int, int, int]:
@@ -522,7 +522,11 @@ async def ask_documents(
     target_filename = target_doc.filename if target_doc else "Uploaded Document"
     raw_doc_text = get_document_text(doc_id) if doc_id else ""
     page_count = getattr(target_doc, "page_count", 1) if target_doc else 1
-    char_count = getattr(target_doc, "char_count", len(raw_doc_text or "")) if target_doc else len(raw_doc_text or "")
+    char_count = (
+        getattr(target_doc, "char_count", len(raw_doc_text or ""))
+        if target_doc
+        else len(raw_doc_text or "")
+    )
     if char_count == 0 and raw_doc_text:
         char_count = len(raw_doc_text)
 
@@ -659,7 +663,9 @@ async def ask_documents(
             doc_id = ready_tenant_docs[-1].id
 
     filters = {"document_id": doc_id} if doc_id else None
-    chunks = await asyncio.to_thread(vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id)
+    chunks = await asyncio.to_thread(
+        vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id
+    )
 
     # Secondary defense: strictly isolate to the target document
     if doc_id:
@@ -777,7 +783,9 @@ async def search_documents(
 ) -> list[dict[str, Any]]:
     """Direct semantic similarity search over document chunks."""
     filters = {"document_id": req.document_id} if req.document_id else None
-    results = await asyncio.to_thread(vector_search, req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id)
+    results = await asyncio.to_thread(
+        vector_search, req.query, top_k=req.top_k, filters=filters, tenant_id=tenant_id
+    )
     if req.document_id:
         results = [c for c in results if c.get("document_id") == req.document_id]
     return results

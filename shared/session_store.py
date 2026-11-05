@@ -138,4 +138,3 @@ def truncate_session_messages(session_id: str, keep_count: int, tenant_id: str =
         keep_count = 0
     session.messages = session.messages[:keep_count]
     return True
-

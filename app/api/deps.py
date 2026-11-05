@@ -3,6 +3,7 @@ FastAPI dependencies for tenant isolation, BYOK API keys, and store access.
 """
 
 from fastapi import Request
+
 from shared.tenant_context import get_tenant_id
 
 

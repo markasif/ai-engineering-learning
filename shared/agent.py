@@ -39,16 +39,31 @@ PUBLIC API:
   run_agent_with_mcp(message, session_id, tenant_id) → dict  [Feature 9]
 """
 
+import inspect
 import json
 from typing import Any
 
 from shared.config import settings
+from shared.domain_mcp_server import (
+    get_expense_claims,
+    get_pending_leave_requests,
+    list_department_staff,
+    lookup_employee,
+    submit_expense_claim,
+    update_leave_status,
+)
 from shared.llm_client import call_llm
 from shared.session_store import add_message, get_session
 from shared.tools import (
     CHECK_AVAILABILITY_SCHEMA,
     CREATE_TICKET_SCHEMA,
+    GET_EXPENSE_CLAIMS_SCHEMA,
+    GET_PENDING_LEAVE_REQUESTS_SCHEMA,
+    LIST_DEPARTMENT_STAFF_SCHEMA,
+    LOOKUP_EMPLOYEE_SCHEMA,
     LOOKUP_INFO_SCHEMA,
+    SUBMIT_EXPENSE_CLAIM_SCHEMA,
+    UPDATE_LEAVE_STATUS_SCHEMA,
     check_availability,
     create_ticket,
     lookup_info,
@@ -67,6 +82,14 @@ from shared.tools import (
 # =============================================================================
 
 TOOLS_REGISTRY: dict[str, tuple[Any, dict]] = {
+    # Core HR domain tools with in-process execution and MCP parity
+    "lookup_employee": (lookup_employee, LOOKUP_EMPLOYEE_SCHEMA),
+    "list_department_staff": (list_department_staff, LIST_DEPARTMENT_STAFF_SCHEMA),
+    "get_pending_leave_requests": (get_pending_leave_requests, GET_PENDING_LEAVE_REQUESTS_SCHEMA),
+    "update_leave_status": (update_leave_status, UPDATE_LEAVE_STATUS_SCHEMA),
+    "submit_expense_claim": (submit_expense_claim, SUBMIT_EXPENSE_CLAIM_SCHEMA),
+    "get_expense_claims": (get_expense_claims, GET_EXPENSE_CLAIMS_SCHEMA),
+    # Operational utilities
     "check_availability": (check_availability, CHECK_AVAILABILITY_SCHEMA),
     "create_ticket": (create_ticket, CREATE_TICKET_SCHEMA),
     "lookup_info": (lookup_info, LOOKUP_INFO_SCHEMA),
@@ -233,7 +256,10 @@ async def run_agent(
             }
         else:
             try:
-                tool_result = fn(**tool_args)
+                if inspect.iscoroutinefunction(fn):
+                    tool_result = await fn(**tool_args)
+                else:
+                    tool_result = fn(**tool_args)
             except Exception as exc:
                 tool_result = {"error": str(exc), "tool": tool_name}
 
@@ -301,9 +327,13 @@ async def run_agent_with_mcp(
         mcp_tool_names: set[str] = {t["name"] for t in await list_mcp_tools()}
     except Exception:
         # MCP not available — fall back to the basic agent loop.
-        return await run_agent(message=message, session_id=session_id, tenant_id=tenant_id, api_key=api_key)
+        return await run_agent(
+            message=message, session_id=session_id, tenant_id=tenant_id, api_key=api_key
+        )
 
-    combined_schemas = _TOOL_SCHEMAS + mcp_schemas
+    local_tool_names = {s["function"]["name"] for s in _TOOL_SCHEMAS}
+    unique_mcp_schemas = [s for s in mcp_schemas if s["function"]["name"] not in local_tool_names]
+    combined_schemas = _TOOL_SCHEMAS + unique_mcp_schemas
 
     # Build messages from session history.
     session = get_session(session_id, tenant_id=tenant_id)
@@ -362,16 +392,33 @@ async def run_agent_with_mcp(
             # MCP tool — delegate to the connected server.
             try:
                 tool_result = await call_mcp_tool(tool_name, tool_args)
+                source = f"MCP:{_get_mcp_server_for_tool(tool_name)}"
             except Exception as exc:
-                tool_result = {"error": str(exc)}
-            source = f"MCP:{_get_mcp_server_for_tool(tool_name)}"
+                # Local fallback if MCP server fails or encounters an error
+                fn, _ = TOOLS_REGISTRY.get(tool_name, (None, None))
+                if fn is not None:
+                    try:
+                        if inspect.iscoroutinefunction(fn):
+                            tool_result = await fn(**tool_args)
+                        else:
+                            tool_result = fn(**tool_args)
+                        source = "LOCAL:FALLBACK"
+                    except Exception as inner_exc:
+                        tool_result = {"error": str(inner_exc)}
+                        source = f"MCP:{_get_mcp_server_for_tool(tool_name)}"
+                else:
+                    tool_result = {"error": str(exc)}
+                    source = f"MCP:{_get_mcp_server_for_tool(tool_name)}"
         else:
             fn, _ = TOOLS_REGISTRY.get(tool_name, (None, None))
             if fn is None:
                 tool_result = {"error": f"Unknown tool '{tool_name}'."}
             else:
                 try:
-                    tool_result = fn(**tool_args)
+                    if inspect.iscoroutinefunction(fn):
+                        tool_result = await fn(**tool_args)
+                    else:
+                        tool_result = fn(**tool_args)
                 except Exception as exc:
                     tool_result = {"error": str(exc)}
             source = "LOCAL"
@@ -385,7 +432,9 @@ async def run_agent_with_mcp(
         )
 
     # Call 2: synthesize final answer.
-    second_response = await call_llm(messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key)
+    second_response = await call_llm(
+        messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key
+    )
     answer = second_response.content or ""
     add_message(session_id, "user", message)
     add_message(session_id, "assistant", answer)

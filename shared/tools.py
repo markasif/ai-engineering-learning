@@ -259,3 +259,159 @@ LOOKUP_INFO_SCHEMA = {
         },
     },
 }
+
+
+# =============================================================================
+# HR Operations Tools (Enterprise Domain - Feature 7 & 9)
+# =============================================================================
+
+LOOKUP_EMPLOYEE_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "lookup_employee",
+        "description": (
+            "Look up an employee's profile, contact details, role, department, "
+            "reporting manager, leave balance, and employment status from the HR database."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Employee full name, email, or employee code (e.g. 'Rahul Sharma', 'EMP-101')",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+}
+
+LIST_DEPARTMENT_STAFF_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "list_department_staff",
+        "description": (
+            "List all staff members and their roles in a specific department (e.g. 'Engineering', 'HR & People Operations', 'Product')."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "department": {
+                    "type": "string",
+                    "description": "Department name to inspect, e.g. 'Engineering', 'Product', 'HR & People Operations'",
+                },
+            },
+            "required": ["department"],
+        },
+    },
+}
+
+GET_PENDING_LEAVE_REQUESTS_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "get_pending_leave_requests",
+        "description": (
+            "Retrieve pending employee leave and time-off (PTO) requests waiting for manager or HR approval."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "employee_name": {
+                    "type": "string",
+                    "description": "Optional: Filter pending leave requests for a specific employee name.",
+                },
+            },
+        },
+    },
+}
+
+UPDATE_LEAVE_STATUS_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "update_leave_status",
+        "description": (
+            "Approve or reject an employee's leave request by request code (e.g., 'LV-2026-001'). "
+            "If approved, automatically adjusts the employee's available PTO balance."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "request_code": {
+                    "type": "string",
+                    "description": "The unique leave request code (e.g. 'LV-2026-001')",
+                },
+                "status": {
+                    "type": "string",
+                    "description": "The new status: 'Approved' or 'Rejected'",
+                    "enum": ["Approved", "Rejected"],
+                },
+                "reviewer_comment": {
+                    "type": "string",
+                    "description": "Optional review notes or decision justification",
+                },
+            },
+            "required": ["request_code", "status"],
+        },
+    },
+}
+
+GET_EXPENSE_CLAIMS_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "get_expense_claims",
+        "description": (
+            "Retrieve employee business expense reimbursement claims from the database. "
+            "Optionally filter by employee name or approval status ('Pending Review', 'Approved')."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "employee_name": {
+                    "type": "string",
+                    "description": "Optional: Filter expense claims for a specific employee name.",
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Optional: Filter by approval status ('Pending Review', 'Approved').",
+                },
+            },
+        },
+    },
+}
+
+SUBMIT_EXPENSE_CLAIM_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "submit_expense_claim",
+        "description": (
+            "Submit an employee business expense reimbursement claim. Automatically applies policy checks: "
+            "claims under $100 are auto-approved; claims above $100 require manager approval."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "employee_name": {
+                    "type": "string",
+                    "description": "Full name of the employee submitting the expense claim",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Expense category, e.g. 'Office & Equipment', 'Client Meal', 'Travel & Lodging', 'Software'",
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "Amount in USD (e.g., 75.50)",
+                },
+                "merchant": {
+                    "type": "string",
+                    "description": "Merchant, vendor, or store name (e.g., 'Starbucks', 'Keychron', 'Delta')",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Brief business justification or expense description",
+                },
+            },
+            "required": ["employee_name", "category", "amount", "merchant"],
+        },
+    },
+}

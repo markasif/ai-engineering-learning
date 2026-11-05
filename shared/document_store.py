@@ -1,8 +1,8 @@
 """
-In-memory document store for Feature 4: Feed the Brain.
+Document store for Feature 4: Feed the Brain.
 
-Parallel to session_store.py (Feature 3) — same dict-backed pattern,
-same create / read / write / list / delete interface.
+Provides an in-memory document store backed by local JSON persistence
+(data/documents_metadata.json) so uploaded documents survive server restarts.
 
 FRAMEWORK EQUIVALENTS:
   _documents dict  ≈  a database table (documents)
@@ -20,19 +20,69 @@ MULTI-TENANCY (Feature 6, Part B):
   by tenant_id — one tenant cannot see another's documents.
 """
 
+import json
+import logging
+import os
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 from shared.models import Chunk, Document
+
+logger = logging.getLogger(__name__)
+
+_DATA_DIR = Path("data")
+_METADATA_FILE = _DATA_DIR / "documents_metadata.json"
 
 _documents: dict[str, Document] = {}
 _chunks: dict[str, list[Chunk]] = {}  # keyed by document_id
 _document_texts: dict[str, str] = {}  # keyed by document_id for CAG full-context queries
 
 
+def _persist_to_disk() -> None:
+    """Save metadata to disk so it survives server reboots."""
+    if os.getenv("TESTING", "").lower() == "true":
+        return
+    try:
+        _DATA_DIR.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "documents": {k: v.model_dump(mode="json") for k, v in _documents.items()},
+            "chunks": {k: [c.model_dump(mode="json") for c in v] for k, v in _chunks.items()},
+            "document_texts": _document_texts,
+        }
+        temp_file = _METADATA_FILE.with_suffix(".tmp")
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        temp_file.replace(_METADATA_FILE)
+    except Exception as exc:
+        logger.warning("Could not persist document metadata to %s: %s", _METADATA_FILE, exc)
+
+
+def _load_from_disk() -> None:
+    """Load previously persisted metadata on startup."""
+    if not _METADATA_FILE.exists():
+        return
+    try:
+        with open(_METADATA_FILE, encoding="utf-8") as f:
+            payload = json.load(f)
+        for doc_id, doc_dict in payload.get("documents", {}).items():
+            _documents[doc_id] = Document.model_validate(doc_dict)
+        for doc_id, chunks_list in payload.get("chunks", {}).items():
+            _chunks[doc_id] = [Chunk.model_validate(c) for c in chunks_list]
+        for doc_id, text in payload.get("document_texts", {}).items():
+            _document_texts[doc_id] = text
+    except Exception as exc:
+        logger.warning("Could not load document metadata from %s: %s", _METADATA_FILE, exc)
+
+
+# Load existing metadata at module import time
+_load_from_disk()
+
+
 def save_document_text(document_id: str, text: str) -> None:
     """Store full raw extracted text of a document for CAG (Cache-Augmented Generation)."""
     _document_texts[document_id] = text
+    _persist_to_disk()
 
 
 def get_document_text(document_id: str) -> str | None:
@@ -63,6 +113,7 @@ def save_document(filename: str, tenant_id: str = "default") -> Document:
         tenant_id=tenant_id,
     )
     _documents[doc.id] = doc
+    _persist_to_disk()
     return doc
 
 
@@ -94,6 +145,7 @@ def update_document(
     updates["cag_eligible"] = bool(effective_pages <= 50 and effective_chars <= 120_000)
 
     _documents[doc_id] = doc.model_copy(update=updates)
+    _persist_to_disk()
 
 
 def get_document(doc_id: str, tenant_id: str = "default") -> Document | None:
@@ -132,6 +184,7 @@ def save_chunk(chunk: Chunk) -> None:
     if chunk.document_id not in _chunks:
         _chunks[chunk.document_id] = []
     _chunks[chunk.document_id].append(chunk)
+    _persist_to_disk()
 
 
 def get_chunks(document_id: str) -> list[Chunk]:
@@ -157,4 +210,5 @@ def delete_document(doc_id: str, tenant_id: str = "default") -> bool:
     del _documents[doc_id]
     _chunks.pop(doc_id, None)
     _document_texts.pop(doc_id, None)
+    _persist_to_disk()
     return True

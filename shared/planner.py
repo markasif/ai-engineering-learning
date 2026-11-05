@@ -92,13 +92,15 @@ def _extract_steps(raw: str, fallback_message: str) -> list[str]:
     valid_steps = [
         q.strip()
         for q in quoted_candidates
-        if not any(skip in q.lower() for skip in ("standalone", "step ", "steps", "json", "object", "type"))
+        if not any(
+            skip in q.lower() for skip in ("standalone", "step ", "steps", "json", "object", "type")
+        )
     ]
     if len(valid_steps) >= 2:
         return valid_steps[:5]
 
     # 6. Fallback: split on numbered steps e.g. "Step 1: ..." or "1. ..."
-    numbered = re.findall(r'(?:Step\s*\d+:|\d+\.)\s*([A-Z][^\n\.\;]{15,200})', raw)
+    numbered = re.findall(r"(?:Step\s*\d+:|\d+\.)\s*([A-Z][^\n\.\;]{15,200})", raw)
     if len(numbered) >= 2:
         return [n.strip() for n in numbered[:5]]
 
@@ -116,12 +118,16 @@ def _clean_final_answer(raw_answer: str, steps_completed: list[dict]) -> str:
     text = re.sub(r"<think>[\s\S]*?</think>", "", text).strip()
 
     # Check if text starts with "Here's a thinking process:" or similar
-    m = re.search(r"(?:here(?:'s| is) a thinking process:?|thinking process:?|analysis of user request:?)", text, re.IGNORECASE)
+    m = re.search(
+        r"(?:here(?:'s| is) a thinking process:?|thinking process:?|analysis of user request:?)",
+        text,
+        re.IGNORECASE,
+    )
     if m:
         # Search for transition to answer e.g. "Final Answer:", "Summary:", "Resolution:"
         answer_split = re.search(
             r"(?:\n\s*(?:final answer|summary|resolution|conclusion|in summary|result|answer):?\s*\n+|\n\s*---\s*\n+)",
-            text[m.start():],
+            text[m.start() :],
             re.IGNORECASE,
         )
         if answer_split:
@@ -132,8 +138,13 @@ def _clean_final_answer(raw_answer: str, steps_completed: list[dict]) -> str:
         # If no clean split marker, attempt to find the last paragraph that doesn't look like thinking
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         non_thinking = [
-            p for p in paragraphs
-            if not re.search(r"^(?:\d+\.|[-*•]|here|let's|user wants|step \d|review|analyze|mental iteration)", p, re.IGNORECASE)
+            p
+            for p in paragraphs
+            if not re.search(
+                r"^(?:\d+\.|[-*•]|here|let's|user wants|step \d|review|analyze|mental iteration)",
+                p,
+                re.IGNORECASE,
+            )
         ]
         if non_thinking and len(non_thinking[-1]) > 20:
             return "\n\n".join(non_thinking)
@@ -151,7 +162,7 @@ def _build_fallback_summary(steps_completed: list[dict]) -> str:
 
     lines = ["**Workflow Execution Summary:**", ""]
     for s in steps_completed:
-        step_title = s.get("step", f"Step {s.get('step_index', 0)+1}")
+        step_title = s.get("step", f"Step {s.get('step_index', 0) + 1}")
         result_text = s.get("result", "").strip()
         short_res = result_text.split("\n")[0] if result_text else "Completed"
         if len(short_res) > 120:
@@ -159,11 +170,13 @@ def _build_fallback_summary(steps_completed: list[dict]) -> str:
         lines.append(f"- **{step_title}:** {short_res}")
 
     lines.append("")
-    lines.append("All requested workflow steps were executed and synchronized with the enterprise database.")
+    lines.append(
+        "All requested workflow steps were executed and synchronized with the enterprise database."
+    )
     return "\n".join(lines)
 
 
-async def make_plan(message: str) -> list[str]:
+async def make_plan(message: str, api_key: str | None = None) -> list[str]:
     """
     Ask the LLM to decompose a user request into 2–4 concrete steps.
     Robust against reasoning models that emit internal thoughts before JSON.
@@ -177,12 +190,13 @@ async def make_plan(message: str) -> list[str]:
         temperature=0.2,
         max_tokens=1200,
         response_format={"type": "json_object"},
+        api_key=api_key,
     )
     raw = response.content or ""
     return _extract_steps(raw, message)
 
 
-async def execute_plan(task_id: str) -> None:
+async def execute_plan(task_id: str, api_key: str | None = None) -> None:
     """
     Execute every step in an AgentTask's plan using the Feature 7 agent loop.
     Synthesizes a polished, plain-English final answer free from thinking artifacts.
@@ -201,6 +215,7 @@ async def execute_plan(task_id: str) -> None:
                 message=step,
                 session_id=task.session_id,
                 tenant_id=task.tenant_id,
+                api_key=api_key,
             )
             step_record = {
                 "step_index": i,
@@ -222,7 +237,12 @@ async def execute_plan(task_id: str) -> None:
                 "content": f"Original request: {task.message}\n\nStep results:\n{step_summary}",
             },
         ]
-        synth_response = await call_llm(synth_messages, temperature=0.3, max_tokens=1200)
+        synth_response = await call_llm(
+            synth_messages,
+            temperature=0.3,
+            max_tokens=1200,
+            api_key=api_key,
+        )
         final_result = _clean_final_answer(synth_response.content or "", steps_completed)
 
         update_task(task_id, status="done", result=final_result)

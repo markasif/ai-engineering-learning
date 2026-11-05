@@ -21,6 +21,7 @@ from app.schemas.chat import (
     SmartChatResponse,
     StructuredResponse,
 )
+from shared.document_store import list_documents
 from shared.llm_client import call_llm
 from shared.models import Message
 from shared.retrieval_memory import (
@@ -29,15 +30,14 @@ from shared.retrieval_memory import (
     get_recent_retrievals,
     log_retrieval,
 )
-from shared.document_store import list_documents
 from shared.router import classify_query
 from shared.session_store import (
     add_message,
-    truncate_session_messages,
     create_session,
     delete_session,
     get_session,
     list_sessions,
+    truncate_session_messages,
 )
 from shared.vector_store import search as vector_search
 
@@ -207,10 +207,10 @@ async def remove_session(
     return {"deleted": session_id}
 
 
-
-
 class TruncateSessionRequest(BaseModel):
-    keep_count: int = Field(default=0, ge=0, description="Number of earliest messages to keep in session history")
+    keep_count: int = Field(
+        default=0, ge=0, description="Number of earliest messages to keep in session history"
+    )
 
 
 @router.post("/sessions/{session_id}/truncate", tags=["F3 · AI Memory"])
@@ -257,7 +257,8 @@ async def smart_chat(
     if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
         raw_chunks = vector_search(body.message, top_k=5, tenant_id=tenant_id)
         chunks_used = [
-            c for c in raw_chunks
+            c
+            for c in raw_chunks
             if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
         ]
         if chunks_used:
@@ -267,7 +268,8 @@ async def smart_chat(
     elif ready_doc_ids and not high_confidence:
         raw_chunks = vector_search(body.message, top_k=3, tenant_id=tenant_id)
         chunks_used = [
-            c for c in raw_chunks
+            c
+            for c in raw_chunks
             if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
         ]
         if chunks_used:

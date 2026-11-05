@@ -2,9 +2,12 @@
 Unit tests for CAG (Cache-Augmented Generation) mode and full-context retrieval.
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
+from app.api.v1.endpoints.documents import ask_documents
+from app.schemas.documents import SearchRequest
 from shared.document_store import (
     delete_document,
     get_document_text,
@@ -14,9 +17,7 @@ from shared.document_store import (
     update_document,
 )
 from shared.ingestion import CHUNKING_STRATEGIES
-from shared.models import Chunk, Document
-from app.schemas.documents import SearchRequest
-from app.api.v1.endpoints.documents import ask_documents
+from shared.models import Chunk
 
 
 def test_document_store_cag_text():
@@ -64,12 +65,16 @@ async def test_ask_documents_cag_mode():
     """Verify ask_documents endpoint executes in CAG mode with full document context."""
     doc = save_document("policy.pdf", tenant_id="default")
     doc_id = doc.id
-    raw_text = "NeoIntelli allows 25 days of annual leave. Approval is required from department managers."
+    raw_text = (
+        "NeoIntelli allows 25 days of annual leave. Approval is required from department managers."
+    )
     save_document_text(doc_id, raw_text)
     update_document(doc_id, status="ready", chunk_count=1, page_count=3, char_count=len(raw_text))
 
     mock_llm_response = AsyncMock()
-    mock_llm_response.content = "According to the full document, employees receive **25 days of annual leave**."
+    mock_llm_response.content = (
+        "According to the full document, employees receive **25 days of annual leave**."
+    )
 
     with patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)):
         req = SearchRequest(
@@ -95,7 +100,9 @@ async def test_large_document_cag_warning():
     doc_id = doc.id
     raw_text = "Manual content " * 1000
     save_document_text(doc_id, raw_text)
-    update_document(doc_id, status="ready", chunk_count=100, page_count=120, char_count=len(raw_text))
+    update_document(
+        doc_id, status="ready", chunk_count=100, page_count=120, char_count=len(raw_text)
+    )
 
     mock_llm_response = AsyncMock()
     mock_llm_response.content = "Answer based on manual."
@@ -124,7 +131,9 @@ async def test_auto_adaptive_routing_small_vs_large():
     doc_small = save_document("brief.pdf", tenant_id="default")
     raw_small = "Brief policy on remote work."
     save_document_text(doc_small.id, raw_small)
-    update_document(doc_small.id, status="ready", chunk_count=1, page_count=2, char_count=len(raw_small))
+    update_document(
+        doc_small.id, status="ready", chunk_count=1, page_count=2, char_count=len(raw_small)
+    )
 
     mock_llm_response = AsyncMock()
     mock_llm_response.content = "Remote work allowed 3 days."
@@ -142,15 +151,22 @@ async def test_auto_adaptive_routing_small_vs_large():
     doc_large = save_document("encyclopedia.pdf", tenant_id="default")
     raw_large = "Encyclopedia content."
     save_document_text(doc_large.id, raw_large)
-    update_document(doc_large.id, status="ready", chunk_count=150, page_count=85, char_count=150_000)
+    update_document(
+        doc_large.id, status="ready", chunk_count=150, page_count=85, char_count=150_000
+    )
 
     # Mock vector_search
-    with patch("app.api.v1.endpoints.documents.vector_search", return_value=[{"text": "Sample excerpt", "document_id": doc_large.id}]):
-        with patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)):
-            req = SearchRequest(query="Deep topic?", document_id=doc_large.id, mode="auto")
-            res_large = await ask_documents(req=req, tenant_id="default")
-            assert res_large["mode"] == "rag"
-            assert res_large["auto_routed"] is True
-            assert "auto-routed to RAG" in res_large["reason"]
+    with (
+        patch(
+            "app.api.v1.endpoints.documents.vector_search",
+            return_value=[{"text": "Sample excerpt", "document_id": doc_large.id}],
+        ),
+        patch("shared.llm_client.call_llm", new=AsyncMock(return_value=mock_llm_response)),
+    ):
+        req = SearchRequest(query="Deep topic?", document_id=doc_large.id, mode="auto")
+        res_large = await ask_documents(req=req, tenant_id="default")
+        assert res_large["mode"] == "rag"
+        assert res_large["auto_routed"] is True
+        assert "auto-routed to RAG" in res_large["reason"]
 
     delete_document(doc_large.id, tenant_id="default")

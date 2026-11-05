@@ -43,13 +43,14 @@ async def agent_plan(
     request: PlanRequest,
     background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
 ) -> dict[str, Any]:
     """Plan-and-Execute agent: breaks a goal into sequential steps executed in the background."""
     session_id = request.session_id or create_session(tenant_id=tenant_id)
     task = create_task(message=request.message, session_id=session_id, tenant_id=tenant_id)
-    plan = await make_plan(request.message)
+    plan = await make_plan(request.message, api_key=user_api_key)
     update_task(task.id, plan=plan)
-    background_tasks.add_task(execute_plan, task.id)
+    background_tasks.add_task(execute_plan, task.id, api_key=user_api_key)
     return {"task_id": task.id, "session_id": session_id, "plan": plan}
 
 

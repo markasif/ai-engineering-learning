@@ -140,12 +140,17 @@ def get_provider(role: str = "llm", api_key: str | None = None) -> LLMProvider:
         key_stripped = api_key.strip()
         if key_stripped.startswith("gsk_"):
             from shared.providers.groq_provider import GroqProvider
-            return GroqProvider(api_key=key_stripped, model=settings.groq_model or "llama-3.3-70b-versatile")
+
+            return GroqProvider(
+                api_key=key_stripped, model=settings.groq_model or "llama-3.3-70b-versatile"
+            )
         elif key_stripped.startswith("sk-") and not key_stripped.startswith("sk-ant-"):
             from shared.providers.openai_provider import OpenAIProvider
+
             return OpenAIProvider(api_key=key_stripped, model="gpt-4o-mini")
         elif settings.llm_provider == "custom":
             from shared.providers.openai_provider import OpenAIProvider
+
             return OpenAIProvider(
                 api_key=key_stripped,
                 base_url=settings.custom_base_url,
@@ -153,9 +158,11 @@ def get_provider(role: str = "llm", api_key: str | None = None) -> LLMProvider:
             )
         elif settings.llm_provider == "groq":
             from shared.providers.groq_provider import GroqProvider
+
             return GroqProvider(api_key=key_stripped)
         else:
             from shared.providers.openai_provider import OpenAIProvider
+
             return OpenAIProvider(api_key=key_stripped)
     if role == "voice":
         provider_name = settings.effective_voice_provider().lower().strip()

@@ -133,6 +133,7 @@ def test_session_truncate_endpoint(client: TestClient):
     session_id = s_resp.json()["session_id"]
 
     from shared.session_store import add_message
+
     add_message(session_id, "user", "Message 1")
     add_message(session_id, "assistant", "Answer 1")
     add_message(session_id, "user", "Message 2")

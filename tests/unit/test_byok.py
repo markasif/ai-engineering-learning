@@ -4,8 +4,6 @@ Validates that custom user API keys correctly route to the proper provider,
 extract from headers, and override server defaults without persistence leaks.
 """
 
-from unittest.mock import AsyncMock, patch
-import pytest
 from starlette.requests import Request
 
 from app.api.deps import get_user_api_key
@@ -54,4 +52,3 @@ def test_byok_header_extraction():
     scope_empty = {"type": "http", "headers": []}
     req_empty = Request(scope_empty)
     assert get_user_api_key(req_empty) is None
-

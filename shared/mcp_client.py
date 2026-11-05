@@ -43,6 +43,7 @@ PUBLIC API:
 import json
 import os
 import sys
+
 from shared.config import settings
 
 # ---------------------------------------------------------------------------
@@ -77,7 +78,10 @@ except ImportError:
 def _build_server_registry() -> list[dict]:
     registry = []
     # Domain server (Enterprise HR & Operations)
-    if settings.enable_domain_mcp_server or os.getenv("ENABLE_DOMAIN_MCP_SERVER", "false").lower() == "true":
+    if (
+        settings.enable_domain_mcp_server
+        or os.getenv("ENABLE_DOMAIN_MCP_SERVER", "false").lower() == "true"
+    ):
         registry.append(
             {
                 "name": "domain",
@@ -88,7 +92,9 @@ def _build_server_registry() -> list[dict]:
             }
         )
     # Demo server only enabled if explicitly requested or if domain server is not active
-    enable_demo = os.getenv("ENABLE_DEMO_MCP_SERVER", "false" if registry else "true").lower() == "true"
+    enable_demo = (
+        os.getenv("ENABLE_DEMO_MCP_SERVER", "false" if registry else "true").lower() == "true"
+    )
     if enable_demo:
         demo_server_cmd = [sys.executable, "-m", "shared.mcp_demo_server"]
         registry.append(
@@ -135,7 +141,9 @@ async def _list_tools_from_server(server_entry: dict) -> list[dict]:
                 {
                     "name": tool.name,
                     "description": tool.description or "",
-                    "inputSchema": getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None) or {},
+                    "inputSchema": getattr(tool, "input_schema", None)
+                    or getattr(tool, "inputSchema", None)
+                    or {},
                     "server": server_entry["name"],
                 }
             )

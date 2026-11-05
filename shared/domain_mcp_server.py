@@ -21,7 +21,6 @@ Enable via .env:
 import asyncio
 import json
 import os
-import sys
 import time
 from typing import Any
 
@@ -405,7 +404,9 @@ async def submit_expense_claim(
     lookup = await lookup_employee(clean_emp)
     if lookup.get("found"):
         candidates = lookup.get("employees", [])
-        exact_code = [e for e in candidates if e.get("employee_code", "").lower() == clean_emp.lower()]
+        exact_code = [
+            e for e in candidates if e.get("employee_code", "").lower() == clean_emp.lower()
+        ]
         exact_name = [e for e in candidates if e.get("name", "").lower() == clean_emp.lower()]
 
         if len(exact_code) == 1:
@@ -699,7 +700,11 @@ if _MCP_AVAILABLE:
                         "type": "object",
                         "properties": {
                             "query": {"type": "string", "description": "Search query"},
-                            "limit": {"type": "integer", "description": "Maximum results", "default": 5},
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum results",
+                                "default": 5,
+                            },
                         },
                         "required": ["query"],
                     },
