@@ -124,6 +124,7 @@ async def run_agent(
     message: str,
     session_id: str,
     tenant_id: str = "default",
+    api_key: str | None = None,
 ) -> dict:
     """
     Run the agent loop for one user message.
@@ -240,6 +241,7 @@ async def run_agent(
         messages=messages,
         temperature=0.7,
         max_tokens=1000,
+        api_key=api_key,
         # No tools on the second call — we want natural-language output, not
         # another round of tool calls.
     )
@@ -261,6 +263,7 @@ async def run_agent_with_mcp(
     message: str,
     session_id: str,
     tenant_id: str = "default",
+    api_key: str | None = None,
 ) -> dict:
     """
     Feature 9 extension of run_agent() — merges MCP tools with local tools.
@@ -283,7 +286,7 @@ async def run_agent_with_mcp(
         mcp_tool_names: set[str] = {t["name"] for t in await list_mcp_tools()}
     except Exception:
         # MCP not available — fall back to the basic agent loop.
-        return await run_agent(message=message, session_id=session_id, tenant_id=tenant_id)
+        return await run_agent(message=message, session_id=session_id, tenant_id=tenant_id, api_key=api_key)
 
     combined_schemas = _TOOL_SCHEMAS + mcp_schemas
 
