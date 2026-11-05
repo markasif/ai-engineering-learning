@@ -164,123 +164,8 @@
               </button>
             </div>
 
-            <!-- DOCUMENT Q&A HEADER CONTROLS (Top right side, same line as inner navigation) -->
+            <!-- DOCUMENT Q&A HEADER CONTROLS (Top right side on desktop) -->
             <div class="tab-nav-doc-controls" id="tab-nav-doc-controls" style="display: none;">
-              <!-- Chunking Strategy Custom Dropdown (Sentence-aware / Paragraph-based) -->
-              <div class="strategy-dropdown-wrapper" id="strategy-dropdown-wrapper">
-                <button type="button" class="strategy-trigger-btn" id="strategy-trigger-btn" aria-haspopup="listbox" aria-expanded="false" title="Document retrieval strategy (Auto, CAG, or RAG)">
-                  <span class="strategy-trigger-icon" aria-hidden="true">🧠</span>
-                  <span class="strategy-trigger-label" id="strategy-trigger-label">Auto (Adaptive)</span>
-                  <span class="strategy-rec-badge auto" id="strategy-rec-badge">Smart</span>
-                  <span class="strategy-trigger-chevron" aria-hidden="true">▾</span>
-                </button>
-
-                <!-- Hidden select preserved for DOM API compatibility with ingestion scripts -->
-                <select id="strategy-select" class="strategy-hidden-select" style="display: none;" aria-hidden="true" tabindex="-1">
-                  <option value="auto" selected>Auto (Adaptive Routing)</option>
-                  <option value="sentence">Sentence-aware (recommended RAG)</option>
-                  <option value="paragraph">Paragraph-based (RAG)</option>
-                  <option value="cag">CAG Full-Context Mode</option>
-                </select>
-
-                <!-- Modern Popover Menu -->
-                <div class="strategy-popover" id="strategy-popover" role="listbox" aria-label="Chunking strategies" hidden>
-                  <div class="strategy-popover-header">
-                    <div class="strategy-popover-title-row">
-                      <span class="strategy-popover-tag">Smart Ingestion</span>
-                      <strong class="strategy-popover-title">Retrieval &amp; Chunking Strategy</strong>
-                    </div>
-                    <p class="strategy-popover-subtitle">Controls whether documents are sliced into vector chunks (RAG) or analyzed whole (CAG).</p>
-                  </div>
-
-                  <div class="strategy-options-list">
-                    <!-- Option 0: Auto (Adaptive Routing - Default) -->
-                    <button type="button" class="strategy-option-item selected" role="option" data-value="auto" aria-selected="true" id="strategy-opt-auto">
-                      <div class="strategy-option-icon-box">
-                        <span class="strategy-option-icon">🧠</span>
-                      </div>
-                      <div class="strategy-option-content">
-                        <div class="strategy-option-header">
-                          <strong class="strategy-option-name">Auto (Adaptive Routing)</strong>
-                          <span class="strategy-option-badge auto">Smart</span>
-                        </div>
-                        <p class="strategy-option-desc">
-                          Intelligently routes files: small documents (&lt;50 pages) use CAG for 100% full context; large documents (&gt;50 pages) use RAG for efficient vector search.
-                        </p>
-                      </div>
-                      <div class="strategy-option-check" aria-hidden="true">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                    </button>
-
-                    <!-- Option 1: Sentence-aware (Recommended RAG) -->
-                    <button type="button" class="strategy-option-item" role="option" data-value="sentence" aria-selected="false" id="strategy-opt-sentence">
-                      <div class="strategy-option-icon-box">
-                        <span class="strategy-option-icon">✂️</span>
-                      </div>
-                      <div class="strategy-option-content">
-                        <div class="strategy-option-header">
-                          <strong class="strategy-option-name">Sentence-aware (RAG)</strong>
-                          <span class="strategy-option-badge rec">Vector Search</span>
-                        </div>
-                        <p class="strategy-option-desc">
-                          Splits on sentence boundaries with contextual sliding windows. Highest citation accuracy for questions, compliance rules, and data lookups.
-                        </p>
-                      </div>
-                      <div class="strategy-option-check" aria-hidden="true">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                    </button>
-
-                    <!-- Option 2: Paragraph-based -->
-                    <button type="button" class="strategy-option-item" role="option" data-value="paragraph" aria-selected="false" id="strategy-opt-paragraph">
-                      <div class="strategy-option-icon-box">
-                        <span class="strategy-option-icon">📄</span>
-                      </div>
-                      <div class="strategy-option-content">
-                        <div class="strategy-option-header">
-                          <strong class="strategy-option-name">Paragraph-based</strong>
-                          <span class="strategy-option-badge">Coarse</span>
-                        </div>
-                        <p class="strategy-option-desc">
-                          Splits text by natural paragraph blocks. Preserves larger structural narrative for thematic overviews and long summaries.
-                        </p>
-                      </div>
-                      <div class="strategy-option-check" aria-hidden="true">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                    </button>
-
-                    <!-- Option 3: CAG Mode (Full Context) -->
-                    <button type="button" class="strategy-option-item" role="option" data-value="cag" aria-selected="false" id="strategy-opt-cag">
-                      <div class="strategy-option-icon-box">
-                        <span class="strategy-option-icon">⚡</span>
-                      </div>
-                      <div class="strategy-option-content">
-                        <div class="strategy-option-header">
-                          <strong class="strategy-option-name">CAG (Full Context)</strong>
-                          <span class="strategy-option-badge cag">Zero Retrieval Errors</span>
-                        </div>
-                        <p class="strategy-option-desc">
-                          Bypasses vector search. Pre-loads the entire document into the LLM context with KV cache for 100% full-document visibility.
-                        </p>
-                      </div>
-                      <div class="strategy-option-check" aria-hidden="true">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               <!-- CAG popover trigger -->
               <div class="cag-wrapper" id="cag-wrapper">
                 <button type="button" class="toolbar-pill-btn cag-btn" id="cag-trigger" aria-haspopup="dialog" aria-expanded="false" title="What is CAG?">
@@ -345,13 +230,8 @@
               </div>
             </div>
 
-            <!-- AGENT HEADER CONTROLS (Top right side, same line as inner navigation) -->
-            <div class="tab-nav-agent-controls" id="tab-nav-agent-controls" style="display: none;">
-              <div class="agent-mode-switcher-pill" role="group" aria-label="Agent execution mode">
-                <button type="button" class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick" title="Quick single-turn tool execution">⚡ Quick</button>
-                <button type="button" class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep" title="Multi-step reasoning and plan execution">🔄 Multi-Step</button>
-              </div>
-            </div>
+            <!-- AGENT HEADER CONTROLS (Placeholder for tab switching compatibility) -->
+            <div class="tab-nav-agent-controls" id="tab-nav-agent-controls" style="display: none;"></div>
           </div>
         </nav>
 
@@ -431,9 +311,9 @@
                           <path d="M16 16h2"></path>
                         </svg>
                       </span>
-                      <strong class="clean-prompt-title">Expense Compliance</strong>
+                      <strong class="clean-prompt-title">Expenses</strong>
                     </div>
-                    <span class="clean-prompt-desc">File reimbursement claims and verify policy limits.</span>
+                    <span class="clean-prompt-desc">Receipts &amp; policy caps</span>
                   </button>
                 </div>
               </div>
@@ -598,6 +478,121 @@
                     </svg>
                     <span>Attach file</span>
                   </button>
+
+                  <!-- Chunking Strategy Custom Dropdown (Auto / Sentence / Paragraph / CAG) -->
+                  <div class="strategy-dropdown-wrapper" id="strategy-dropdown-wrapper">
+                    <button type="button" class="strategy-trigger-btn" id="strategy-trigger-btn" aria-haspopup="listbox" aria-expanded="false" title="Document retrieval strategy (Auto, CAG, or RAG)">
+                      <span class="strategy-trigger-icon" aria-hidden="true">🧠</span>
+                      <span class="strategy-trigger-label" id="strategy-trigger-label">Auto (Adaptive)</span>
+                      <span class="strategy-rec-badge auto" id="strategy-rec-badge">Smart</span>
+                      <span class="strategy-trigger-chevron" aria-hidden="true">▾</span>
+                    </button>
+
+                    <!-- Hidden select preserved for DOM API compatibility with ingestion scripts -->
+                    <select id="strategy-select" class="strategy-hidden-select" style="display: none;" aria-hidden="true" tabindex="-1">
+                      <option value="auto" selected>Auto (Adaptive Routing)</option>
+                      <option value="sentence">Sentence-aware (recommended RAG)</option>
+                      <option value="paragraph">Paragraph-based (RAG)</option>
+                      <option value="cag">CAG Full-Context Mode</option>
+                    </select>
+
+                    <!-- Modern Popover Menu (opens upward above chat toolbar) -->
+                    <div class="strategy-popover" id="strategy-popover" role="listbox" aria-label="Chunking strategies" hidden>
+                      <div class="strategy-popover-header">
+                        <div class="strategy-popover-title-row">
+                          <span class="strategy-popover-tag">Smart Ingestion</span>
+                          <strong class="strategy-popover-title">Retrieval &amp; Chunking Strategy</strong>
+                        </div>
+                        <p class="strategy-popover-subtitle">Controls whether documents are sliced into vector chunks (RAG) or analyzed whole (CAG).</p>
+                      </div>
+
+                      <div class="strategy-options-list">
+                        <!-- Option 0: Auto (Adaptive Routing - Default) -->
+                        <button type="button" class="strategy-option-item selected" role="option" data-value="auto" aria-selected="true" id="strategy-opt-auto">
+                          <div class="strategy-option-icon-box">
+                            <span class="strategy-option-icon">🧠</span>
+                          </div>
+                          <div class="strategy-option-content">
+                            <div class="strategy-option-header">
+                              <strong class="strategy-option-name">Auto (Adaptive Routing)</strong>
+                              <span class="strategy-option-badge auto">Smart</span>
+                            </div>
+                            <p class="strategy-option-desc">
+                              Intelligently routes files: small documents (&lt;50 pages) use CAG for 100% full context; large documents (&gt;50 pages) use RAG for efficient vector search.
+                            </p>
+                          </div>
+                          <div class="strategy-option-check" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </div>
+                        </button>
+
+                        <!-- Option 1: Sentence-aware (Recommended RAG) -->
+                        <button type="button" class="strategy-option-item" role="option" data-value="sentence" aria-selected="false" id="strategy-opt-sentence">
+                          <div class="strategy-option-icon-box">
+                            <span class="strategy-option-icon">✂️</span>
+                          </div>
+                          <div class="strategy-option-content">
+                            <div class="strategy-option-header">
+                              <strong class="strategy-option-name">Sentence-aware (RAG)</strong>
+                              <span class="strategy-option-badge rec">Vector Search</span>
+                            </div>
+                            <p class="strategy-option-desc">
+                              Splits on sentence boundaries with contextual sliding windows. Highest citation accuracy for questions, compliance rules, and data lookups.
+                            </p>
+                          </div>
+                          <div class="strategy-option-check" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </div>
+                        </button>
+
+                        <!-- Option 2: Paragraph-based -->
+                        <button type="button" class="strategy-option-item" role="option" data-value="paragraph" aria-selected="false" id="strategy-opt-paragraph">
+                          <div class="strategy-option-icon-box">
+                            <span class="strategy-option-icon">📄</span>
+                          </div>
+                          <div class="strategy-option-content">
+                            <div class="strategy-option-header">
+                              <strong class="strategy-option-name">Paragraph-based</strong>
+                              <span class="strategy-option-badge">Coarse</span>
+                            </div>
+                            <p class="strategy-option-desc">
+                              Splits text by natural paragraph blocks. Preserves larger structural narrative for thematic overviews and long summaries.
+                            </p>
+                          </div>
+                          <div class="strategy-option-check" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </div>
+                        </button>
+
+                        <!-- Option 3: CAG Mode (Full Context) -->
+                        <button type="button" class="strategy-option-item" role="option" data-value="cag" aria-selected="false" id="strategy-opt-cag">
+                          <div class="strategy-option-icon-box">
+                            <span class="strategy-option-icon">⚡</span>
+                          </div>
+                          <div class="strategy-option-content">
+                            <div class="strategy-option-header">
+                              <strong class="strategy-option-name">CAG (Full Context)</strong>
+                              <span class="strategy-option-badge cag">Zero Retrieval Errors</span>
+                            </div>
+                            <p class="strategy-option-desc">
+                              Bypasses vector search. Pre-loads the entire document into the LLM context with KV cache for 100% full-document visibility.
+                            </p>
+                          </div>
+                          <div class="strategy-option-check" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="toolbar-right-group">
                   <button id="doc-send-btn" class="btn-circle-send" type="button" aria-label="Send query" title="Ask document">
@@ -750,6 +745,10 @@
                 autocomplete="off" />
               <div class="modern-chat-toolbar">
                 <div class="toolbar-left-group">
+                  <div class="agent-mode-switcher-pill" role="group" aria-label="Agent execution mode">
+                    <button type="button" class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick" title="Quick single-turn tool execution">⚡ Quick</button>
+                    <button type="button" class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep" title="Multi-step reasoning and plan execution">🔄 Multi-Step</button>
+                  </div>
                   <div class="mcp-services-wrapper" id="mcp-services-wrapper">
                     <button class="toolbar-pill-btn mcp-services-toggle" id="mcp-services-toggle" type="button" aria-expanded="false"
                       aria-controls="mcp-services-body" title="View connected MCP servers &amp; tools">

@@ -1291,9 +1291,12 @@ btnDeleteActiveChat?.addEventListener("click", async () => {
 messageHistory?.addEventListener("click", (e) => {
   const chip = e.target.closest(".welcome-chip");
   if (chip && chip.dataset.query) {
+    e.preventDefault();
+    e.stopPropagation();
     const query = chip.dataset.query;
     if (chatInput) {
       chatInput.value = "";
+      chatInput.blur();
     }
     sendMessage(query);
     return;
@@ -2587,7 +2590,12 @@ docChatInput?.addEventListener("keydown", (e) => {
 document.addEventListener("click", (e) => {
   const chip = e.target.closest(".doc-prompt-chip");
   if (chip && chip.dataset.query) {
-    if (docChatInput) docChatInput.value = "";
+    e.preventDefault();
+    e.stopPropagation();
+    if (docChatInput) {
+      docChatInput.value = "";
+      docChatInput.blur();
+    }
     sendDocMessage(chip.dataset.query);
   }
 });
@@ -3111,7 +3119,9 @@ agentInput?.addEventListener("keydown", (e) => {
 
 // Wire up example prompt buttons and chips.
 document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     const promptText = (
       btn.dataset.prompt ||
       btn.querySelector(".agent-example-text")?.textContent?.trim() ||
@@ -3120,6 +3130,7 @@ document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn
     );
     if (agentInput) {
       agentInput.value = "";
+      agentInput.blur();
     }
     if (agentMode === "quick" && isComplexMultiStepQuery(promptText)) {
       showMultiStepModal(promptText);
@@ -3142,7 +3153,9 @@ let agentMode = "quick";
 
 const agentModeBtns = document.querySelectorAll(".agent-mode-btn");
 agentModeBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setAgentMode(btn.dataset.mode);
   });
 });
