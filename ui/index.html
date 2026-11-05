@@ -795,20 +795,21 @@
            =================================================== -->
           <section class="panel tab-panel admin-modern-panel" id="admin-panel" role="tabpanel" aria-labelledby="sidebar-admin-btn" hidden>
             <div class="admin-panel-container">
-              <!-- Enterprise Settings Header Row -->
+              <!-- Settings Header Row -->
               <div class="panel-header-row admin-header-row">
-                <div class="admin-header-title-group">
-                  <span class="admin-eyebrow">Enterprise Console</span>
-                  <h2 class="admin-main-title">
-                    <span class="admin-title-icon" aria-hidden="true">⚙️</span> Settings &amp; Configuration
-                  </h2>
-                  <p class="admin-header-desc">
-                    Manage active AI models, tenant isolation, long-term memory digests, and live service metrics.
-                  </p>
+                <div class="admin-header-top-row">
+                  <h2 class="admin-main-title">Settings &amp; Configuration</h2>
+                  <button type="button" class="btn btn-ghost btn-sm btn-admin-back" id="btn-admin-back-chat" title="Back to Chat" aria-label="Back to Chat">
+                    <svg class="admin-back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span class="admin-back-text">Back to Chat</span>
+                  </button>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm btn-admin-back" id="btn-admin-back-chat" title="Back to Chat">
-                  ← Back to Chat
-                </button>
+                <p class="admin-header-desc">
+                  Manage active AI models, tenant isolation, long-term memory digests, and live service metrics.
+                </p>
               </div>
 
               <!-- CARDS CONTAINER -->
