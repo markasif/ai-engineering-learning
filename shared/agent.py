@@ -117,7 +117,18 @@ CRITICAL PRESENTATION GUIDELINES FOR HIGH-IMPACT HR RESPONSES:
    - Present in a clean Markdown table with Expense Code, Employee, Category, Amount, Merchant, Policy Check (<$100 auto-approved vs >$100 manager review), and Status.
 
 5. MANDATORY DATABASE QUERY OUTPUT RULE:
-   - For ANY database query, record retrieval, or directory search, ALWAYS present the primary records in a clean Markdown table before adding summaries or next steps. Never omit data rows."""
+   - For ANY database query, record retrieval, or directory search, ALWAYS present the primary records in a clean Markdown table before adding summaries or next steps. Never omit data rows.
+
+6. NAME DISAMBIGUATION & MULTIPLE CANDIDATES (CRITICAL):
+   - When an action or query references an ambiguous name or first name where multiple employees exist (e.g., "Diya", "Alex", or any shared name), OR when a tool indicates disambiguation is required:
+     - DO NOT guess, assume, or pick one candidate arbitrarily.
+     - DO NOT submit an expense claim, log records, or approve actions for an ambiguous name.
+     - You MUST list ALL matching candidates in a structured Markdown table:
+       | Employee Code | Full Name | Department | Designation / Role | Work Email |
+       | :--- | :--- | :--- | :--- | :--- |
+     - Clearly ask the user to clarify which employee they are referring to:
+       "Multiple employees were found matching '**<Name>**'. Which employee should this be for? Please reply with their Employee Code (e.g., `EMP-106`) or Full Name."
+     - Only proceed with the action once the user provides a specific Employee Code or full name."""
 
 
 async def run_agent(

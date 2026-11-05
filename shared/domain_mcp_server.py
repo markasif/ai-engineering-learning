@@ -100,6 +100,28 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
         "leave_balance": 20,
         "status": "Active",
     },
+    {
+        "employee_code": "EMP-106",
+        "name": "Diya Sharma",
+        "email": "diya.sharma@neointelli.com",
+        "phone": "+91 9811223344",
+        "department": "Engineering",
+        "role": "Frontend Developer",
+        "manager_name": "Sarah Jenkins",
+        "leave_balance": 15,
+        "status": "Active",
+    },
+    {
+        "employee_code": "EMP-107",
+        "name": "Diya Patel",
+        "email": "diya.patel@neointelli.com",
+        "phone": "+91 9822334455",
+        "department": "Marketing",
+        "role": "Growth Marketing Lead",
+        "manager_name": "Elena Rostova",
+        "leave_balance": 19,
+        "status": "Active",
+    },
 ]
 
 MOCK_LEAVE_REQUESTS: list[dict[str, Any]] = [
@@ -377,6 +399,43 @@ async def submit_expense_claim(
 ) -> dict[str, Any]:
     """Submit an expense reimbursement claim with automated policy validation."""
     amt = float(amount)
+    clean_emp = employee_name.strip()
+
+    # Disambiguation check: Verify if multiple employees match the requested name
+    lookup = await lookup_employee(clean_emp)
+    if lookup.get("found"):
+        candidates = lookup.get("employees", [])
+        exact_code = [e for e in candidates if e.get("employee_code", "").lower() == clean_emp.lower()]
+        exact_name = [e for e in candidates if e.get("name", "").lower() == clean_emp.lower()]
+
+        if len(exact_code) == 1:
+            clean_emp = f"{exact_code[0]['name']} ({exact_code[0]['employee_code']})"
+        elif len(exact_name) == 1:
+            clean_emp = f"{exact_name[0]['name']} ({exact_name[0]['employee_code']})"
+        elif len(candidates) > 1:
+            return {
+                "success": False,
+                "requires_disambiguation": True,
+                "count": len(candidates),
+                "matched_name": clean_emp,
+                "candidates": [
+                    {
+                        "employee_code": c.get("employee_code"),
+                        "name": c.get("name"),
+                        "department": c.get("department"),
+                        "role": c.get("role"),
+                        "email": c.get("email"),
+                    }
+                    for c in candidates
+                ],
+                "message": f"Multiple employees found matching '{clean_emp}'. Disambiguation required before submitting.",
+                "instruction": (
+                    f"Present all {len(candidates)} matching employees in a clean Markdown table "
+                    f"with Employee Code, Full Name, Department, Role, and Work Email. "
+                    f"Ask the user to clarify which employee this expense claim is for by providing their Employee Code or Full Name."
+                ),
+            }
+
     # Enterprise Policy: Claims under $100 auto-approve; higher amounts flag for manager review
     if amt <= 100.0:
         approval_status = "Approved (Auto-processed under $100 policy)"
@@ -386,7 +445,7 @@ async def submit_expense_claim(
     code = f"EXP-2026-{int(time.time()) % 1000000:04d}"
     record = {
         "expense_code": code,
-        "employee_name": employee_name.strip(),
+        "employee_name": clean_emp,
         "category": category.strip(),
         "amount": amt,
         "currency": "USD",
