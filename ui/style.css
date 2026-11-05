@@ -5052,16 +5052,6 @@ input.modern-input-field:active,
 
 /* Responsiveness on small screens */
 @media (max-width: 768px) {
-  .clean-prompt-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.4rem !important;
-  }
-  .clean-prompt-card {
-    padding: 0.45rem 0.65rem !important;
-  }
-  .clean-prompt-desc {
-    display: none !important;
-  }
   .hero-heading {
     font-size: 1.35rem !important;
   }
@@ -8113,8 +8103,14 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   line-height: 1.35 !important;
   color: #78716c !important;
   margin: 0 !important;
-  padding-left: calc(18px + 0.55rem) !important;
+  padding: 0 !important;
   display: block !important;
+}
+
+@media (min-width: 769px) {
+  .clean-prompt-desc {
+    padding-left: calc(18px + 0.55rem) !important;
+  }
 }
 
 .doc-upload-hint-box .doc-hint-icon {
@@ -9305,43 +9301,6 @@ body.drawer-open {
     max-width: 95% !important;
   }
 
-  /* Prompt Cards Grid: Clean Single-Column Stack */
-  .clean-prompt-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.35rem !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .clean-prompt-card {
-    padding: 0.45rem 0.65rem !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.2rem !important;
-    text-align: left !important;
-  }
-
-  .clean-prompt-icon {
-    font-size: 1rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  .clean-prompt-title {
-    font-size: 0.80rem !important;
-    margin-bottom: 0 !important;
-  }
-
-  .clean-prompt-desc {
-    display: block !important;
-    font-size: 0.70rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 240px !important;
-    opacity: 0.75 !important;
-  }
-
   /* Guidance note cards */
   .doc-upload-hint-box,
   .agent-multistep-note-card {
@@ -9930,36 +9889,36 @@ body.drawer-open {
     display: none !important;
   }
 
-  /* Headings on exact same horizontal line for all cards */
+  /* Headings: left-aligned, no extra padding */
   .clean-prompt-header {
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
     width: 100% !important;
-    height: 1.15rem !important;
-    min-height: 1.15rem !important;
-    max-height: 1.15rem !important;
     margin: 0 !important;
     padding: 0 !important;
+    gap: 0 !important;
+    line-height: 1.2 !important;
   }
 
   .clean-prompt-title {
     font-size: 0.72rem !important;
     font-weight: 700 !important;
-    line-height: 1.15rem !important;
-    height: 1.15rem !important;
+    line-height: 1.2 !important;
     margin: 0 !important;
+    padding: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: block !important;
     width: 100% !important;
+    text-align: left !important;
   }
 
-  /* Descriptions below heading on exact same horizontal line for all cards */
+  /* Descriptions strictly just below heading on exact same horizontal line for all cards */
   .clean-prompt-desc {
     font-size: 0.62rem !important;
-    line-height: 1.15rem !important;
-    height: 1.15rem !important;
+    line-height: 1.2 !important;
     opacity: 0.75 !important;
     display: block !important;
     white-space: nowrap !important;
@@ -9967,7 +9926,11 @@ body.drawer-open {
     text-overflow: ellipsis !important;
     width: 100% !important;
     margin: 0 !important;
-    margin-top: 0.10rem !important;
+    margin-top: 0.12rem !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    text-align: left !important;
   }
 
   /* 4. GUIDANCE NOTES: Upload hint and Multi-step note taking full 3 cards space */
@@ -10201,23 +10164,10 @@ body.drawer-open {
 #documents-panel .clean-prompt-card,
 #chat-panel .clean-prompt-card,
 #agent-panel .clean-prompt-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.clean-prompt-header {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  width: 100%;
-}
-
-.clean-prompt-desc {
-  display: block;
-  width: 100%;
-  margin-top: 0.15rem;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
 }
 
 /* Ensure mobile navbar hides document controls when in chat or agent tab */
