@@ -98,21 +98,21 @@ html, body {
 .btn-mobile-sidebar {
   display: none;
   align-items: center;
-  gap: 0.35rem;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  justify-content: center;
+  background: #f5f0e6;
+  border: 1.5px solid #e0d6c5;
   color: #1c1917;
-  padding: 0.3rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  font-weight: 600;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
 }
 
 .btn-mobile-sidebar:hover {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: var(--color-matcha);
+  background: #ffffff;
+  border-color: var(--color-matcha, #10b981);
   color: #059669;
 }
 
@@ -6363,72 +6363,95 @@ input.modern-input-field:active,
   gap: 0.85rem !important;
 }
 
-/* Mobile Sidebar Drawer Toggle Button in Dark Mode */
-[data-theme="dark"] .btn-mobile-sidebar {
-  color: #f4f4f5 !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-}
-
-[data-theme="dark"] .btn-mobile-sidebar:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: var(--color-matcha, #10b981) !important;
-}
-
-[data-theme="dark"] .btn-mobile-sidebar svg,
-[data-theme="dark"] .btn-mobile-sidebar svg line {
-  stroke: #f4f4f5 !important;
-}
-
-[data-theme="dark"] .mobile-toggle-text {
-  color: #f4f4f5 !important;
-}
-
-/* Mobile Sidebar Drawer Toggle Button in Light Mode - High Contrast Black */
+/* Mobile Sidebar Drawer Toggle Button (Exact same design and size as theme-toggle and sound-toggle) */
+.btn-mobile-sidebar,
+#mobile-sidebar-toggle,
+[data-theme="dark"] .btn-mobile-sidebar,
+[data-theme="dark"] #mobile-sidebar-toggle,
 [data-theme="light"] .btn-mobile-sidebar,
 [data-theme="light"] #mobile-sidebar-toggle,
 html:not([data-theme="dark"]) .btn-mobile-sidebar,
 html:not([data-theme="dark"]) #mobile-sidebar-toggle {
-  color: #1a1d24 !important;
   background: #f5f0e6 !important;
-  border: 1.5px solid #dfd7c7 !important;
+  border: 1.5px solid #e0d6c5 !important;
+  color: #1c1917 !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  transition: all 0.18s ease !important;
 }
 
+.btn-mobile-sidebar:hover,
+#mobile-sidebar-toggle:hover,
+[data-theme="dark"] .btn-mobile-sidebar:hover,
+[data-theme="dark"] #mobile-sidebar-toggle:hover,
 [data-theme="light"] .btn-mobile-sidebar:hover,
 [data-theme="light"] #mobile-sidebar-toggle:hover,
 html:not([data-theme="dark"]) .btn-mobile-sidebar:hover,
 html:not([data-theme="dark"]) #mobile-sidebar-toggle:hover {
-  background: #ece5d6 !important;
+  background: #ffffff !important;
   border-color: #10b981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-mobile-sidebar .hamburger-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.btn-mobile-sidebar svg,
+#mobile-sidebar-toggle svg,
+[data-theme="dark"] .btn-mobile-sidebar svg,
+[data-theme="dark"] #mobile-sidebar-toggle svg,
+[data-theme="light"] .btn-mobile-sidebar svg,
+[data-theme="light"] #mobile-sidebar-toggle svg,
+html:not([data-theme="dark"]) .btn-mobile-sidebar svg,
+html:not([data-theme="dark"]) #mobile-sidebar-toggle svg {
+  width: 15px !important;
+  height: 15px !important;
+  display: block !important;
+  stroke: #1c1917 !important;
+  color: #1c1917 !important;
+  stroke-width: 2 !important;
+}
+
+.btn-mobile-sidebar svg line,
+#mobile-sidebar-toggle svg line,
+[data-theme="dark"] .btn-mobile-sidebar svg line,
+[data-theme="dark"] #mobile-sidebar-toggle svg line,
+[data-theme="light"] .btn-mobile-sidebar svg line,
+[data-theme="light"] #mobile-sidebar-toggle svg line,
+html:not([data-theme="dark"]) .btn-mobile-sidebar svg line,
+html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
+  stroke: #1c1917 !important;
+}
+
+.btn-mobile-sidebar:hover svg,
+#mobile-sidebar-toggle:hover svg,
+.btn-mobile-sidebar:hover svg line,
+#mobile-sidebar-toggle:hover svg line {
+  stroke: #10b981 !important;
   color: #10b981 !important;
 }
 
-[data-theme="light"] .btn-mobile-sidebar svg,
-[data-theme="light"] #mobile-sidebar-toggle svg,
-[data-theme="light"] .btn-mobile-sidebar svg line,
-[data-theme="light"] #mobile-sidebar-toggle svg line,
-html:not([data-theme="dark"]) .btn-mobile-sidebar svg,
-html:not([data-theme="dark"]) #mobile-sidebar-toggle svg,
-html:not([data-theme="dark"]) .btn-mobile-sidebar svg line,
-html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
-  stroke: #1a1d24 !important;
-  color: #1a1d24 !important;
-}
-
-[data-theme="light"] .btn-mobile-sidebar:hover svg,
-[data-theme="light"] #mobile-sidebar-toggle:hover svg,
-[data-theme="light"] .btn-mobile-sidebar:hover svg line,
-[data-theme="light"] #mobile-sidebar-toggle:hover svg line,
-html:not([data-theme="dark"]) .btn-mobile-sidebar:hover svg,
-html:not([data-theme="dark"]) #mobile-sidebar-toggle:hover svg,
-html:not([data-theme="dark"]) .btn-mobile-sidebar:hover svg line,
-html:not([data-theme="dark"]) #mobile-sidebar-toggle:hover svg line {
-  stroke: #10b981 !important;
-}
-
-[data-theme="light"] .mobile-toggle-text {
-  color: #1a1d24 !important;
-  font-weight: 700 !important;
+.btn-mobile-sidebar .mobile-toggle-text,
+#mobile-sidebar-toggle .mobile-toggle-text {
+  display: none !important;
 }
 
 /* Official AskRaggy 3D Origami/Ribbon Logo Mark */
@@ -8879,23 +8902,21 @@ body.drawer-open {
    Off-canvas sidebar drawer gives full screen width to chat and agent tasks
    ============================================================================= */
 @media (max-width: 992px) and (min-width: 769px) {
-  .btn-mobile-sidebar {
+  .btn-mobile-sidebar,
+  #mobile-sidebar-toggle {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 0.35rem !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    color: #ffffff !important;
-    padding: 0.32rem 0.65rem !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
+    padding: 0 !important;
     border-radius: 8px !important;
-    font-size: 0.78rem !important;
     cursor: pointer !important;
-  }
-
-  [data-theme="light"] .btn-mobile-sidebar {
-    background: #f5f0e6 !important;
-    border: 1.5px solid #e0d6c5 !important;
-    color: #1c1917 !important;
+    flex-shrink: 0 !important;
   }
 
   .sidebar-close-btn {
@@ -9016,23 +9037,21 @@ body.drawer-open {
     flex-shrink: 0 !important;
   }
 
-  .btn-mobile-sidebar {
+  .btn-mobile-sidebar,
+  #mobile-sidebar-toggle {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 0.25rem !important;
-    padding: 0.28rem 0.5rem !important;
-    border-radius: 8px !important;
-    font-size: 0.74rem !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
     cursor: pointer !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    color: #ffffff !important;
-  }
-
-  [data-theme="light"] .btn-mobile-sidebar {
-    background: #f5f0e6 !important;
-    border: 1.5px solid #e0d6c5 !important;
-    color: #1c1917 !important;
+    flex-shrink: 0 !important;
   }
 
   .brand-logo-img {
@@ -9082,11 +9101,20 @@ body.drawer-open {
 
   .btn-theme-toggle,
   .btn-sound-toggle,
+  .btn-mobile-sidebar,
+  #mobile-sidebar-toggle,
   [data-theme="dark"] .btn-theme-toggle,
-  [data-theme="dark"] .btn-sound-toggle {
+  [data-theme="dark"] .btn-sound-toggle,
+  [data-theme="dark"] .btn-mobile-sidebar,
+  [data-theme="dark"] #mobile-sidebar-toggle {
     width: 28px !important;
     height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
     border-radius: 6px !important;
+    padding: 0 !important;
     flex-shrink: 0 !important;
   }
 
@@ -9410,8 +9438,11 @@ body.drawer-open {
     display: none !important;
   }
 
-  .btn-mobile-sidebar {
-    padding: 0.28rem 0.38rem !important;
+  .btn-mobile-sidebar,
+  #mobile-sidebar-toggle {
+    padding: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .header-domain-badge {

@@ -1638,7 +1638,7 @@ async function loadDocuments() {
       }
 
       if (docChatInput) {
-        docChatInput.placeholder = "Attach or drop a document (.pdf, .docx, .txt) to ask questions…";
+        docChatInput.placeholder = getDocPlaceholder(null);
       }
 
       if (docCountBadge) docCountBadge.textContent = "0 files";
@@ -1714,7 +1714,7 @@ async function loadDocuments() {
     // Explicitly ENABLE the input and send button!
     if (docChatInput) {
       docChatInput.disabled = false;
-      docChatInput.placeholder = `Ask anything about ${activeDocName} (press Enter)…`;
+      docChatInput.placeholder = getDocPlaceholder(activeDocName);
     }
     if (docSendBtn) {
       docSendBtn.disabled = false;
@@ -1988,11 +1988,11 @@ searchDocFilter?.addEventListener("change", () => {
   if (doc) {
     if (groundingTitle) groundingTitle.textContent = `Grounded in: ${doc.filename}`;
     if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${doc.filename}" with verified source citations.`;
-    if (docChatInput) docChatInput.placeholder = `Ask anything about ${doc.filename} (press Enter)…`;
+    if (docChatInput) docChatInput.placeholder = getDocPlaceholder(doc.filename);
   } else {
     if (groundingTitle) groundingTitle.textContent = "Grounded in: All uploaded documents";
     if (groundingSubtitle) groundingSubtitle.textContent = "This chat answers across all your uploaded documents with verified source citations.";
-    if (docChatInput) docChatInput.placeholder = "Ask anything about your documents (press Enter)…";
+    if (docChatInput) docChatInput.placeholder = getDocPlaceholder("your documents");
   }
 });
 
@@ -4517,15 +4517,30 @@ function updateStrategyAdvisory() {
 
 })();
 
+/** Helper to get responsive concise placeholder for document chat input */
+function getDocPlaceholder(docName = null) {
+  if (window.innerWidth <= 768) {
+    return "Ask doc…";
+  }
+  if (window.innerWidth <= 992) {
+    return "Ask document…";
+  }
+  if (docName) {
+    return `Ask anything about ${docName} (press Enter)…`;
+  }
+  return "Attach or drop a document (.pdf, .docx, .txt) to ask questions…";
+}
+
 // Manage responsive concise placeholders for mobile and tablet
 function applyResponsivePlaceholders() {
+  const isMobile = window.innerWidth <= 768;
   const isCompact = window.innerWidth <= 992;
   const chatInputEl = document.getElementById("chat-input");
   const docInputEl = document.getElementById("doc-chat-input");
   const agentInputEl = document.getElementById("agent-input");
-  if (chatInputEl) chatInputEl.placeholder = "Ask me anything…";
-  if (docInputEl) docInputEl.placeholder = isCompact ? "Ask your document…" : "Attach or drop a document (.pdf, .docx, .txt) to ask questions…";
-  if (agentInputEl) agentInputEl.placeholder = isCompact ? "Ask agent anything…" : "Ask anything (e.g. Look up an employee, check department staff, approve leave, submit expense)…";
+  if (chatInputEl) chatInputEl.placeholder = isMobile ? "Ask anything…" : "Ask me anything…";
+  if (docInputEl) docInputEl.placeholder = getDocPlaceholder(typeof activeDocumentId !== "undefined" && activeDocumentId && typeof activeDocName !== "undefined" ? activeDocName : null);
+  if (agentInputEl) agentInputEl.placeholder = isMobile ? "Ask agent…" : (isCompact ? "Ask agent anything…" : "Ask anything (e.g. Look up an employee, check department staff, approve leave, submit expense)…");
 }
 
 window.addEventListener("resize", applyResponsivePlaceholders);
