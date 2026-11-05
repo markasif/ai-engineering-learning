@@ -821,24 +821,7 @@
 
               <!-- CARDS CONTAINER -->
               <div class="admin-cards-grid">
-                <!-- ── Card 1: Active AI & Voice Provider Configuration ── -->
-                <div class="admin-card admin-section" id="provider-panel-section">
-                  <div class="admin-card-header">
-                    <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🤖</span>
-                      <h3 class="admin-section-title">Active AI &amp; Voice Engine</h3>
-                      <span class="admin-card-badge">Live Provider</span>
-                    </div>
-                    <p class="admin-section-desc">
-                      Currently running LLM provider, domain persona, and real-time audio pipeline.
-                    </p>
-                  </div>
-                  <div class="provider-info-card" id="provider-info-card">
-                    <span>Loading provider info…</span>
-                  </div>
-                </div>
-
-                <!-- ── Card 1B: Custom LLM API Key (BYOK — Bring Your Own Key) ── -->
+                <!-- ── Card 1: Custom LLM API Key (BYOK — Bring Your Own Key) ── -->
                 <div class="admin-card admin-section" id="byok-panel-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
@@ -920,7 +903,44 @@
                   </div>
                 </div>
 
-                <!-- ── Card 3: Retrieval memory / Knowledge Digest ── -->
+                <!-- ── Card 3: Retrieval log (Recent Retrieval History) ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">🔍</span>
+                      <h3 class="admin-section-title">Recent Retrieval History</h3>
+                    </div>
+                    <p class="admin-section-desc">
+                      Inspection log of queries that triggered document chunk retrieval in this session.
+                    </p>
+                  </div>
+                  <div style="margin-bottom: 0.65rem;">
+                    <button id="retrievals-load-btn" class="btn btn-ghost btn-sm">Load Recent Retrievals</button>
+                  </div>
+                  <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
+                </div>
+
+                <!-- ── Card 4: Live Metrics Dashboard (Live Telemetry & System Metrics) ── -->
+                <div class="admin-card admin-section">
+                  <div class="admin-card-header">
+                    <div class="admin-card-title-row">
+                      <span class="admin-card-icon" aria-hidden="true">📊</span>
+                      <h3 class="admin-section-title">
+                        Live Telemetry &amp; System Metrics
+                        <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
+                      </h3>
+                      <span class="admin-card-badge live-telemetry-badge">Every 5s</span>
+                    </div>
+                    <p class="admin-section-desc">
+                      Request counts, average response latency, and system error rates updated on every <code>/api/*</code> call.
+                    </p>
+                  </div>
+                  <div class="metrics-grid" id="metrics-grid">
+                    <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
+                  </div>
+                </div>
+
+                <!-- ── Card 5: Retrieval memory / Knowledge Digest ── -->
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
@@ -941,27 +961,7 @@
                   </div>
                 </div>
 
-                <!-- ── Card 4: Live Metrics Dashboard (Feature 11 Part A) ── -->
-                <div class="admin-card admin-section">
-                  <div class="admin-card-header">
-                    <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">📊</span>
-                      <h3 class="admin-section-title">
-                        Live Telemetry &amp; System Metrics
-                        <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
-                      </h3>
-                      <span class="admin-card-badge live-telemetry-badge">Every 5s</span>
-                    </div>
-                    <p class="admin-section-desc">
-                      Request counts, average response latency, and system error rates updated on every <code>/api/*</code> call.
-                    </p>
-                  </div>
-                  <div class="metrics-grid" id="metrics-grid">
-                    <p class="sidebar-empty" style="font-size:0.82rem">Open this tab to load metrics.</p>
-                  </div>
-                </div>
-
-                <!-- ── Card 5: Eval Harness (Feature 11 Part B) ── -->
+                <!-- ── Card 6: Eval Harness (Evaluation & Quality Benchmark) ── -->
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
@@ -980,21 +980,21 @@
                   <div id="eval-results" class="eval-results"></div>
                 </div>
 
-                <!-- ── Card 6: Retrieval log ── -->
-                <div class="admin-card admin-section">
+                <!-- ── Card 7: Active AI & Voice Provider Configuration ── -->
+                <div class="admin-card admin-section" id="provider-panel-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🔍</span>
-                      <h3 class="admin-section-title">Recent Retrieval History</h3>
+                      <span class="admin-card-icon" aria-hidden="true">🤖</span>
+                      <h3 class="admin-section-title">Active AI &amp; Voice Engine</h3>
+                      <span class="admin-card-badge">Live Provider</span>
                     </div>
                     <p class="admin-section-desc">
-                      Inspection log of queries that triggered document chunk retrieval in this session.
+                      Currently running LLM provider, domain persona, and real-time audio pipeline.
                     </p>
                   </div>
-                  <div style="margin-bottom: 0.65rem;">
-                    <button id="retrievals-load-btn" class="btn btn-ghost btn-sm">Load Recent Retrievals</button>
+                  <div class="provider-info-card" id="provider-info-card">
+                    <span>Loading provider info…</span>
                   </div>
-                  <div id="retrievals-list" class="admin-retrievals-list" hidden></div>
                 </div>
               </div>
             </div>
