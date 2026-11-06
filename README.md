@@ -1,148 +1,354 @@
-# AskRaggy · Enterprise Knowledge & Autonomous Agent Platform
+# AskRaggy · Enterprise Intelligence & Autonomous Agent Platform
 
 <p align="center">
-  <img src="ui/askraggy-brand.png" alt="AskRaggy Logo" width="120" />
+  <img src="ui/askraggy-brand.png" alt="AskRaggy Logo" width="130" />
 </p>
 
 <p align="center">
-  <strong>Industry-Grade Autonomous AI Microservice with Model Context Protocol (MCP), ReAct Agents, Grounded RAG, and Real-Time Evaluation Gates.</strong>
+  <strong>Production-Grade AI Operations Platform with Model Context Protocol (MCP), ReAct Tool-Calling Agents, Dual-Engine Persistence, Real-Time Token Streaming, and Role-Based Access Control (RBAC).</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/Model%20Context%20Protocol-MCP-10b981?style=flat" alt="MCP" />
   <img src="https://img.shields.io/badge/ChromaDB-Vector%20Store-orange?style=flat" alt="ChromaDB" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/Tests-41%20Passed-brightgreen?style=flat" alt="Tests" />
+  <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Supabase-Cloud%20Sync-3ECF8E?style=flat&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Streaming-Server--Sent%20Events%20(SSE)-blueviolet?style=flat" alt="SSE Streaming" />
+  <img src="https://img.shields.io/badge/Tests-65%20Passed-brightgreen?style=flat" alt="Tests" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" alt="License" />
 </p>
 
 ---
 
+## 🌟 Executive Summary: What is AskRaggy?
+
+**AskRaggy** is an enterprise-ready AI intelligence microservice designed for **NeoIntelli HR & Operations**. It goes beyond simple chatbot wrappers by implementing full-lifecycle agentic AI engineering:
+
+1. **Autonomous Tool-Calling Agents**: Solves operational tasks (employee directory queries, leave approvals, policy enforcement, expense filings) via **Model Context Protocol (MCP)** and local ReAct loops.
+2. **Dual-Engine Persistence**: Pairs ultra-fast local **SQLite (WAL Mode)** caching with non-blocking cloud mirroring to **Supabase PostgreSQL**, surviving container restarts and cloud ephemeral disk wipes.
+3. **Real-Time Token Streaming**: Streams generated tokens directly to the browser via native **Server-Sent Events (SSE)** with a live typewriter effect and citation accordions — 100% free with zero third-party socket fees.
+4. **Frictionless RBAC Demo Switcher**: Allows visitors to test both **Employee** and **Manager** roles with 1-click toggling, enforcing Role-Based Access Control in both LLM prompts and backend tools without sign-up barriers.
+5. **Enterprise Token Protection**: Budgets public demo sessions to 15 turns with IP rate limiting and prompt guards, offering seamless **Bring-Your-Own-Key (BYOK)** unlock for unlimited testing.
+6. **Multi-Format Export**: One-click client export to clean **PDF** (via `@media print`), **CSV** (data tables and expense claims), **Markdown (.md)** transcripts, and plain clipboard text.
+
 ---
 
-## ⚡ Quickstart
+## 🏛️ System Architecture
 
-### 1. Local Development (Single-Command Setup)
+### 1. High-Level Topology
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   AskRaggy Modern Frontend (SPA)                       │
+│  [💬 Smart Chat]   [📄 Docs Q&A]   [⚡ ReAct Agent]   [⚙️ BYOK & Tenant] │
+│  [👤 Rahul (Emp) | 👔 Sarah (Mgr)]   [⚡ 15 Credits]   [📥 Export ▾]     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP / SSE Stream
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   FastAPI Application Gateway                          │
+│   ├── Middleware: CORS, RequestID, Structured Logging, SlowAPI Limiter │
+│   ├── Tenant Router: X-Tenant-ID Partitioning & Header Auth            │
+│   └── API v1 Endpoints: /chat/smart/stream, /agent/run, /documents     │
+└──────────────┬────────────────────┬────────────────────┬───────────────┘
+               │                    │                    │
+               ▼                    ▼                    ▼
+     ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+     │  Smart Router    │ │   ReAct Agent    │ │  Ingestion &     │
+     │  Classification  │ │  & MCP Server    │ │  Vector Memory   │
+     │ (LLM/RAG/Hybrid) │ │ (5 HR Ops Tools) │ │ (ChromaDB + CAG) │
+     └─────────┬────────┘ └────────┬─────────┘ └────────┬─────────┘
+               │                   │                    │
+               └─────────────┬─────┴────────────────────┘
+                             │
+                             ▼
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │               Dual-Engine Storage & Persistence Architecture          │
+ │                                                                       │
+ │   ┌─────────────────────────────┐     ┌───────────────────────────┐   │
+ │   │   Local SQLite (WAL Mode)   │────▶│ Supabase Cloud PostgreSQL │   │
+ │   │  • Sub-millisecond reads    │sync │ • Survives container reboot │   │
+ │   │  • Sessions, Messages, Tasks│     │ • Non-blocking HTTP mirror│   │
+ │   └─────────────────────────────┘     └───────────────────────────┘   │
+ └───────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 2. Smart Router Query Lifecycle
+
+```mermaid
+flowchart TD
+    UserQuery(["User Submits Message"]) --> Classify["LLM Query Classifier\n(shared/router.py)"]
+    Classify --> NeedsRetrieval{"Needs Document\nRetrieval?"}
+
+    NeedsRetrieval -- "No (Factual/General)" --> LLMDirect["Direct LLM Completion\n(Fast Path: ~400ms)"]
+    NeedsRetrieval -- "Yes (Confidence > 0.6)" --> VectorSearch["ChromaDB Similarity Search\n(Cosine Distance >= 0.35)"]
+    NeedsRetrieval -- "Uncertain (0.4 - 0.6)" --> HybridPath["Hybrid Retrieval\n(Vector Context + General Knowledge)"]
+
+    VectorSearch --> BuildContext["Build Citation Context Block"]
+    HybridPath --> BuildContext
+
+    BuildContext --> StreamEngine["Token Streaming Engine\n(FastAPI StreamingResponse)"]
+    LLMDirect --> StreamEngine
+
+    StreamEngine --> SSE["Server-Sent Events (SSE)\n• type: start (Metadata & Citations)\n• type: token (Real-Time Typewriter)\n• type: done (Persistence & Logs)"]
+    SSE --> UI["Render in Modern Chat View"]
+```
+
+---
+
+### 3. ReAct Agent & Model Context Protocol (MCP) Execution Loop
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User / Persona
+    participant UI as Browser UI
+    participant Agent as ReAct Engine (shared/agent.py)
+    participant LLM as Multi-Provider LLM (Groq / OpenRouter)
+    participant Tools as Domain MCP Server (shared/domain_mcp_server.py)
+    participant DB as SQLite + Supabase Dual-Engine
+
+    User->>UI: "Approve Rahul's leave request LV-2026-001"
+    UI->>Agent: POST /api/sessions/{id}/agent/run<br/>{message, persona: "manager", user_name: "Sarah Jenkins"}
+    Agent->>LLM: Call 1: User message + Tool Schemas + RBAC System Prompt
+    LLM-->>Agent: tool_calls: [update_leave_status(request_code="LV-2026-001", status="Approved")]
+    
+    rect rgb(240, 248, 255)
+        Note over Agent,Tools: RBAC Verification Phase
+        Agent->>Tools: execute(update_leave_status, caller_role="manager")
+        Tools->>Tools: Validate caller permission (Manager == Allowed)
+        Tools->>DB: Update leave record & deduct 3 days PTO balance
+        Tools-->>Agent: {"success": true, "status": "Approved", "balance": 15}
+    end
+
+    Agent->>LLM: Call 2: Tool execution results + Conversation context
+    LLM-->>Agent: "Leave request LV-2026-001 for Rahul Sharma has been approved. Updated PTO: 15 days."
+    Agent->>DB: Persist user turn and assistant reply
+    Agent-->>UI: Return final report + execution step pills
+    UI-->>User: Render verified response with status badges
+```
+
+---
+
+## ⚡ Core Capabilities
+
+### 1. Real-Time Token Streaming (Native Server-Sent Events)
+* **Zero External Fees**: Built natively using FastAPI `StreamingResponse(media_type="text/event-stream")` and browser `ReadableStream`.
+* **Multi-Provider Support**: Streams live tokens from **Groq (Llama-3.3-70B)**, **OpenAI**, and **NVIDIA Nemotron** (handling both `reasoning_content` deltas and `content` deltas).
+* **Live Typewriter Effect**: Displays a sleek blinking matcha cursor (`.streaming-cursor`), dynamic autoscrolling, Markdown formatting, and collapsible citation accordions.
+
+### 2. Dual-Engine Persistence Architecture
+* **The Cloud Ephemeral Challenge**: Free-tier cloud hosts (Render, Railway, Fly.io) wipe local filesystems on sleep or redeployment.
+* **The Dual-Engine Solution**:
+  * **Primary (Local)**: High-speed **SQLite in WAL mode** (`data/app_state.db`) with foreign key constraints ensures sub-millisecond local queries.
+  * **Secondary (Cloud)**: Asynchronous non-blocking mirror to **Supabase Cloud PostgreSQL** (`sessions`, `messages`, `tasks`). If the container restarts, conversations remain intact.
+  * **Graceful Degradation**: If Supabase is offline or unconfigured, the app falls back to local SQLite with zero latency penalty (<100ms timeout).
+
+### 3. Role-Aware Demo Persona Switcher (RBAC)
+Showcase enterprise permission boundaries with 1-click toggling — no login friction for LinkedIn visitors:
+
+| Capability | 👤 Rahul Sharma (`EMP-101`)<br>*(Individual Contributor · Employee)* | 👔 Sarah Jenkins (`EMP-102`)<br>*(VP Engineering · HR Manager)* |
+|:---|:---:|:---:|
+| **Staff Directory Search** | ✅ Full Access | ✅ Full Access |
+| **View HR Policies & PTO Balance** | ✅ Own Balance (18 Days) | ✅ Team Balances |
+| **Submit Expense Claims** | ✅ Self-Filing (<$100 Auto-Approved) | ✅ Executive Claims |
+| **Review Pending Leave Requests** | ❌ Blocked | ✅ Full Team Review |
+| **Approve / Reject Leave Claims** | ❌ **Access Denied (RBAC)** | ✅ **Authorized Approver** |
+| **Company-Wide Expense Audits** | ❌ Blocked | ✅ Full Audit Access |
+
+> [!NOTE]
+> **Defense-in-Depth RBAC**: Permissions are validated at **two independent layers**:
+> 1. In the LLM System Prompt instructing the agent on role boundaries.
+> 2. In the Python tool execution functions (`shared/domain_mcp_server.py`) which reject unauthorized role invocations.
+
+### 4. Smart Name Disambiguation
+Enterprise databases often have employees with identical first names. When a user asks:
+> *"Submit a travel expense for Diya"* or *"Look up Diya"*
+
+AskRaggy will **never guess or pick arbitrarily**. It queries the directory, identifies duplicates (**Diya Sharma** in Engineering vs. **Diya Patel** in Marketing), outputs a candidate comparison table, and requests the exact Employee Code before taking action.
+
+### 5. Multi-Format Minimal Export
+Discreet 32px header button providing 4 instant export options:
+* **📄 Print / PDF**: Dedicated `@media print` layout that hides chat chrome and renders an executive report.
+* **📊 Export Tables (CSV)**: Automatically scans chat messages for tables (staff directories, expense claims, leave rosters) and exports them into an Excel/Sheets-compatible `.csv`.
+* **📝 Markdown Transcript (.md)**: Exports full conversation transcripts with timestamps, persona metadata, and citations.
+* **📋 Copy Text**: One-click clipboard copy of clean conversation prose.
+
+### 6. LinkedIn Demo Token Protection & BYOK
+* **Session Turn Budget**: Demo sessions are capped at **15 high-quality turns** to prevent bot draining.
+* **Live Credit Indicator**: Top bar surfaces `⚡ 15 demo credits remaining`.
+* **BYOK (Bring-Your-Own-Key)**: When credits reach 0, a modal invites the visitor to enter their own free Groq API key in Settings (⚙️) to unlock unlimited turns.
+* **Rate Limiting**: `slowapi` enforces IP-level limits (30 req/min for chat, 15 req/min for agents).
+
+---
+
+## 🎯 Live Demo Guide: Try These Prompts!
+
+Try these curated prompts to test every major architecture component:
+
+### Test 1: Employee vs Manager Permissions (RBAC)
+1. Select **👤 Rahul (Employee)** in the top bar.
+2. Ask: `Approve Rahul's Diwali leave request LV-2026-001`
+3. 👉 *Notice AskRaggy's polite RBAC refusal explaining that Employee roles cannot approve leaves.*
+4. Switch to **👔 Sarah (Manager)** in the top bar.
+5. Ask: `Approve Rahul's Diwali leave request LV-2026-001`
+6. 👉 *Notice AskRaggy executes the tool, deducts days from balance, and confirms approval!*
+
+### Test 2: Name Disambiguation & Database Search
+1. Ask: `Add a $45 client lunch expense claim for Diya at Starbucks`
+2. 👉 *Notice AskRaggy halts, displays both Diya Sharma and Diya Patel in a table, and asks for confirmation.*
+3. Reply: `For EMP-106 Diya Sharma`
+4. 👉 *Notice AskRaggy verifies under-$100 policy and auto-approves the claim!*
+
+### Test 3: Real-Time Token Streaming
+1. Ask: `What is our company policy on parental leave and health insurance reimbursement?`
+2. 👉 *Watch the response stream token-by-token with real-time typewriter effect and collapsible citation badges.*
+
+### Test 4: Autonomous ReAct Multi-Step Agent
+1. Switch to the **⚡ Agent** tab.
+2. Enter: `Find all staff members in Engineering, check who has pending leaves, and summarize team coverage for next week.`
+3. 👉 *Observe the agent plan steps, invoke tools, inspect directory records, and synthesize an executive report.*
+
+---
+
+## 💻 Tech Stack
+
+| Domain | Technology | Purpose |
+|:---|:---|:---|
+| **Backend Framework** | **FastAPI 0.115+** | High-performance async REST & SSE Streaming Gateway |
+| **Language & Runtime** | **Python 3.12+** / **3.14** | Modern typing, asyncio, Pydantic v2 validation contracts |
+| **Primary Storage** | **SQLite (WAL Mode)** | Zero-latency local caching for sessions, messages, and task logs |
+| **Cloud Storage** | **Supabase PostgreSQL** | Cloud persistence mirror surviving container restarts |
+| **Vector Engine** | **ChromaDB** | Vector similarity search with Cosine distance indexing |
+| **Tool Protocol** | **Model Context Protocol (MCP)** | Decoupled client-server agent tool interoperability |
+| **LLM Inference** | **Groq Llama-3.3-70B** | Sub-second inference latency for classification and synthesis |
+| **Multi-Provider SDK** | **OpenAI, Anthropic, Cohere, Ollama** | Unified abstraction across commercial & open-source models |
+| **Frontend UI** | **HTML5, Vanilla CSS3, Vanilla JS** | Lightweight, accessible, zero-dependency SPA with Dark/Light theme |
+| **Testing & Quality** | **Pytest, pytest-asyncio, Ruff** | 65 automated tests + strict linting & formatting |
+
+---
+
+## 🚀 Quickstart & Local Setup
+
+### 1. Clone Repository & Install Dependencies
 
 ```bash
-# 1. Clone & copy environment template
+# Clone repository
+git clone https://github.com/markasif/ai-engineering-learning.git
+cd ai-engineering-learning
+
+# Create and activate Python virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install package in editable mode with development dependencies
+pip install -e ".[dev]"
+```
+
+### 2. Configure Environment Variables
+
+Copy the template configuration file:
+```bash
 cp .env.example .env
-
-# 2. Install editable package with dev dependencies
-make install
-# or: pip install -e ".[dev]"
-
-# 3. Launch FastAPI development server with auto-reload
-make dev
-# or: python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-Open **[http://localhost:8000](http://localhost:8000)** in your browser for the web application, or **[http://localhost:8000/docs](http://localhost:8000/docs)** for interactive OpenAPI documentation.
 
-### 2. Run in Production Docker Container
+Edit `.env` with your API keys (Groq is completely free):
+```ini
+# LLM Provider Configuration
+DEFAULT_PROVIDER=groq
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Enterprise HR Domain Setting
+ENTERPRISE_DOMAIN=NeoIntelli HR & Enterprise Operations
+ENABLE_DOMAIN_MCP_SERVER=true
+
+# Optional: Cloud Persistence Mirror (Free Tier)
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your_supabase_anon_or_service_key
+
+# Security & Multi-Tenancy
+ENABLE_MULTI_TENANT=true
+```
+
+### 3. Launch Development Server
 
 ```bash
-# Build and run with named volumes for ChromaDB and Uploads
-docker compose up --build -d
+# Start FastAPI application with live hot-reloading
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# Verify container health
-curl http://localhost:8000/api/health
+* **Interactive Web Application**: Visit **[http://localhost:8000](http://localhost:8000)**
+* **Interactive OpenAPI Swagger Docs**: Visit **[http://localhost:8000/docs](http://localhost:8000/docs)**
+* **System Health Endpoint**: Visit **[http://localhost:8000/api/health](http://localhost:8000/api/health)**
+
+---
+
+## 🧪 Testing & Verification
+
+The repository includes a comprehensive test suite covering unit logic, integration endpoints, and evaluation gates:
+
+```bash
+# Run full test suite (65 tests)
+pytest -v
+
+# Run fast unit tests without network calls
+pytest tests/unit/ -v
+
+# Run integration smoke tests
+pytest tests/integration/ -v
+
+# Verify code formatting and linting
+ruff check .
+ruff format --check .
 ```
 
 ---
 
-## 🏗️ Repository & Architecture Layout
-
-The codebase is structured following **Clean Architecture** patterns separating API interfaces, business services, core libraries, and deterministic tests:
+## 📂 Repository Layout
 
 ```
 ai-engineering-learning/
-├── app/                         # Production Application Layer (FastAPI)
+├── app/                         # FastAPI Application Layer
 │   ├── main.py                  # App factory, lifespan, CORS, middleware assembly
 │   ├── core/                    # Config, rate limiting, logging
-│   ├── schemas/                 # Pydantic v2 validation contracts
-│   ├── api/                     # Modular API routers & dependency injection
-│   │   ├── router.py            # Aggregates /api and /api/v1 endpoints
-│   │   └── v1/endpoints/        # Chat, documents, agents, multimodal, system
-│   └── services/                # Business logic separation
+│   ├── schemas/                 # Pydantic v2 validation contracts (chat, agents, docs)
+│   └── api/v1/endpoints/        # Chat, streaming, documents, agents, multimodal
 │
-├── shared/                      # Core AI primitives & multi-provider engine
-│   ├── providers/               # Multi-LLM provider abstraction (Groq, OpenAI, Anthropic, Cohere, Ollama...)
-│   ├── agent.py                 # ReAct agent loop
-│   ├── planner.py               # Multi-step task planner
+├── shared/                      # Core AI Primitives & Multi-Provider Engine
+│   ├── db.py                    # Centralized SQLite WAL database engine
+│   ├── supabase_sync.py         # Non-blocking Supabase Cloud mirror
+│   ├── agent.py                 # ReAct agent loop with RBAC enforcement
+│   ├── domain_mcp_server.py     # 5 Live HR Operations MCP tools & mock database
+│   ├── session_store.py         # Persistent session memory (SQLite + Cloud)
 │   ├── vector_store.py          # ChromaDB vector embedding engine
-│   ├── mcp_client.py            # Model Context Protocol (MCP) tool client
-│   ├── ingestion.py             # PDF, DOCX, TXT parsing & semantic chunking
-│   └── tenant_context.py        # Multi-tenant isolation logic
+│   ├── router.py                # Smart Query Intent Classifier
+│   ├── planner.py               # Multi-step task planner
+│   └── providers/               # Provider factory (Groq, OpenAI, Anthropic...)
 │
-├── tests/                       # Testing Pyramid
-│   ├── conftest.py              # Pytest fixtures & mock environment setup
-│   ├── unit/                    # Fast deterministic tests (zero API token cost)
-│   ├── integration/             # FastAPI TestClient endpoint & UI smoke tests
-│   └── eval/                    # Golden benchmark dataset & CI eval gate
+├── ui/                          # Modern Frontend Single Page App (SPA)
+│   ├── index.html               # Clean UI structure, Persona Switcher, Modals
+│   ├── style.css                # Enterprise design system, Dark/Light, @media print
+│   └── app.js                   # SSE stream consumer, RBAC state, export handlers
 │
-├── ui/                          # Static Frontend SPA (HTML5, Modern CSS, JS)
-├── docs/                        # Architecture diagrams, ADRs, and deployment guides
-├── .github/workflows/
-│   ├── ci.yml                   # Linting, formatting, type checking & test suite
-│   └── eval.yml                 # Golden eval quality gate on push/PR
-├── pyproject.toml               # Standards-based PEP 517/621 packaging & tooling config
-├── Dockerfile                   # Multi-stage, non-root user, healthcheck CMD
+├── data/                        # Persistent Storage Mount
+│   └── app_state.db             # Local SQLite database (WAL mode)
+│
+├── tests/                       # Test Suite (65 Passed)
+│   ├── unit/                    # Deterministic unit tests (streaming, RBAC, quota)
+│   └── integration/             # FastAPI TestClient endpoint & smoke tests
+│
+├── Dockerfile                   # Multi-stage production container
 ├── docker-compose.yml           # Stateful container setup with persistent volumes
-└── Makefile                     # Developer command shortcuts
+└── pyproject.toml               # PEP 517/621 packaging & Ruff config
 ```
 
 ---
 
-## 🛠️ Developer CLI (`Makefile`)
+## 📄 License
 
-| Command | Action |
-|:---|:---|
-| `make install` | Installs the project in editable mode (`pip install -e .[dev]`) and installs pre-commit hooks |
-| `make dev` | Starts local FastAPI dev server with auto-reload at `localhost:8000` |
-| `make test` | Runs the full test suite (`pytest tests -v`) |
-| `make test-unit` | Runs fast unit tests without network calls (`pytest tests/unit -v`) |
-| `make test-integration` | Runs API endpoint & middleware smoke tests (`pytest tests/integration -v`) |
-| `make lint` | Runs Ruff linter and MyPy type checker |
-| `make format` | Automatically formats all code using Ruff |
-| `make docker-build` | Builds production multi-stage Docker container |
-| `make docker-up` | Starts production container in background (`docker compose up -d`) |
-| `make clean` | Removes bytecode, cache directories, and test artifacts |
-
----
-
-## 🧪 Testing & Evaluation Strategy
-
-1. **Deterministic Unit Tests**: Located in `tests/unit/`. These validate translation schemas, provider format conversions, and tenant isolation in-memory without making external network calls.
-2. **Integration & Smoke Tests**: Located in `tests/integration/`. Uses FastAPI's `TestClient` to verify router behavior, rate-limiting, headers, and UI mounting.
-3. **AI Quality Gate (Evaluation Harness)**: Located in `tests/eval/`. Runs golden test cases through the inference pipeline (`tests/eval/run_eval_ci.py`), enforcing a minimum 70% quality bar before deployment.
-
----
-
-## 📚 12-Feature Curriculum Map
-
-If you are following or referencing the progressive learning curriculum, features 1 through 12 are available in the weekly folders:
-
-| Phase | Feature | Description | Production Module |
-|:---|:---|:---|:---|
-| **🧠 Brain** | **F1** Basic Chat | Single-turn LLM completions | `app/api/v1/endpoints/chat.py` |
-| | **F2** Structured Outputs | JSON-mode schema validation | `app/schemas/chat.py` |
-| | **F3** Conversation Memory | Session state & sliding-window context | `shared/session_store.py` |
-| **📚 Knowledge** | **F4** Document Ingestion | PDF/DOCX/TXT upload & chunking | `shared/ingestion.py` |
-| | **F5** Semantic Search | ChromaDB vector indexing | `shared/vector_store.py` |
-| | **F6** Smart Router | Dynamic RAG vs LLM query routing | `shared/router.py` |
-| **🤝 Hands** | **F7** ReAct Agent | Autonomous tool calling | `shared/agent.py` |
-| | **F8** Multi-Step Agent | Plan-and-execute task runner | `shared/planner.py` |
-| | **F9** MCP Integration | Model Context Protocol tools | `shared/mcp_client.py` |
-| **🚀 Launch** | **F10** Multimodal AI | Speech-to-Text, TTS, Vision VLM | `app/api/v1/endpoints/multimodal.py` |
-| | **F11** Observability | RequestID, JSON logs, Metrics, Evals | `app/core/`, `tests/eval/` |
-| | **F12** Containerization | Multi-stage Docker, Compose, CI/CD | `Dockerfile`, `docker-compose.yml` |
-
----
-
-## 🔒 Security & Deployment
-
-* **Principle of Least Privilege**: The production Docker container executes under an unprivileged `appuser` (UID 1001).
-* **Multi-Tenant Protection**: Strict tenant partitioning prevents data cross-contamination.
-* **Secrets Management**: Read [docs/cloud-deployment-guide.md](docs/cloud-deployment-guide.md) for Infisical and Doppler vault integrations.
+This project is licensed under the **MIT License**. Free for educational, commercial, and research use.

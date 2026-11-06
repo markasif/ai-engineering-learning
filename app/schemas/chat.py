@@ -27,6 +27,11 @@ class SmartChatRequest(BaseModel):
         default="Rahul Sharma", description="Display name of active persona"
     )
     user_code: str | None = Field(default="EMP-101", description="Employee code of active persona")
+    persona: str | None = Field(default="employee", description="Active role: employee or manager")
+    user_name: str | None = Field(
+        default="Rahul Sharma", description="Display name of active persona"
+    )
+    user_code: str | None = Field(default="EMP-101", description="Employee code of active persona")
 
 
 class MultiTenantModeRequest(BaseModel):
