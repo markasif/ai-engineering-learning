@@ -958,17 +958,12 @@ function showToast(message, type = "info") {
   const toast = document.createElement("div");
   toast.className = `toast-pill toast-${type}`;
 
-  const iconMap = {
-    success: "✅",
-    error: "❌",
-    info: "ℹ️",
-    warning: "⚠️",
-  };
-  const icon = iconMap[type] || "ℹ️";
+  // Strip leading emojis so toaster display is purely clean and typographic
+  const cleanMsg = (message || "").replace(/^[\p{Emoji}\u200d\uFE0F\s]+/u, "").trim();
 
   toast.innerHTML = `
-    <span class="toast-icon" aria-hidden="true">${icon}</span>
-    <span class="toast-msg">${escapeHtml(message)}</span>
+    <span class="toast-indicator" aria-hidden="true"></span>
+    <span class="toast-msg">${escapeHtml(cleanMsg || message)}</span>
     <button type="button" class="toast-close" aria-label="Close notification">✕</button>
   `;
 
@@ -4797,6 +4792,7 @@ function initByokSettings() {
   const byokInput = document.getElementById("byok-key-input");
   const byokSaveBtn = document.getElementById("byok-save-btn");
   const byokClearBtn = document.getElementById("byok-clear-btn");
+  const byokToggleVisBtn = document.getElementById("byok-toggle-visibility-btn");
   const byokStatusCard = document.getElementById("byok-status-card");
   const byokHeaderBadge = document.getElementById("byok-header-badge");
 
@@ -4863,6 +4859,25 @@ function initByokSettings() {
     if (byokInput) byokInput.value = "";
     updateStatusDisplay();
     showToast("Custom API key removed.", "info");
+  });
+
+  byokToggleVisBtn?.addEventListener("click", () => {
+    if (!byokInput) return;
+    const eyeIcon = byokToggleVisBtn.querySelector(".icon-eye");
+    const eyeOffIcon = byokToggleVisBtn.querySelector(".icon-eye-off");
+    const isPassword = byokInput.type === "password";
+
+    if (isPassword) {
+      byokInput.type = "text";
+      if (eyeIcon) eyeIcon.style.display = "none";
+      if (eyeOffIcon) eyeOffIcon.style.display = "block";
+      byokToggleVisBtn.setAttribute("title", "Hide API Key");
+    } else {
+      byokInput.type = "password";
+      if (eyeIcon) eyeIcon.style.display = "block";
+      if (eyeOffIcon) eyeOffIcon.style.display = "none";
+      byokToggleVisBtn.setAttribute("title", "Show API Key");
+    }
   });
 
   updateStatusDisplay();
