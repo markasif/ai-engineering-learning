@@ -158,11 +158,48 @@ CRITICAL PRESENTATION GUIDELINES FOR HIGH-IMPACT HR RESPONSES:
      - Only proceed with the action once the user provides a specific Employee Code or full name."""
 
 
+def _build_agent_system_prompt(
+    persona: str = "employee",
+    user_name: str | None = None,
+    user_code: str | None = None,
+) -> str:
+    role = (persona or "employee").lower()
+    name = user_name or ("Sarah Jenkins" if role == "manager" else "Rahul Sharma")
+    code = user_code or ("EMP-102" if role == "manager" else "EMP-101")
+
+    if role == "manager":
+        rbac_clause = (
+            f"\n\n7. ACTIVE USER CONTEXT & RBAC PERMISSIONS (MANAGER):\n"
+            f"- Active Persona: {name} ({code})\n"
+            f"- Role: VP of Engineering / HR Manager\n"
+            f"- PERMISSIONS: FULL APPROVAL AUTHORITY.\n"
+            f"  - You are fully authorized to approve or reject employee leave requests (update_leave_status).\n"
+            f"  - You are fully authorized to review and audit company expense claims (get_expense_claims).\n"
+            f"  - When approving or rejecting, confirm the updated status and new leave balance clearly."
+        )
+    else:
+        rbac_clause = (
+            f"\n\n7. ACTIVE USER CONTEXT & RBAC PERMISSIONS (EMPLOYEE):\n"
+            f"- Active Persona: {name} ({code})\n"
+            f"- Role: Senior Frontend Developer (Individual Contributor)\n"
+            f"- PERMISSIONS: SELF-SERVICE ONLY.\n"
+            f"  - You can search the employee directory, view company policies, check your own leave balance, and submit your own expense claims.\n"
+            f"  - RESTRICTION: You DO NOT have permission to approve or reject leave requests or approve expenses for others.\n"
+            f"  - If the user asks to approve or reject leave/expense requests, you MUST decline with a polite RBAC notice:\n"
+            f"    '⚠️ **Access Restricted (RBAC Policy)**: As **{name} (Employee)**, you do not have permission to approve leave requests or review management claims. Approvals require Manager privileges. Please switch to **Sarah Jenkins (HR Manager)** in the top Persona bar to test approvals!'"
+        )
+
+    return f"{_AGENT_SYSTEM_PROMPT}{rbac_clause}"
+
+
 async def run_agent(
     message: str,
     session_id: str,
     tenant_id: str = "default",
     api_key: str | None = None,
+    persona: str = "employee",
+    user_name: str | None = None,
+    user_code: str | None = None,
 ) -> dict:
     """
     Run the agent loop for one user message.
@@ -188,8 +225,9 @@ async def run_agent(
         for msg in recent:
             history.append({"role": msg.role, "content": msg.content})
 
+    agent_prompt = _build_agent_system_prompt(persona, user_name, user_code)
     messages: list[dict] = [
-        {"role": "system", "content": _AGENT_SYSTEM_PROMPT},
+        {"role": "system", "content": agent_prompt},
         *history,
         {"role": "user", "content": message},
     ]
@@ -256,10 +294,13 @@ async def run_agent(
             }
         else:
             try:
+                kwargs = dict(tool_args)
+                if tool_name == "update_leave_status" and "caller_role" not in kwargs:
+                    kwargs["caller_role"] = persona
                 if inspect.iscoroutinefunction(fn):
-                    tool_result = await fn(**tool_args)
+                    tool_result = await fn(**kwargs)
                 else:
-                    tool_result = fn(**tool_args)
+                    tool_result = fn(**kwargs)
             except Exception as exc:
                 tool_result = {"error": str(exc), "tool": tool_name}
 
@@ -305,6 +346,9 @@ async def run_agent_with_mcp(
     session_id: str,
     tenant_id: str = "default",
     api_key: str | None = None,
+    persona: str = "employee",
+    user_name: str | None = None,
+    user_code: str | None = None,
 ) -> dict:
     """
     Feature 9 extension of run_agent() — merges MCP tools with local tools.
@@ -328,7 +372,13 @@ async def run_agent_with_mcp(
     except Exception:
         # MCP not available — fall back to the basic agent loop.
         return await run_agent(
-            message=message, session_id=session_id, tenant_id=tenant_id, api_key=api_key
+            message=message,
+            session_id=session_id,
+            tenant_id=tenant_id,
+            api_key=api_key,
+            persona=persona,
+            user_name=user_name,
+            user_code=user_code,
         )
 
     local_tool_names = {s["function"]["name"] for s in _TOOL_SCHEMAS}
@@ -342,8 +392,9 @@ async def run_agent_with_mcp(
         for msg in session.messages[-20:]:
             history.append({"role": msg.role, "content": msg.content})
 
+    agent_prompt = _build_agent_system_prompt(persona, user_name, user_code)
     messages: list[dict] = [
-        {"role": "system", "content": _AGENT_SYSTEM_PROMPT},
+        {"role": "system", "content": agent_prompt},
         *history,
         {"role": "user", "content": message},
     ]

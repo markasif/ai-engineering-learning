@@ -533,14 +533,24 @@ async function handleStreamingSmartChat(text, thinkingEl) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ message: text }),
+    body: JSON.stringify({
+      message: text,
+      persona: currentPersona.role,
+      user_name: currentPersona.name,
+      user_code: currentPersona.code,
+    }),
     signal: activeChatAbortController.signal,
   });
 
   if (!response.ok) {
+    thinkingEl.remove();
     if (response.status === 429) {
-      thinkingEl.remove();
-      renderRateLimitNotice("chat");
+      const err = await response.json().catch(() => ({}));
+      if (err.detail && err.detail.includes("DEMO_LIMIT_REACHED")) {
+        showDemoLimitModal();
+      } else {
+        renderRateLimitNotice("chat");
+      }
       playNotificationSound();
       return;
     }
@@ -602,6 +612,9 @@ async function handleStreamingSmartChat(text, thinkingEl) {
 
         if (payload.type === "start") {
           streamMeta = payload;
+          if (typeof payload.demo_credits_left === "number") {
+            updateDemoQuotaDisplay(payload.demo_credits_left);
+          }
           if (payload.chunks_used && payload.chunks_used.length > 0 && !headerEl) {
             headerEl = document.createElement("div");
             headerEl.className = "smart-response-header clean-citation-header";
@@ -764,14 +777,24 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({
+        message: text,
+        persona: currentPersona.role,
+        user_name: currentPersona.name,
+        user_code: currentPersona.code,
+      }),
       signal: activeChatAbortController.signal,
     });
 
     if (!response.ok) {
+      thinkingEl.remove();
       if (response.status === 429) {
-        thinkingEl.remove();
-        renderRateLimitNotice("chat");
+        const err = await response.json().catch(() => ({}));
+        if (err.detail && err.detail.includes("DEMO_LIMIT_REACHED")) {
+          showDemoLimitModal();
+        } else {
+          renderRateLimitNotice("chat");
+        }
         playNotificationSound();
         return;
       }
@@ -781,6 +804,9 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
 
     const data = await response.json();
     thinkingEl.remove();
+    if (typeof data.demo_credits_left === "number") {
+      updateDemoQuotaDisplay(data.demo_credits_left);
+    }
 
     // Smart Mode returns SmartChatResponse; session/structured returns StructuredResponse.
     if (currentSessionId && isSmartMode) {
@@ -1561,6 +1587,12 @@ function switchTab(tabName) {
     const show = panel.id === `${tabName}-panel`;
     panel.toggleAttribute("hidden", !show);
   });
+
+  // Toggle top-right chat & persona controls in navigation bar
+  const chatNavControls = document.getElementById("tab-nav-chat-controls");
+  if (chatNavControls) {
+    chatNavControls.style.display = (tabName === "chat" || tabName === "agent") ? "flex" : "none";
+  }
 
   // Toggle top-right document controls in navigation bar
   const docNavControls = document.getElementById("tab-nav-doc-controls");
@@ -3267,15 +3299,25 @@ async function runAgent(overrideText = null, existingUserEl = null) {
       {
         method: "POST",
         headers,
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          message: text,
+          persona: currentPersona.role,
+          user_name: currentPersona.name,
+          user_code: currentPersona.code,
+        }),
         signal: activeAgentAbortController.signal,
       },
     );
 
     if (!res.ok) {
+      thinkingEl.remove();
       if (res.status === 429) {
-        thinkingEl.remove();
-        renderRateLimitNotice("agent");
+        const err = await res.json().catch(() => ({}));
+        if (err.detail && err.detail.includes("DEMO_LIMIT_REACHED")) {
+          showDemoLimitModal();
+        } else {
+          renderRateLimitNotice("agent");
+        }
         return;
       }
       const err = await res.json().catch(() => ({}));
@@ -3284,6 +3326,9 @@ async function runAgent(overrideText = null, existingUserEl = null) {
 
     const data = await res.json();
     thinkingEl.remove();
+    if (typeof data.demo_credits_left === "number") {
+      updateDemoQuotaDisplay(data.demo_credits_left);
+    }
     agentAppendResponse(data);
     loadSessions();  // update sidebar message count
   } catch (err) {
@@ -4850,9 +4895,242 @@ function initByokSettings() {
   updateStatusDisplay();
 }
 
+
+// =============================================================================
+// OPTION 3 & 4: DEMO PERSONA SWITCHER (RBAC), QUOTA GUARD & EXPORT
+// =============================================================================
+
+let currentPersona = {
+  role: "employee",
+  name: "Rahul Sharma",
+  code: "EMP-101",
+};
+let currentDemoCredits = 15;
+
+function setPersona(role) {
+  const btnEmp = document.getElementById("btn-persona-employee");
+  const btnMgr = document.getElementById("btn-persona-manager");
+
+  if (role === "manager") {
+    currentPersona = {
+      role: "manager",
+      name: "Sarah Jenkins",
+      code: "EMP-102",
+    };
+    btnMgr?.classList.add("active");
+    btnMgr?.setAttribute("aria-checked", "true");
+    btnEmp?.classList.remove("active");
+    btnEmp?.setAttribute("aria-checked", "false");
+    showToast("👔 Switched to Sarah Jenkins (HR Manager) — Full approval permissions enabled.", "info");
+  } else {
+    currentPersona = {
+      role: "employee",
+      name: "Rahul Sharma",
+      code: "EMP-101",
+    };
+    btnEmp?.classList.add("active");
+    btnEmp?.setAttribute("aria-checked", "true");
+    btnMgr?.classList.remove("active");
+    btnMgr?.setAttribute("aria-checked", "false");
+    showToast("👤 Switched to Rahul Sharma (Employee) — Self-service directory & claims.", "info");
+  }
+}
+
+function updateDemoQuotaDisplay(credits) {
+  currentDemoCredits = credits;
+  const quotaText = document.getElementById("demo-quota-text");
+  const quotaBadge = document.getElementById("demo-quota-badge");
+  if (!quotaText || !quotaBadge) return;
+
+  if (credits < 0 || activeByokKey) {
+    quotaText.textContent = "⚡ Unlimited (BYOK)";
+    quotaBadge.style.color = "#10b981";
+    quotaBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+    quotaBadge.style.background = "rgba(16, 185, 129, 0.12)";
+  } else {
+    quotaText.textContent = `${credits} demo credit${credits !== 1 ? "s" : ""}`;
+    if (credits <= 3) {
+      quotaBadge.style.color = "#ef4444";
+      quotaBadge.style.borderColor = "rgba(239, 68, 68, 0.35)";
+      quotaBadge.style.background = "rgba(239, 68, 68, 0.12)";
+    } else {
+      quotaBadge.style.color = "";
+      quotaBadge.style.borderColor = "";
+      quotaBadge.style.background = "";
+    }
+  }
+}
+
+function showDemoLimitModal() {
+  const modal = document.getElementById("demo-limit-modal-backdrop");
+  if (modal) modal.hidden = false;
+}
+
+function hideDemoLimitModal() {
+  const modal = document.getElementById("demo-limit-modal-backdrop");
+  if (modal) modal.hidden = true;
+}
+
+function exportChatAsCsv() {
+  const messagesEl = document.getElementById("message-history");
+  if (!messagesEl) return;
+  const tables = messagesEl.querySelectorAll("table");
+  let csvContent = "";
+
+  if (tables.length > 0) {
+    tables.forEach((table, tableIdx) => {
+      csvContent += `Table ${tableIdx + 1}\n`;
+      const rows = table.querySelectorAll("tr");
+      rows.forEach((row) => {
+        const cols = row.querySelectorAll("th, td");
+        const rowData = Array.from(cols)
+          .map((c) => `"${c.innerText.trim().replace(/"/g, '""')}"`)
+          .join(",");
+        csvContent += rowData + "\n";
+      });
+      csvContent += "\n";
+    });
+  } else {
+    csvContent = "Timestamp,Speaker,Message\n";
+    const bubbles = messagesEl.querySelectorAll(".message");
+    bubbles.forEach((b) => {
+      const isUser = b.classList.contains("user");
+      const speaker = isUser ? `User (${currentPersona.name})` : "AskRaggy Assistant";
+      const time = new Date().toLocaleTimeString();
+      const text = b.innerText.replace(/"/g, '""');
+      csvContent += `"${time}","${speaker}","${text}"\n`;
+    });
+  }
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `askraggy-export-${currentSessionId ? currentSessionId.slice(0, 8) : "demo"}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("📊 Data table exported as CSV!", "success");
+}
+
+function exportChatAsMarkdown() {
+  const messagesEl = document.getElementById("message-history");
+  if (!messagesEl) return;
+  const bubbles = messagesEl.querySelectorAll(".message");
+  if (bubbles.length === 0) {
+    showToast("No messages to export yet.", "info");
+    return;
+  }
+
+  let md = `# AskRaggy Enterprise Intelligence — Chat Transcript\n\n`;
+  md += `- **Date:** ${new Date().toLocaleString()}\n`;
+  md += `- **Active Persona:** ${currentPersona.name} (${currentPersona.role.toUpperCase()})\n`;
+  md += `- **Session ID:** \`${currentSessionId || "demo"}\`\n`;
+  md += `- **Enterprise Domain:** NeoIntelli HR & Enterprise Operations\n\n---\n\n`;
+
+  bubbles.forEach((b) => {
+    const isUser = b.classList.contains("user");
+    const speaker = isUser ? `👤 User (${currentPersona.name})` : `🤖 AskRaggy Assistant`;
+    md += `### ${speaker}\n\n${b.innerText.trim()}\n\n---\n\n`;
+  });
+
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `askraggy-transcript-${currentSessionId ? currentSessionId.slice(0, 8) : "demo"}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("📝 Transcript exported as Markdown!", "success");
+}
+
+function copyChatText() {
+  const messagesEl = document.getElementById("message-history");
+  if (!messagesEl) return;
+  const bubbles = messagesEl.querySelectorAll(".message");
+  if (bubbles.length === 0) {
+    showToast("No messages to copy.", "info");
+    return;
+  }
+
+  let text = `AskRaggy Enterprise Chat Transcript\n`;
+  text += `Persona: ${currentPersona.name} (${currentPersona.role}) | Date: ${new Date().toLocaleString()}\n\n`;
+  bubbles.forEach((b) => {
+    const isUser = b.classList.contains("user");
+    const speaker = isUser ? `User (${currentPersona.name})` : "AskRaggy Assistant";
+    text += `[${speaker}]\n${b.innerText.trim()}\n\n`;
+  });
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("📋 Conversation copied to clipboard!", "success");
+  }).catch(() => {
+    showToast("Unable to copy to clipboard.", "error");
+  });
+}
+
+function initPersonaAndExport() {
+  // Persona button listeners
+  document.getElementById("btn-persona-employee")?.addEventListener("click", () => setPersona("employee"));
+  document.getElementById("btn-persona-manager")?.addEventListener("click", () => setPersona("manager"));
+
+  // Export dropdown
+  const exportBtn = document.getElementById("export-btn");
+  const exportMenu = document.getElementById("export-menu");
+  if (exportBtn && exportMenu) {
+    exportBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = exportMenu.hidden;
+      exportMenu.hidden = !isHidden;
+      exportBtn.setAttribute("aria-expanded", String(isHidden));
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!exportMenu.hidden && !e.target.closest("#export-dropdown")) {
+        exportMenu.hidden = true;
+        exportBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    if (exportMenu) exportMenu.hidden = true;
+    window.print();
+  });
+
+  document.getElementById("btn-export-csv")?.addEventListener("click", () => {
+    if (exportMenu) exportMenu.hidden = true;
+    exportChatAsCsv();
+  });
+
+  document.getElementById("btn-export-md")?.addEventListener("click", () => {
+    if (exportMenu) exportMenu.hidden = true;
+    exportChatAsMarkdown();
+  });
+
+  document.getElementById("btn-copy-chat")?.addEventListener("click", () => {
+    if (exportMenu) exportMenu.hidden = true;
+    copyChatText();
+  });
+
+  // Demo limit modal listeners
+  document.getElementById("demo-limit-modal-close")?.addEventListener("click", hideDemoLimitModal);
+  document.getElementById("demo-limit-modal-newchat")?.addEventListener("click", () => {
+    hideDemoLimitModal();
+    newChat();
+  });
+  document.getElementById("demo-limit-modal-settings")?.addEventListener("click", () => {
+    hideDemoLimitModal();
+    switchTab("admin");
+  });
+}
+
 function initApp() {
   applyResponsivePlaceholders();
   initByokSettings();
+  initPersonaAndExport();
   loadSessions();
   loadDocuments();
   loadTenantInfo();

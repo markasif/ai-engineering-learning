@@ -337,8 +337,20 @@ async def get_pending_leave_requests(employee_name: str | None = None) -> dict[s
     }
 
 
-async def update_leave_status(request_code: str, status: str) -> dict[str, Any]:
+async def update_leave_status(
+    request_code: str, status: str, caller_role: str = "manager"
+) -> dict[str, Any]:
     """Approve or reject a leave request and update employee leave balance."""
+    if caller_role.lower() == "employee":
+        return {
+            "success": False,
+            "error": (
+                "Permission Denied: Only Managers can approve or reject leave requests. "
+                "Current persona is Employee. Switch persona to Sarah Jenkins (HR Manager) to perform this action."
+            ),
+            "requires_role": "manager",
+        }
+
     normalized_status = "Approved" if "app" in status.lower() else "Rejected"
     url, key = _get_supabase_config()
 
@@ -735,7 +747,9 @@ if _MCP_AVAILABLE:
             result = await get_pending_leave_requests(arguments.get("employee_name"))
         elif name == "update_leave_status":
             result = await update_leave_status(
-                arguments.get("request_code", ""), arguments.get("status", "Approved")
+                arguments.get("request_code", ""),
+                arguments.get("status", "Approved"),
+                caller_role=arguments.get("caller_role", "manager"),
             )
         elif name == "get_expense_claims":
             result = await get_expense_claims(

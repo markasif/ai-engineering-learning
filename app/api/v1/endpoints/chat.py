@@ -57,6 +57,28 @@ _SMART_SYSTEM_PROMPT = (
 _SMART_RAG_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Use the provided document excerpts to answer accurately."
 _SMART_HYBRID_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Some excerpts have been retrieved — use them if helpful."
 
+DEMO_MAX_MESSAGES_PER_SESSION = 15
+
+
+def _build_persona_context(
+    persona: str = "employee",
+    user_name: str | None = None,
+    user_code: str | None = None,
+) -> str:
+    role = (persona or "employee").lower()
+    name = user_name or ("Sarah Jenkins" if role == "manager" else "Rahul Sharma")
+    code = user_code or ("EMP-102" if role == "manager" else "EMP-101")
+    if role == "manager":
+        return (
+            f"\n\nCURRENT USER CONTEXT: {name} ({code}) — Role: Manager (VP of Engineering / HR Operations). "
+            f"You have full manager authority to review team requests, approve claims, and oversee department operations."
+        )
+    return (
+        f"\n\nCURRENT USER CONTEXT: {name} ({code}) — Role: Employee (Senior Frontend Developer). "
+        f"You can view company policies, search staff directory, check your own leave balance, and submit your claims. "
+        f"You do NOT have manager authority to approve or reject leave requests or expenses for other employees."
+    )
+
 
 def _parse_structured(raw_text: str) -> StructuredResponse:
     try:
@@ -245,6 +267,20 @@ async def smart_chat(
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
 
+    if not user_api_key:
+        user_msg_count = sum(1 for m in session.messages if m.role == "user")
+        if user_msg_count >= DEMO_MAX_MESSAGES_PER_SESSION:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "DEMO_LIMIT_REACHED: You have used your 15 demo credits for this conversation. "
+                    "Configure your own free Groq API key in Settings (⚙️) to continue without limits, or start a New Chat."
+                ),
+            )
+        credits_left = max(0, DEMO_MAX_MESSAGES_PER_SESSION - (user_msg_count + 1))
+    else:
+        credits_left = -1
+
     classification = await classify_query(body.message, api_key=user_api_key)
     chunks_used: list[dict[str, Any]] = []
     source = "llm"
@@ -277,6 +313,14 @@ async def smart_chat(
             source = "hybrid"
             retrieval_method = "vector"
             system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+
+    system_prompt += _build_persona_context(
+        body.persona or "employee", body.user_name, body.user_code
+    )
+
+    system_prompt += _build_persona_context(
+        body.persona or "employee", body.user_name, body.user_code
+    )
 
     if settings.enable_long_term_context:
         digest = get_current_digest(tenant_id)
@@ -314,6 +358,7 @@ async def smart_chat(
         chunks_used=chunks_used,
         confidence=classification["confidence"],
         retrieval_method=retrieval_method,
+        demo_credits_left=credits_left,
     )
 
 
@@ -333,6 +378,20 @@ async def smart_chat_stream(
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
+
+    if not user_api_key:
+        user_msg_count = sum(1 for m in session.messages if m.role == "user")
+        if user_msg_count >= DEMO_MAX_MESSAGES_PER_SESSION:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "DEMO_LIMIT_REACHED: You have used your 15 demo credits for this conversation. "
+                    "Configure your own free Groq API key in Settings (⚙️) to continue without limits, or start a New Chat."
+                ),
+            )
+        credits_left = max(0, DEMO_MAX_MESSAGES_PER_SESSION - (user_msg_count + 1))
+    else:
+        credits_left = -1
 
     classification = await classify_query(body.message, api_key=user_api_key)
     chunks_used: list[dict[str, Any]] = []
@@ -393,6 +452,7 @@ async def smart_chat_stream(
             "retrieval_method": retrieval_method,
             "confidence": classification["confidence"],
             "chunks_used": chunks_used,
+            "demo_credits_left": credits_left,
         }
         yield f"data: {json.dumps(start_payload)}\n\n"
 
@@ -424,6 +484,7 @@ async def smart_chat_stream(
                 "retrieval_method": retrieval_method,
                 "confidence": classification["confidence"],
                 "chunks_used": chunks_used,
+                "demo_credits_left": credits_left,
             }
             yield f"data: {json.dumps(done_payload)}\n\n"
 

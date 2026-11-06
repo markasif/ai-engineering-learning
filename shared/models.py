@@ -272,6 +272,11 @@ class SmartChatResponse(BaseModel):
         )
     )
 
+    demo_credits_left: int | None = Field(
+        default=None,
+        description="Remaining free demo turns in session (-1 for unlimited with BYOK)",
+    )
+
 
 # =============================================================================
 # Feature 6: Part C — Long-term retrieval memory

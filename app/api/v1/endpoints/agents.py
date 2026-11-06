@@ -31,9 +31,36 @@ async def agent_run(
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
-    return await run_agent_with_mcp(
-        message=body.message, session_id=session_id, tenant_id=tenant_id, api_key=user_api_key
+
+    if not user_api_key:
+        user_msg_count = sum(1 for m in session.messages if m.role == "user")
+        if user_msg_count >= 15:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "DEMO_LIMIT_REACHED: You have used your 15 demo credits for this conversation. "
+                    "Configure your own free Groq API key in Settings (⚙️) to continue without limits, or start a New Chat."
+                ),
+            )
+
+    res = await run_agent_with_mcp(
+        message=body.message,
+        session_id=session_id,
+        tenant_id=tenant_id,
+        api_key=user_api_key,
+        persona=body.persona or "employee",
+        user_name=body.user_name or "Rahul Sharma",
+        user_code=body.user_code or "EMP-101",
     )
+    if not user_api_key:
+        updated_session = get_session(session_id, tenant_id=tenant_id)
+        current_count = sum(
+            1 for m in (updated_session.messages if updated_session else []) if m.role == "user"
+        )
+        res["demo_credits_left"] = max(0, 15 - current_count)
+    else:
+        res["demo_credits_left"] = -1
+    return res
 
 
 @router.post("/agent/plan", tags=["F8 · Multi-Step Agent"])

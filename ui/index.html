@@ -231,6 +231,78 @@
               </div>
             </div>
 
+            <!-- CHAT & AGENT TOP CONTROLS (Persona Switcher, Quota Capsule, Minimal Export) -->
+            <div class="tab-nav-chat-controls" id="tab-nav-chat-controls">
+              <!-- Demo Persona Switcher (RBAC Showcase) -->
+              <div class="persona-switcher" id="persona-switcher" role="radiogroup" aria-label="Demo Persona Switcher">
+                <button type="button" class="persona-btn active" id="btn-persona-employee" data-role="employee" data-name="Rahul Sharma" data-code="EMP-101" role="radio" aria-checked="true" title="Active Persona: Rahul Sharma (Senior Frontend Dev · Employee)">
+                  <span class="persona-icon" aria-hidden="true">👤</span>
+                  <span class="persona-info">
+                    <span class="persona-name">Rahul</span>
+                    <span class="persona-badge badge-emp">Employee</span>
+                  </span>
+                </button>
+                <button type="button" class="persona-btn" id="btn-persona-manager" data-role="manager" data-name="Sarah Jenkins" data-code="EMP-102" role="radio" aria-checked="false" title="Switch Persona: Sarah Jenkins (VP Eng · HR Manager)">
+                  <span class="persona-icon" aria-hidden="true">👔</span>
+                  <span class="persona-info">
+                    <span class="persona-name">Sarah</span>
+                    <span class="persona-badge badge-mgr">Manager</span>
+                  </span>
+                </button>
+              </div>
+
+              <!-- Demo Credits Capsule (LinkedIn Abuse Guard) -->
+              <div class="demo-quota-badge" id="demo-quota-badge" title="Free demo turns remaining in this conversation">
+                <span class="quota-bolt" aria-hidden="true">⚡</span>
+                <span class="quota-text" id="demo-quota-text">15 credits</span>
+              </div>
+
+              <!-- Minimal Export Dropdown (PDF, CSV, MD, Copy) -->
+              <div class="export-dropdown" id="export-dropdown">
+                <button type="button" class="toolbar-pill-btn export-btn" id="export-btn" aria-haspopup="menu" aria-expanded="false" title="Export conversation">
+                  <span class="export-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                  </span>
+                  <span class="export-label">Export</span>
+                  <span class="export-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div class="export-menu" id="export-menu" role="menu" aria-label="Export options" hidden>
+                  <button type="button" class="export-menu-item" id="btn-export-pdf" role="menuitem">
+                    <span class="export-menu-icon" aria-hidden="true">📄</span>
+                    <div class="export-menu-text">
+                      <strong>Print / PDF</strong>
+                      <span>Clean branded report layout</span>
+                    </div>
+                  </button>
+                  <button type="button" class="export-menu-item" id="btn-export-csv" role="menuitem">
+                    <span class="export-menu-icon" aria-hidden="true">📊</span>
+                    <div class="export-menu-text">
+                      <strong>Export Tables (CSV)</strong>
+                      <span>Download claims &amp; records</span>
+                    </div>
+                  </button>
+                  <button type="button" class="export-menu-item" id="btn-export-md" role="menuitem">
+                    <span class="export-menu-icon" aria-hidden="true">📝</span>
+                    <div class="export-menu-text">
+                      <strong>Transcript (.md)</strong>
+                      <span>Markdown conversation record</span>
+                    </div>
+                  </button>
+                  <button type="button" class="export-menu-item" id="btn-copy-chat" role="menuitem">
+                    <span class="export-menu-icon" aria-hidden="true">📋</span>
+                    <div class="export-menu-text">
+                      <strong>Copy Text</strong>
+                      <span>Copy chat to clipboard</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- AGENT HEADER CONTROLS (Placeholder for tab switching compatibility) -->
             <div class="tab-nav-agent-controls" id="tab-nav-agent-controls" style="display: none;"></div>
           </div>
@@ -1064,6 +1136,45 @@
         <button type="button" class="btn btn-secondary" id="multistep-modal-quick-btn">Continue in Quick Mode</button>
         <button type="button" class="btn btn-primary" id="multistep-modal-switch-btn">
           <span>🔄 Switch to Multi-Step &amp; Run</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       DEMO QUOTA LIMIT REACHED MODAL (LinkedIn Showcase Guard)
+       =================================================== -->
+  <div id="demo-limit-modal-backdrop" class="modal-backdrop" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="demo-limit-modal-title">
+      <div class="modal-header">
+        <div class="modal-icon-badge" style="background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35);">
+          <span aria-hidden="true">⚡</span>
+        </div>
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="demo-limit-modal-title">Demo Limit Reached (15 Turns)</h3>
+          <p class="modal-subtitle">Enterprise Token Protection</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="demo-limit-modal-close" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body" id="demo-limit-modal-body">
+        <p style="margin-bottom: 0.65rem;">
+          You have completed <strong>15 free demo queries</strong> in this session!
+        </p>
+        <p style="font-size: 0.86rem; color: var(--text-muted, #64748b); line-height: 1.55; margin-bottom: 0.85rem;">
+          To keep the public demo fast and free from abuse, each conversation is budgeted to 15 turns. You can:
+        </p>
+        <ul style="font-size: 0.86rem; color: var(--text, #1e293b); padding-left: 1.25rem; margin-bottom: 0.85rem; line-height: 1.6;">
+          <li><strong>Start a fresh chat</strong> for another 15 demo queries.</li>
+          <li><strong>Add your own free Groq API key</strong> in Settings to explore with unlimited queries.</li>
+          <li><strong>Export your chat</strong> as a PDF or Markdown report using the Export button.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="demo-limit-modal-newchat">
+          + Start New Chat
+        </button>
+        <button type="button" class="btn btn-primary" id="demo-limit-modal-settings">
+          ⚙️ Settings (Add API Key)
         </button>
       </div>
     </div>

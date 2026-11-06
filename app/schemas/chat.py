@@ -22,6 +22,11 @@ class SessionSummary(BaseModel):
 
 class SmartChatRequest(BaseModel):
     message: str = Field(..., description="User prompt to be routed and answered")
+    persona: str | None = Field(default="employee", description="Active role: employee or manager")
+    user_name: str | None = Field(
+        default="Rahul Sharma", description="Display name of active persona"
+    )
+    user_code: str | None = Field(default="EMP-101", description="Employee code of active persona")
 
 
 class MultiTenantModeRequest(BaseModel):
