@@ -10058,11 +10058,8 @@ body.drawer-open {
     gap: 0.2rem !important;
   }
 
-  /* Hide top controls on mobile to keep navbar centered */
-  .tab-nav-doc-controls,
+  /* Mobile navbar controls: CAG is hidden, agent controls hidden (moved to toolbar), doc manager dropdown remains accessible */
   .tab-nav-agent-controls,
-  #doc-manager-wrapper,
-  .doc-manager-wrapper,
   #cag-wrapper,
   .cag-wrapper,
   .cag-btn,
@@ -10070,17 +10067,59 @@ body.drawer-open {
     display: none !important;
   }
 
+  .tab-nav-doc-controls {
+    gap: 0.25rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .doc-manager-wrapper {
+    display: inline-flex !important;
+    position: relative !important;
+  }
+
+  .doc-manager-trigger {
+    padding: 0.22rem 0.45rem !important;
+    font-size: 0.70rem !important;
+    gap: 0.22rem !important;
+    border-radius: 999px !important;
+  }
+
+  .doc-manager-popover {
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    right: 4px !important;
+    left: auto !important;
+    width: 280px !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: 55vh !important;
+    overflow-y: auto !important;
+    z-index: 1050 !important;
+    box-sizing: border-box !important;
+  }
+
   /* 9. DOCUMENT TOOLBAR: Strategy Dropdown (Auto) and upward popover */
+  .modern-chat-toolbar .btn-doc-attach {
+    padding: 0.22rem 0.45rem !important;
+  }
+
+  .modern-chat-toolbar .btn-doc-attach span {
+    display: none !important;
+  }
+
+  .modern-chat-toolbar .strategy-dropdown-wrapper {
+    position: static !important;
+  }
+
   .modern-chat-toolbar .strategy-trigger-btn {
     padding: 0.22rem 0.45rem !important;
     font-size: 0.70rem !important;
-    gap: 0.25rem !important;
-    max-width: 115px !important;
+    gap: 0.22rem !important;
+    max-width: 105px !important;
     border-radius: 999px !important;
   }
 
   .modern-chat-toolbar .strategy-trigger-label {
-    max-width: 65px !important;
+    max-width: 50px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -10091,17 +10130,72 @@ body.drawer-open {
     display: none !important;
   }
 
-  /* Popover opens UPWARD into chat area without breaking or clipping */
+  /* Popover opens UPWARD docked inside chat box without breaking or horizontal clipping */
   .modern-chat-toolbar .strategy-popover {
     position: absolute !important;
     bottom: calc(100% + 8px) !important;
     top: auto !important;
-    left: 0 !important;
-    right: auto !important;
+    left: 6px !important;
+    right: 6px !important;
+    width: auto !important;
+    max-width: calc(100% - 12px) !important;
     transform: none !important;
-    max-width: calc(100vw - 1.25rem) !important;
-    width: 295px !important;
+    max-height: 52vh !important;
+    overflow-y: auto !important;
+    padding: 0.45rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
     z-index: 1050 !important;
+  }
+
+  .strategy-popover-subtitle {
+    display: none !important;
+  }
+
+  .strategy-popover-header {
+    padding-bottom: 0.30rem !important;
+    margin-bottom: 0.30rem !important;
+  }
+
+  .strategy-popover-tag {
+    font-size: 0.58rem !important;
+    padding: 0.05rem 0.25rem !important;
+  }
+
+  .strategy-popover-title {
+    font-size: 0.76rem !important;
+  }
+
+  .strategy-options-list {
+    gap: 0.22rem !important;
+  }
+
+  .strategy-option-item {
+    padding: 0.35rem 0.45rem !important;
+    gap: 0.4rem !important;
+    border-radius: 8px !important;
+  }
+
+  .strategy-option-icon-box {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 0.75rem !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .strategy-option-name {
+    font-size: 0.72rem !important;
+  }
+
+  .strategy-option-badge {
+    font-size: 0.56rem !important;
+    padding: 0.04rem 0.25rem !important;
+  }
+
+  .strategy-option-desc {
+    font-size: 0.63rem !important;
+    line-height: 1.25 !important;
   }
 
   /* 10. AGENT TOOLBAR: Remove connected server, show Quick & Multi-Step switcher */

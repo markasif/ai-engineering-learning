@@ -1812,17 +1812,12 @@ function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
 
 /** Fetch /api/documents and render the document list, dynamically syncing upload and Q&A state. */
 async function loadDocuments() {
-  if (!documentList) return;
-
-  const documentDetailsSection = document.getElementById("document-details-section");
   const uploadContainer = document.getElementById("upload-container");
   const btnToggleUpload = document.getElementById("btn-toggle-upload");
-  const btnUploadBottom = document.getElementById("btn-upload-bottom");
   const docGroundingBanner = document.getElementById("doc-grounding-banner");
   const groundingTitle = document.getElementById("grounding-title");
   const groundingSubtitle = document.getElementById("grounding-subtitle");
   const documentChatSection = document.getElementById("document-chat-section");
-  const docCountBadge = document.getElementById("doc-count-badge");
   const docChatInput = document.getElementById("doc-chat-input");
 
   const headers = {};
@@ -1833,6 +1828,7 @@ async function loadDocuments() {
     if (!res.ok) throw new Error("documents endpoint not available");
 
     const docs = await res.json();
+    currentDocsCache = docs;
 
     const docUploadHint = document.getElementById("doc-upload-hint");
     const docPromptGrid = document.getElementById("doc-prompt-grid");
@@ -1845,10 +1841,6 @@ async function loadDocuments() {
       if (docUploadHint) docUploadHint.style.display = "flex";
       if (docPromptGrid) docPromptGrid.style.display = "grid";
 
-      if (documentDetailsSection) {
-        documentDetailsSection.style.display = "none";
-      }
-
       if (docGroundingBanner) {
         docGroundingBanner.style.display = "none";
       }
@@ -1856,8 +1848,6 @@ async function loadDocuments() {
       if (docChatInput) {
         docChatInput.placeholder = getDocPlaceholder(null);
       }
-
-      if (docCountBadge) docCountBadge.textContent = "0 files";
 
       // Update doc manager pill in top right
       const docManagerDot = document.getElementById("doc-manager-dot");
@@ -1875,8 +1865,9 @@ async function loadDocuments() {
         renderDocPopoverList(docPopoverList, [], null);
       }
 
-      // Clear documentList
-      documentList.innerHTML = "";
+      if (typeof updateStrategyAdvisory === "function") {
+        updateStrategyAdvisory();
+      }
       loadSearchDocumentFilter([]);
       return;
     }
@@ -1885,24 +1876,14 @@ async function loadDocuments() {
     if (docUploadHint) docUploadHint.style.display = "none";
     if (docPromptGrid) docPromptGrid.style.display = "grid";
 
-    // 1+ documents: show active grounding banner, chat interface, and uploaded documents list below
-    if (documentDetailsSection) {
-      documentDetailsSection.style.display = "block";
-    }
     if (btnToggleUpload) {
       btnToggleUpload.style.display = "none";
     }
-    if (btnUploadBottom) {
-      btnUploadBottom.style.display = "inline-flex";
-    }
-    // Upload dropzone above is not needed when documents are uploaded
     if (uploadContainer) {
       uploadContainer.style.display = "none";
     }
 
-    currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
-    updateStrategyAdvisory();
 
     // Select active document: prioritize explicitly active doc (e.g. freshly uploaded),
     // otherwise default to the latest uploaded document so older files never interfere!
@@ -1921,7 +1902,6 @@ async function loadDocuments() {
       if (groundingTitle) groundingTitle.textContent = `Grounded in: ${activeDocName}`;
       if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${activeDocName}" with verified source citations.`;
     }
-    updateStrategyAdvisory();
 
     if (documentChatSection) {
       documentChatSection.style.display = "flex";
@@ -1934,10 +1914,6 @@ async function loadDocuments() {
     }
     if (docSendBtn) {
       docSendBtn.disabled = false;
-    }
-
-    if (docCountBadge) {
-      docCountBadge.textContent = `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
     }
 
     // Update doc manager pill in top right
@@ -1963,16 +1939,13 @@ async function loadDocuments() {
       renderDocPopoverList(docPopoverList, docs, activeDocumentId);
     }
 
-    documentList.innerHTML = "";
-    docs.forEach((doc) => {
-      documentList.appendChild(buildDocumentCard(doc));
-    });
+    if (typeof updateStrategyAdvisory === "function") {
+      updateStrategyAdvisory();
+    }
 
     loadSearchDocumentFilter(docs);
   } catch (err) {
-    documentList.innerHTML = `<p class="sidebar-empty" style="color:var(--color-pistache);font-size:0.82rem">
-      Document list requires the Feature 4 server.<br>${escapeHtml(err.message)}
-    </p>`;
+    console.warn("Documents load notice:", err);
   }
 }
 
@@ -4633,16 +4606,17 @@ document.addEventListener("keydown", (e) => {
           item.setAttribute("aria-selected", String(isSelected));
         });
 
-        // Update trigger button label & badge
+        // Update trigger button label & badge (concise on mobile)
         if (strategyTriggerLabel) {
+          const isMobile = window.innerWidth <= 768;
           if (value === "auto") {
-            strategyTriggerLabel.textContent = "Auto (Adaptive)";
+            strategyTriggerLabel.textContent = isMobile ? "Auto" : "Auto (Adaptive)";
           } else if (value === "cag") {
-            strategyTriggerLabel.textContent = "CAG (Full Context)";
+            strategyTriggerLabel.textContent = isMobile ? "CAG" : "CAG (Full Context)";
           } else if (value === "sentence") {
-            strategyTriggerLabel.textContent = "Sentence-aware";
+            strategyTriggerLabel.textContent = isMobile ? "Sentence" : "Sentence-aware";
           } else {
-            strategyTriggerLabel.textContent = "Paragraph-based";
+            strategyTriggerLabel.textContent = isMobile ? "Paragraph" : "Paragraph-based";
           }
         }
         if (strategyRecBadge) {
@@ -4688,10 +4662,12 @@ document.addEventListener("keydown", (e) => {
       }
     });
   }
+})();
 
 /**
  * Real-time Document Size Detection & Strategy Advisory
  * Inspects active document page/character size and shows warning/tips based on selected strategy.
+ * (Defined in global scope so loadDocuments and other handlers can invoke it safely)
  */
 function updateStrategyAdvisory() {
   const advisoryEl = document.getElementById("doc-strategy-advisory");
@@ -4702,6 +4678,7 @@ function updateStrategyAdvisory() {
     return;
   }
 
+  const searchDocFilter = document.getElementById("search-doc-filter");
   const targetDocId = searchDocFilter?.value || activeDocumentId || (currentDocsCache[0] ? currentDocsCache[0].id : null);
   const doc = currentDocsCache.find((d) => d.id === targetDocId) || currentDocsCache[0];
   if (!doc) {
@@ -4709,6 +4686,7 @@ function updateStrategyAdvisory() {
     return;
   }
 
+  const strategySelect = document.getElementById("strategy-select");
   const currentStrat = strategySelect?.value || "auto";
   const pages = doc.page_count || 1;
   const chars = doc.char_count || 0;
@@ -4763,8 +4741,7 @@ function updateStrategyAdvisory() {
     advisoryEl.style.display = "none";
   }
 }
-
-})();
+window.updateStrategyAdvisory = updateStrategyAdvisory;
 
 /** Helper to get responsive concise placeholder for document chat input */
 function getDocPlaceholder(docName = null) {

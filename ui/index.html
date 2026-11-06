@@ -592,7 +592,7 @@
                               <span class="strategy-option-badge auto">Smart</span>
                             </div>
                             <p class="strategy-option-desc">
-                              Intelligently routes files: small documents (&lt;50 pages) use CAG for 100% full context; large documents (&gt;50 pages) use RAG for efficient vector search.
+                              Auto routes: CAG for small docs (&lt;50p), RAG vector search for large files (&gt;50p).
                             </p>
                           </div>
                           <div class="strategy-option-check" aria-hidden="true">
@@ -613,7 +613,7 @@
                               <span class="strategy-option-badge rec">Vector Search</span>
                             </div>
                             <p class="strategy-option-desc">
-                              Splits on sentence boundaries with contextual sliding windows. Highest citation accuracy for questions, compliance rules, and data lookups.
+                              Sliding-window vector search with precise sentence citations.
                             </p>
                           </div>
                           <div class="strategy-option-check" aria-hidden="true">
@@ -634,7 +634,7 @@
                               <span class="strategy-option-badge">Coarse</span>
                             </div>
                             <p class="strategy-option-desc">
-                              Splits text by natural paragraph blocks. Preserves larger structural narrative for thematic overviews and long summaries.
+                              Splits on natural paragraphs for thematic summaries.
                             </p>
                           </div>
                           <div class="strategy-option-check" aria-hidden="true">
@@ -655,7 +655,7 @@
                               <span class="strategy-option-badge cag">Zero Retrieval Errors</span>
                             </div>
                             <p class="strategy-option-desc">
-                              Bypasses vector search. Pre-loads the entire document into the LLM context with KV cache for 100% full-document visibility.
+                              Full document in context (100% visibility, zero retrieval errors).
                             </p>
                           </div>
                           <div class="strategy-option-check" aria-hidden="true">
@@ -686,19 +686,8 @@
               </div>
             </div>
 
-            <!-- Uploaded Document Details (Knowledge Base Files) -->
-            <div class="document-details-section" id="document-details-section" style="display: none;">
-              <div class="document-list-header">
-                <div class="document-header-left">
-                  <h3 class="document-section-subtitle">Uploaded Knowledge Base Files</h3>
-                  <span class="doc-count-badge" id="doc-count-badge">0 files</span>
-                </div>
-                <button id="btn-upload-bottom" class="btn btn-secondary btn-sm" type="button">
-                  + Upload File
-                </button>
-              </div>
-              <div id="document-list" class="document-list"></div>
-            </div>
+            <!-- Fallback document-list container preserved hidden for backward compatibility -->
+            <div id="document-list" style="display: none;" aria-hidden="true"></div>
 
             <!-- Fallback elements for JS compatibility -->
             <div id="upload-container" style="display: none;">
