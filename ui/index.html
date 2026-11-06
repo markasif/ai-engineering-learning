@@ -137,28 +137,18 @@
             + New Chat
           </button>
 
-          <!-- Demo Persona Switcher (RBAC Showcase) -->
-          <div class="sidebar-persona-card" id="persona-switcher" role="radiogroup" aria-label="Demo Persona Switcher">
-            <div class="sidebar-persona-header">
-              <span class="sidebar-persona-title">Active Persona</span>
-              <span class="sidebar-persona-tag">RBAC</span>
-            </div>
-            <div class="sidebar-persona-options">
-              <button type="button" class="persona-btn active" id="btn-persona-employee" data-role="employee" data-name="Rahul Sharma" data-code="EMP-101" role="radio" aria-checked="true" title="Active Persona: Rahul Sharma (Senior Frontend Dev · Employee)">
-                <span class="persona-icon" aria-hidden="true">👤</span>
-                <div class="persona-info">
-                  <span class="persona-name">Rahul</span>
-                  <span class="persona-badge badge-emp">Employee</span>
-                </div>
-              </button>
-              <button type="button" class="persona-btn" id="btn-persona-manager" data-role="manager" data-name="Sarah Jenkins" data-code="EMP-102" role="radio" aria-checked="false" title="Switch Persona: Sarah Jenkins (VP Eng · HR Manager)">
-                <span class="persona-icon" aria-hidden="true">👔</span>
-                <div class="persona-info">
-                  <span class="persona-name">Sarah</span>
-                  <span class="persona-badge badge-mgr">Manager</span>
-                </div>
-              </button>
-            </div>
+          <!-- Demo Persona Switcher (RBAC Showcase Capsule) -->
+          <div class="sidebar-persona-bar" id="persona-switcher" role="radiogroup" aria-label="Demo Persona Switcher">
+            <button type="button" class="persona-btn active" id="btn-persona-employee" data-role="employee" data-name="Rahul Sharma" data-code="EMP-101" role="radio" aria-checked="true" title="Rahul Sharma · Employee">
+              <span class="persona-icon" aria-hidden="true">👤</span>
+              <span class="persona-name">Rahul</span>
+              <span class="persona-badge badge-emp">Employee</span>
+            </button>
+            <button type="button" class="persona-btn" id="btn-persona-manager" data-role="manager" data-name="Sarah Jenkins" data-code="EMP-102" role="radio" aria-checked="false" title="Sarah Jenkins · Manager">
+              <span class="persona-icon" aria-hidden="true">👔</span>
+              <span class="persona-name">Sarah</span>
+              <span class="persona-badge badge-mgr">Manager</span>
+            </button>
           </div>
 
           <button id="sidebar-admin-btn" class="btn-sidebar-admin" type="button" title="Settings">
