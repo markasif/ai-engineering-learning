@@ -21,6 +21,12 @@ from datetime import UTC, datetime
 
 from shared.db import get_connection
 from shared.models import Message, Session
+from shared.supabase_sync import (
+    sync_add_message,
+    sync_create_session,
+    sync_delete_session,
+    sync_truncate_messages,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +111,7 @@ def create_session(tenant_id: str = "default") -> str:
     except Exception as exc:
         logger.warning("Could not persist new session to SQLite: %s", exc)
 
+    sync_create_session(session_id, tenant_id, now.isoformat())
     return session_id
 
 
@@ -197,6 +204,8 @@ def add_message(session_id: str, role: str, content: str) -> None:
     except Exception as exc:
         logger.warning("Could not persist message to SQLite: %s", exc)
 
+    sync_add_message(session_id, role, content, now.isoformat())
+
 
 def list_sessions(tenant_id: str = "default") -> list[Session]:
     """
@@ -237,6 +246,7 @@ def delete_session(session_id: str, tenant_id: str = "default") -> bool:
     except Exception as exc:
         logger.warning("Could not delete session from SQLite: %s", exc)
 
+    sync_delete_session(session_id)
     return True
 
 
@@ -271,6 +281,7 @@ def truncate_session_messages(session_id: str, keep_count: int, tenant_id: str =
     except Exception as exc:
         logger.warning("Could not update truncated messages in SQLite: %s", exc)
 
+    sync_truncate_messages(session_id, keep_count)
     return True
 
 

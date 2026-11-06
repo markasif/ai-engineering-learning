@@ -14,6 +14,7 @@ from typing import Any
 
 from shared.db import get_connection
 from shared.models import AgentTask
+from shared.supabase_sync import sync_save_task
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,21 @@ def create_task(
     except Exception as exc:
         logger.warning("Could not persist new task to SQLite: %s", exc)
 
+    sync_save_task(
+        {
+            "id": task.id,
+            "session_id": task.session_id,
+            "tenant_id": task.tenant_id,
+            "status": task.status,
+            "message": task.message,
+            "plan": task.plan,
+            "steps_completed": task.steps_completed,
+            "result": task.result,
+            "error": task.error,
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        }
+    )
     return task
 
 
@@ -198,6 +214,22 @@ def update_task(task_id: str, **fields: Any) -> None:
             conn.close()
     except Exception as exc:
         logger.warning("Could not persist task update to SQLite: %s", exc)
+
+    sync_save_task(
+        {
+            "id": task.id,
+            "session_id": task.session_id,
+            "tenant_id": task.tenant_id,
+            "status": task.status,
+            "message": task.message,
+            "plan": task.plan,
+            "steps_completed": task.steps_completed,
+            "result": task.result,
+            "error": task.error,
+            "created_at": task.created_at.isoformat(),
+            "updated_at": now.isoformat(),
+        }
+    )
 
 
 # Load previously persisted tasks on startup
