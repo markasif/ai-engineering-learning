@@ -36,14 +36,20 @@ def client():
 
 @pytest.fixture(autouse=True)
 def reset_in_memory_stores():
-    """Reset all memory and document stores before and after each test."""
+    """Reset all memory, document, and test database stores before and after each test."""
+    import shared.db as db
     import shared.document_store as ds
     import shared.session_store as ss
+    import shared.task_store as ts
 
     ds._documents.clear()
     ds._chunks.clear()
     ss._store.clear()
+    ts._tasks.clear()
+    db.clear_test_db()
     yield
     ds._documents.clear()
     ds._chunks.clear()
     ss._store.clear()
+    ts._tasks.clear()
+    db.clear_test_db()

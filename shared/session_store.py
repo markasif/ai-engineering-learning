@@ -1,50 +1,110 @@
 """
-In-memory session store for the AI Engineering Bootcamp.
+Persistent session store for Feature 3: Conversation Memory.
 
-This module provides a simple dictionary-based store for conversation sessions.
-It is intentionally simple so students can understand the fundamentals before
-moving to a database-backed solution.
+Provides a fast in-memory session cache backed by SQLite (data/app_state.db)
+so conversations survive server restarts, multi-worker reloads, and deployments.
 
-IMPORTANT — LIMITATION:
-  All sessions are lost when the server restarts. This is acceptable for
-  development and demos, but not for production. See Resource 3
-  (resource/memory-patterns-guide.md in feature-3-ai-memory/) for a comparison
-  of memory strategies, including how to swap this out for SQLite or Postgres.
+FRAMEWORK EQUIVALENTS:
+  _store dict       ≈  ConversationBufferMemory in memory
+  SQLite tables     ≈  SQLChatMessageHistory / DatabaseSessionService
+  delete_session    ≈  Session invalidation & cascade delete
 
-FRAMEWORK EQUIVALENTS (for students exploring LangChain after this course):
-  This module is what LangChain calls ConversationBufferMemory.
-  The sliding window in main.py (messages[-CONTEXT_WINDOW_SIZE:]) is what
-  LangChain calls ConversationBufferWindowMemory.
-  See Resource 3 for the full "What You Built vs What Frameworks Call It" table.
+MULTI-TENANCY (Feature 6, Part B):
+  All functions accept an optional tenant_id parameter (default "default").
+  When ENABLE_MULTI_TENANT=true, list_sessions() and get_session() filter
+  by tenant_id — preventing cross-tenant conversation leakage.
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
+from shared.db import get_connection
 from shared.models import Message, Session
 
-# The store: a plain dict mapping session_id (str) -> Session.
-# Module-level so it persists for the lifetime of the server process.
+logger = logging.getLogger(__name__)
+
+# Primary in-memory store for microsecond lookups and test compatibility
 _store: dict[str, Session] = {}
+
+
+def _load_from_db() -> None:
+    """Rehydrate in-memory store from SQLite on module startup."""
+    try:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id, tenant_id, created_at FROM sessions ORDER BY created_at ASC")
+            session_rows = cur.fetchall()
+
+            for s_row in session_rows:
+                s_id = s_row["id"]
+                raw_created = s_row["created_at"]
+                created_at = datetime.fromisoformat(raw_created)
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=UTC)
+
+                cur.execute(
+                    "SELECT role, content, timestamp FROM messages WHERE session_id = ? ORDER BY id ASC",
+                    (s_id,),
+                )
+                msg_rows = cur.fetchall()
+                messages = []
+                for m in msg_rows:
+                    raw_ts = m["timestamp"]
+                    ts = datetime.fromisoformat(raw_ts)
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=UTC)
+                    messages.append(
+                        Message(
+                            role=m["role"],
+                            content=m["content"],
+                            timestamp=ts,
+                        )
+                    )
+
+                _store[s_id] = Session(
+                    id=s_id,
+                    tenant_id=s_row["tenant_id"],
+                    created_at=created_at,
+                    messages=messages,
+                )
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.warning("Could not rehydrate sessions from SQLite: %s", exc)
 
 
 def create_session(tenant_id: str = "default") -> str:
     """
-    Create a new empty session and return its ID.
+    Create a new empty session and persist it to SQLite.
 
-    Each session gets a random UUID so IDs are collision-free without a
-    database sequence. The created_at timestamp is recorded in UTC.
-
-    The tenant_id is stored on the session so that list_sessions() can filter
-    by tenant when ENABLE_MULTI_TENANT=true (Feature 6, Part B).
+    Returns the session UUID string.
     """
     session_id = str(uuid.uuid4())
-    _store[session_id] = Session(
+    now = datetime.now(tz=UTC)
+
+    session = Session(
         id=session_id,
-        created_at=datetime.now(tz=UTC),
+        created_at=now,
         messages=[],
         tenant_id=tenant_id,
     )
+    _store[session_id] = session
+
+    try:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO sessions (id, tenant_id, created_at) VALUES (?, ?, ?)",
+                    (session_id, tenant_id, now.isoformat()),
+                )
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.warning("Could not persist new session to SQLite: %s", exc)
+
     return session_id
 
 
@@ -52,15 +112,53 @@ def get_session(session_id: str, tenant_id: str = "default") -> Session | None:
     """
     Return the session with the given ID, or None if it doesn't exist.
 
-    Callers should always check for None — a missing session should result in
-    a 404 HTTP response, not a KeyError crash.
-
-    When ENABLE_MULTI_TENANT=true, returns None if the session belongs to a
-    different tenant — preventing cross-tenant session access.
+    When ENABLE_MULTI_TENANT=true, returns None if the session belongs to
+    a different tenant.
     """
     from shared.config import settings
 
     session = _store.get(session_id)
+    if session is None:
+        # Fallback check against SQLite in case created by another worker
+        try:
+            conn = get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT id, tenant_id, created_at FROM sessions WHERE id = ?",
+                    (session_id,),
+                )
+                row = cur.fetchone()
+                if row:
+                    raw_created = row["created_at"]
+                    created_at = datetime.fromisoformat(raw_created)
+                    if created_at.tzinfo is None:
+                        created_at = created_at.replace(tzinfo=UTC)
+
+                    cur.execute(
+                        "SELECT role, content, timestamp FROM messages WHERE session_id = ? ORDER BY id ASC",
+                        (session_id,),
+                    )
+                    messages = []
+                    for m in cur.fetchall():
+                        raw_ts = m["timestamp"]
+                        ts = datetime.fromisoformat(raw_ts)
+                        if ts.tzinfo is None:
+                            ts = ts.replace(tzinfo=UTC)
+                        messages.append(Message(role=m["role"], content=m["content"], timestamp=ts))
+
+                    session = Session(
+                        id=session_id,
+                        tenant_id=row["tenant_id"],
+                        created_at=created_at,
+                        messages=messages,
+                    )
+                    _store[session_id] = session
+            finally:
+                conn.close()
+        except Exception:
+            pass
+
     if session is None:
         return None
     if settings.enable_multi_tenant and session.tenant_id != tenant_id:
@@ -70,35 +168,39 @@ def get_session(session_id: str, tenant_id: str = "default") -> Session | None:
 
 def add_message(session_id: str, role: str, content: str) -> None:
     """
-    Append a new message to an existing session's history.
-
-    Silently does nothing if the session_id is not found — the endpoint is
-    responsible for validating the session exists before calling this.
-
-    Args:
-        session_id: The session to append to.
-        role:       "user" or "assistant".
-        content:    The text of the message.
+    Append a new message to an existing session's history and persist to SQLite.
     """
     session = _store.get(session_id)
     if session is None:
+        session = get_session(session_id)
+    if session is None:
         return
 
-    session.messages.append(
-        Message(
-            role=role,  # type: ignore[arg-type]  # Literal checked by caller
-            content=content,
-            timestamp=datetime.now(tz=UTC),
-        )
+    now = datetime.now(tz=UTC)
+    message = Message(
+        role=role,  # type: ignore[arg-type]
+        content=content,
+        timestamp=now,
     )
+    session.messages.append(message)
+
+    try:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute(
+                    "INSERT INTO messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+                    (session_id, role, content, now.isoformat()),
+                )
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.warning("Could not persist message to SQLite: %s", exc)
 
 
 def list_sessions(tenant_id: str = "default") -> list[Session]:
     """
     Return all sessions, most recently created first.
-
-    When ENABLE_MULTI_TENANT=true, only returns sessions belonging to
-    the given tenant. When disabled, returns all sessions (existing behavior).
     """
     from shared.config import settings
 
@@ -110,31 +212,67 @@ def list_sessions(tenant_id: str = "default") -> list[Session]:
 
 def delete_session(session_id: str, tenant_id: str = "default") -> bool:
     """
-    Delete a session and all its stored messages.
-
-    When ENABLE_MULTI_TENANT=true, prevents deleting another tenant's session.
-    Returns True if successfully deleted, False if not found.
+    Delete a session and all its stored messages from memory and SQLite.
     """
     from shared.config import settings
 
     session = _store.get(session_id)
     if session is None:
+        session = get_session(session_id)
+    if session is None:
         return False
     if settings.enable_multi_tenant and session.tenant_id != tenant_id:
         return False
-    del _store[session_id]
+
+    _store.pop(session_id, None)
+
+    try:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+                conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.warning("Could not delete session from SQLite: %s", exc)
+
     return True
 
 
 def truncate_session_messages(session_id: str, keep_count: int, tenant_id: str = "default") -> bool:
     """
     Truncate a session's messages to keep only the first keep_count messages.
-    Used when editing an earlier message in the conversation.
+    Atomically updates both memory cache and SQLite.
     """
     session = get_session(session_id, tenant_id=tenant_id)
     if session is None:
         return False
     if keep_count < 0:
         keep_count = 0
+
     session.messages = session.messages[:keep_count]
+
+    try:
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+                if session.messages:
+                    conn.executemany(
+                        "INSERT INTO messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+                        [
+                            (session_id, m.role, m.content, m.timestamp.isoformat())
+                            for m in session.messages
+                        ],
+                    )
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.warning("Could not update truncated messages in SQLite: %s", exc)
+
     return True
+
+
+# Load previously persisted sessions on startup
+_load_from_db()
