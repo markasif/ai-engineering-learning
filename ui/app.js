@@ -766,6 +766,7 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
       if (sRes.ok) {
         const sData = await sRes.json();
         currentSessionId = sData.session_id;
+        recordVisitorSession(currentSessionId);
         setActiveSession(currentSessionId);
         loadSessions();
       }
@@ -1231,6 +1232,39 @@ function appendSmartResponse(data) {
 /** The currently active session ID, or null when no session is selected. */
 let currentSessionId = null;
 
+// =============================================================================
+// Public Demo Visitor Session Isolation (LinkedIn Showcase Privacy)
+// =============================================================================
+const VISITOR_SESSIONS_STORAGE_KEY = "askraggy_my_sessions";
+
+function getVisitorSessionIds() {
+  try {
+    const raw = localStorage.getItem(VISITOR_SESSIONS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordVisitorSession(sessionId) {
+  if (!sessionId) return;
+  try {
+    const ids = getVisitorSessionIds();
+    if (!ids.includes(sessionId)) {
+      ids.unshift(sessionId);
+      localStorage.setItem(VISITOR_SESSIONS_STORAGE_KEY, JSON.stringify(ids.slice(0, 50)));
+    }
+  } catch {}
+}
+
+function removeVisitorSession(sessionId) {
+  if (!sessionId) return;
+  try {
+    const ids = getVisitorSessionIds().filter((id) => id !== sessionId);
+    localStorage.setItem(VISITOR_SESSIONS_STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
 const newChatBtn    = document.getElementById("new-chat-btn");
 const sessionList   = document.getElementById("session-list");
 const sessionLabel  = document.getElementById("session-label");
@@ -1345,10 +1379,17 @@ async function loadSessions() {
 
     const sessions = await res.json();
 
-    // Filter out abandoned 0-message sessions so history doesn't flood with ghosts
-    const displaySessions = sessions.filter(
-      (s) => s.message_count > 0 || s.id === currentSessionId
-    );
+    // Filter sessions: in default demo mode, isolate sidebar to this visitor's browser.
+    // If user configured a specific enterprise tenant in Settings (⚙️), show all sessions for that tenant.
+    const myIds = getVisitorSessionIds();
+    const isCustomTenant = Boolean(activeTenantId && activeTenantId !== "default");
+    const displaySessions = sessions.filter((s) => {
+      const hasContentOrActive = s.message_count > 0 || s.id === currentSessionId;
+      if (isCustomTenant) {
+        return hasContentOrActive;
+      }
+      return hasContentOrActive && (myIds.includes(s.id) || s.id === currentSessionId);
+    });
 
     if (!displaySessions.length) {
       sessionList.innerHTML = `<p class="sidebar-empty">No conversations yet.<br>Click <strong>New Chat</strong> to start.</p>`;
@@ -1403,6 +1444,7 @@ async function loadSessions() {
           if (activeTenantId) delHeaders["X-Tenant-ID"] = activeTenantId;
           const delRes = await fetch(`${API_BASE}/api/sessions/${s.id}`, { method: "DELETE", headers: delHeaders });
           if (!delRes.ok) throw new Error(`Server returned ${delRes.status}`);
+          removeVisitorSession(s.id);
           if (currentSessionId === s.id) {
             currentSessionId = null;
             clearChat();
@@ -1449,6 +1491,7 @@ async function createNewSession() {
 
     const data = await res.json();
     currentSessionId = data.session_id;
+    recordVisitorSession(currentSessionId);
     clearChat();
     setActiveSession(currentSessionId);
     if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
@@ -1520,6 +1563,7 @@ btnDeleteActiveChat?.addEventListener("click", async () => {
     if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
     const res = await fetch(`${API_BASE}/api/sessions/${currentSessionId}`, { method: "DELETE", headers });
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    removeVisitorSession(currentSessionId);
     currentSessionId = null;
     clearChat();
     setActiveSession(null);
@@ -3288,6 +3332,7 @@ async function runAgent(overrideText = null, existingUserEl = null) {
       if (sRes.ok) {
         const sData = await sRes.json();
         currentSessionId = sData.session_id;
+        recordVisitorSession(currentSessionId);
         setActiveSession(currentSessionId);
         await loadSessions();
       }
@@ -3553,6 +3598,7 @@ async function runMultiStepAgent(overrideText = null, existingUserEl = null) {
       if (sRes.ok) {
         const sData = await sRes.json();
         currentSessionId = sData.session_id;
+        recordVisitorSession(currentSessionId);
         setActiveSession(currentSessionId);
         await loadSessions();
       }
