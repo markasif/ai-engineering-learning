@@ -167,17 +167,14 @@
             <div class="tab-nav-tabs">
               <button class="tab-btn active" role="tab" id="tab-chat" data-tab="chat" aria-selected="true"
                 aria-controls="chat-panel">
-                <span class="tab-btn-icon" aria-hidden="true">💬</span>
                 <span>Chat</span>
               </button>
               <button class="tab-btn" role="tab" id="tab-documents" data-tab="documents" aria-selected="false"
                 aria-controls="documents-panel">
-                <span class="tab-btn-icon" aria-hidden="true">📄</span>
                 <span>Documents &amp; Q&amp;A</span>
               </button>
               <button class="tab-btn" role="tab" id="tab-agent" data-tab="agent" aria-selected="false"
                 aria-controls="agent-panel">
-                <span class="tab-btn-icon" aria-hidden="true">⚡</span>
                 <span>Agent</span>
               </button>
             </div>
@@ -385,8 +382,6 @@
             <!-- Native hidden file input for document uploads -->
             <input type="file" id="file-input" accept=".txt,.pdf,.docx" multiple class="sr-only" aria-label="Upload document file" />
 
-            <!-- Real-Time Strategy Advisory Banner (Detects Large vs. Small Documents) -->
-            <div id="doc-strategy-advisory" class="doc-strategy-advisory" style="display: none;" role="status"></div>
 
             <!-- Message history -->
             <div class="message-history doc-message-history" id="doc-message-history" role="log" aria-live="polite"
@@ -819,7 +814,12 @@
                 <div class="admin-card admin-section" id="byok-panel-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🔑</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4a2 2 0 0 0-2.8 0l-7.7 7.7a4 4 0 1 0 2.8 2.8l4.2-4.2Z"/>
+                          <circle cx="7.5" cy="16.5" r="1.5"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">Custom LLM Key (BYOK)</h3>
                       <span class="admin-card-badge" id="byok-header-badge">Optional · Unlimited</span>
                     </div>
@@ -829,11 +829,8 @@
                   </div>
 
                   <div class="admin-tenant-row byok-input-row" style="margin-top: 0.75rem;">
-                    <div style="position: relative; flex: 1; display: flex;">
-                      <input type="password" id="byok-key-input" class="admin-input" placeholder="Paste your free Groq key (gsk_...) or OpenAI key (sk-...)" style="width: 100%; padding-right: 2.5rem;" autocomplete="off" />
-                      <button type="button" id="byok-toggle-visibility-btn" class="btn btn-ghost btn-sm" title="Show / Hide API Key" style="position: absolute; right: 0.25rem; top: 50%; transform: translateY(-50%); padding: 0.35rem 0.5rem; color: var(--color-silver, #b0b4ba);">
-                        👁️
-                      </button>
+                    <div style="flex: 1; display: flex;">
+                      <input type="text" id="byok-key-input" class="admin-input" placeholder="Paste your free Groq key (gsk_...) or OpenAI key (sk-...)" style="width: 100%;" autocomplete="off" />
                     </div>
                     <button type="button" id="byok-save-btn" class="btn btn-primary btn-sm">Save Key</button>
                     <button type="button" id="byok-clear-btn" class="btn btn-ghost btn-sm">Reset</button>
@@ -859,7 +856,12 @@
                   <div class="admin-card-header">
                     <div class="admin-section-header-flex">
                       <div class="admin-card-title-row">
-                        <span class="admin-card-icon" aria-hidden="true">🏢</span>
+                        <span class="admin-card-icon" aria-hidden="true">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                          </svg>
+                        </span>
                         <h3 class="admin-section-title">Multi-Tenant Isolation &amp; Identity</h3>
                       </div>
                       <div class="admin-toggle-group">
@@ -901,7 +903,13 @@
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🔍</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="8"/>
+                          <path d="m21 21-4.3-4.3"/>
+                          <path d="M11 8v4l2.5 1.5"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">Recent Retrieval History</h3>
                     </div>
                     <p class="admin-section-desc">
@@ -918,7 +926,11 @@
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">📊</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">
                         Live Telemetry &amp; System Metrics
                         <span class="metrics-refresh-dot" id="metrics-refresh-dot" title="Auto-refreshes every 5 s"></span>
@@ -938,7 +950,13 @@
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🧠</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="16" height="16" x="4" y="4" rx="2"/>
+                          <rect width="6" height="6" x="9" y="9" rx="1"/>
+                          <path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">Knowledge Digest &amp; Memory</h3>
                       <span class="admin-card-badge">Long-Term Context</span>
                     </div>
@@ -959,7 +977,13 @@
                 <div class="admin-card admin-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🎯</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <circle cx="12" cy="12" r="6"/>
+                          <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">Evaluation &amp; Quality Benchmark</h3>
                       <span class="admin-card-badge">Golden Eval</span>
                     </div>
@@ -978,7 +1002,13 @@
                 <div class="admin-card admin-section" id="provider-panel-section">
                   <div class="admin-card-header">
                     <div class="admin-card-title-row">
-                      <span class="admin-card-icon" aria-hidden="true">🤖</span>
+                      <span class="admin-card-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 8V4H8"/>
+                          <rect width="16" height="12" x="4" y="8" rx="2"/>
+                          <path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+                        </svg>
+                      </span>
                       <h3 class="admin-section-title">Active AI &amp; Voice Engine</h3>
                       <span class="admin-card-badge">Live Provider</span>
                     </div>

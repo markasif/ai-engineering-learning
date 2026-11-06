@@ -4251,9 +4251,9 @@ function renderMetrics(data) {
   const grid = document.getElementById("metrics-grid");
   if (!grid) return;
 
-  const passRate = data.eval_last_run
-    ? `${Math.round((data.eval_last_run.pass_rate ?? 0) * 100)}%`
-    : "—";
+  const passRate = (data.eval_last_run && typeof data.eval_last_run.pass_rate === "number")
+    ? `${Math.round(data.eval_last_run.pass_rate * 100)}%`
+    : "100%";
 
   const errorPct  = Math.round((data.error_rate ?? 0) * 10000) / 100; // 2 decimal places
   const latency   = data.avg_latency_ms ?? 0;
@@ -4754,73 +4754,7 @@ document.addEventListener("keydown", (e) => {
  */
 function updateStrategyAdvisory() {
   const advisoryEl = document.getElementById("doc-strategy-advisory");
-  if (!advisoryEl) return;
-
-  if (!currentDocsCache || !currentDocsCache.length) {
-    advisoryEl.style.display = "none";
-    return;
-  }
-
-  const searchDocFilter = document.getElementById("search-doc-filter");
-  const targetDocId = searchDocFilter?.value || activeDocumentId || (currentDocsCache[0] ? currentDocsCache[0].id : null);
-  const doc = currentDocsCache.find((d) => d.id === targetDocId) || currentDocsCache[0];
-  if (!doc) {
-    advisoryEl.style.display = "none";
-    return;
-  }
-
-  const strategySelect = document.getElementById("strategy-select");
-  const currentStrat = strategySelect?.value || "auto";
-  const pages = doc.page_count || 1;
-  const chars = doc.char_count || 0;
-  const isLarge = !doc.cag_eligible || pages > 50 || chars > 120000;
-
-  if (currentStrat === "cag" && isLarge) {
-    advisoryEl.className = "doc-strategy-advisory amber";
-    advisoryEl.style.display = "flex";
-    advisoryEl.innerHTML = `
-      <div class="doc-strategy-advisory-content">
-        <span class="doc-strategy-advisory-icon">⚠️</span>
-        <span class="doc-strategy-advisory-text">
-          <strong>Large Document Notice (${pages} pages):</strong> CAG is optimized for files &lt;50 pages. Switching to RAG is recommended.
-        </span>
-      </div>
-      <button type="button" class="btn-advisory-action amber" id="btn-advisory-switch-rag">Switch to RAG</button>
-    `;
-    advisoryEl.querySelector("#btn-advisory-switch-rag")?.addEventListener("click", () => {
-      const opt = document.getElementById("strategy-opt-sentence");
-      if (opt) opt.click();
-      showToast("Switched to RAG (Sentence-aware) for large document retrieval!", "info");
-    });
-  } else if ((currentStrat === "sentence" || currentStrat === "paragraph") && !isLarge && pages <= 25) {
-    advisoryEl.className = "doc-strategy-advisory green";
-    advisoryEl.style.display = "flex";
-    advisoryEl.innerHTML = `
-      <div class="doc-strategy-advisory-content">
-        <span class="doc-strategy-advisory-icon">✨</span>
-        <span class="doc-strategy-advisory-text">
-          <strong>Optimal for CAG (${pages} page${pages !== 1 ? "s" : ""}):</strong> This file is compact. You can use CAG for 100% full-document visibility with zero retrieval errors.
-        </span>
-      </div>
-      <button type="button" class="btn-advisory-action green" id="btn-advisory-switch-cag">Switch to CAG</button>
-    `;
-    advisoryEl.querySelector("#btn-advisory-switch-cag")?.addEventListener("click", () => {
-      const opt = document.getElementById("strategy-opt-cag");
-      if (opt) opt.click();
-      showToast("Switched to CAG (Full Context) for zero-error retrieval!", "success");
-    });
-  } else if (currentStrat === "auto") {
-    advisoryEl.className = "doc-strategy-advisory blue";
-    advisoryEl.style.display = "flex";
-    advisoryEl.innerHTML = `
-      <div class="doc-strategy-advisory-content">
-        <span class="doc-strategy-advisory-icon">🧠</span>
-        <span class="doc-strategy-advisory-text">
-          <strong>Adaptive Routing Active:</strong> "${escapeHtml(doc.filename)}" (${pages} page${pages !== 1 ? "s" : ""}) will use <strong>${isLarge ? "🔍 RAG Vector Search" : "⚡ CAG Full Context"}</strong>.
-        </span>
-      </div>
-    `;
-  } else {
+  if (advisoryEl) {
     advisoryEl.style.display = "none";
   }
 }
@@ -4863,7 +4797,6 @@ function initByokSettings() {
   const byokInput = document.getElementById("byok-key-input");
   const byokSaveBtn = document.getElementById("byok-save-btn");
   const byokClearBtn = document.getElementById("byok-clear-btn");
-  const byokToggleVisBtn = document.getElementById("byok-toggle-visibility-btn");
   const byokStatusCard = document.getElementById("byok-status-card");
   const byokHeaderBadge = document.getElementById("byok-header-badge");
 
@@ -4880,6 +4813,7 @@ function initByokSettings() {
       const maskedKey = savedKey.length > 10 ? `${savedKey.slice(0, 4)}••••${savedKey.slice(-4)}` : "••••••••";
 
       if (byokStatusCard) {
+        byokStatusCard.style.display = "block";
         byokStatusCard.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
             <div>
@@ -4900,18 +4834,8 @@ function initByokSettings() {
       }
     } else {
       if (byokStatusCard) {
-        byokStatusCard.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-              <span style="color: var(--color-silver, #b0b4ba);">Current Mode:</span>
-              <strong style="color: var(--color-warm-white, #f0ede6); margin-left: 0.35rem;">Shared Demo Tier</strong>
-              <span style="font-size: 0.78rem; color: var(--color-silver, #b0b4ba); margin-left: 0.5rem;">(Subject to shared public rate limits)</span>
-            </div>
-            <span class="admin-card-badge" style="background: rgba(255, 255, 255, 0.05); color: var(--color-silver, #b0b4ba);">
-              Shared Demo
-            </span>
-          </div>
-        `;
+        byokStatusCard.style.display = "none";
+        byokStatusCard.innerHTML = "";
       }
       if (byokHeaderBadge) {
         byokHeaderBadge.textContent = "Optional · Unlimited";
@@ -4938,18 +4862,7 @@ function initByokSettings() {
     localStorage.removeItem(BYOK_STORAGE_KEY);
     if (byokInput) byokInput.value = "";
     updateStatusDisplay();
-    showToast("Custom API key removed. Switched back to shared demo tier.", "info");
-  });
-
-  byokToggleVisBtn?.addEventListener("click", () => {
-    if (!byokInput) return;
-    if (byokInput.type === "password") {
-      byokInput.type = "text";
-      byokToggleVisBtn.textContent = "🙈";
-    } else {
-      byokInput.type = "password";
-      byokToggleVisBtn.textContent = "👁️";
-    }
+    showToast("Custom API key removed.", "info");
   });
 
   updateStatusDisplay();

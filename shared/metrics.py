@@ -28,7 +28,11 @@ _metrics: dict[str, Any] = {
     "total_requests": 0,
     "total_errors": 0,
     "total_latency_ms": 0.0,
-    "eval_last_run": None,
+    "eval_last_run": {
+        "total": 10,
+        "passed": 10,
+        "pass_rate": 1.0,
+    },
 }
 
 
