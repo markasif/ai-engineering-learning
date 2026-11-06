@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_tenant_id, get_user_api_key
@@ -22,7 +23,7 @@ from app.schemas.chat import (
     StructuredResponse,
 )
 from shared.document_store import list_documents
-from shared.llm_client import call_llm
+from shared.llm_client import call_llm, stream_llm
 from shared.models import Message
 from shared.retrieval_memory import (
     build_knowledge_digest,
@@ -314,6 +315,122 @@ async def smart_chat(
         confidence=classification["confidence"],
         retrieval_method=retrieval_method,
     )
+
+
+@router.post(
+    "/sessions/{session_id}/chat/smart/stream",
+    tags=["F6 · Smart Router"],
+)
+@rate_limit("30/minute")
+async def smart_chat_stream(
+    request: Request,
+    session_id: str,
+    body: SmartChatRequest,
+    tenant_id: str = Depends(get_tenant_id),
+    user_api_key: str | None = Depends(get_user_api_key),
+) -> StreamingResponse:
+    """Stream tokens from the smart router in real time via Server-Sent Events (SSE)."""
+    session = get_session(session_id, tenant_id=tenant_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
+
+    classification = await classify_query(body.message, api_key=user_api_key)
+    chunks_used: list[dict[str, Any]] = []
+    source = "llm"
+    retrieval_method = "none"
+    system_prompt = _SMART_SYSTEM_PROMPT
+
+    active_docs = list_documents(tenant_id=tenant_id)
+    ready_doc_ids = {d.id for d in active_docs if d.status == "ready"}
+
+    high_confidence = classification["confidence"] > 0.6
+    if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
+        raw_chunks = vector_search(body.message, top_k=5, tenant_id=tenant_id)
+        chunks_used = [
+            c
+            for c in raw_chunks
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+        ]
+        if chunks_used:
+            source = "rag"
+            retrieval_method = "vector"
+            system_prompt = _SMART_RAG_SYSTEM_PROMPT
+    elif ready_doc_ids and not high_confidence:
+        raw_chunks = vector_search(body.message, top_k=3, tenant_id=tenant_id)
+        chunks_used = [
+            c
+            for c in raw_chunks
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+        ]
+        if chunks_used:
+            source = "hybrid"
+            retrieval_method = "vector"
+            system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+
+    if settings.enable_long_term_context:
+        digest = get_current_digest(tenant_id)
+        if digest and digest.summary:
+            system_prompt += f"\n\nContext about this user's history: {digest.summary}"
+
+    window_size = CONTEXT_WINDOW_SIZE if user_api_key else 6
+    max_tokens = 1000 if user_api_key else 400
+
+    messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
+    if chunks_used:
+        messages.append({"role": "system", "content": _build_context_block(chunks_used)})
+    for msg in session.messages[-window_size:]:
+        messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": body.message})
+
+    # Record the user turn immediately
+    add_message(session_id, "user", body.message)
+
+    async def sse_event_generator():
+        # 1. Send start event with source, metadata, and retrieved passages
+        start_payload = {
+            "type": "start",
+            "source": source,
+            "retrieval_method": retrieval_method,
+            "confidence": classification["confidence"],
+            "chunks_used": chunks_used,
+        }
+        yield f"data: {json.dumps(start_payload)}\n\n"
+
+        full_answer_parts = []
+        try:
+            async for token in stream_llm(messages, max_tokens=max_tokens, api_key=user_api_key):
+                full_answer_parts.append(token)
+                yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+
+            final_answer = "".join(full_answer_parts)
+            add_message(session_id, "assistant", final_answer)
+
+            if chunks_used and settings.enable_long_term_context:
+                chunk_ids = [
+                    f"{c.get('document_id', '')}_{c.get('chunk_index', 0)}" for c in chunks_used
+                ]
+                log_retrieval(
+                    session_id=session_id,
+                    tenant_id=tenant_id,
+                    query=body.message,
+                    chunk_ids=chunk_ids,
+                    retrieval_method=retrieval_method,
+                )
+
+            done_payload = {
+                "type": "done",
+                "answer": final_answer,
+                "source": source,
+                "retrieval_method": retrieval_method,
+                "confidence": classification["confidence"],
+                "chunks_used": chunks_used,
+            }
+            yield f"data: {json.dumps(done_payload)}\n\n"
+
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'error': str(exc)})}\n\n"
+
+    return StreamingResponse(sse_event_generator(), media_type="text/event-stream")
 
 
 @router.get("/tenant/info", tags=["F6 · Smart Router"])

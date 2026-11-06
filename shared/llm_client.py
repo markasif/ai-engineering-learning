@@ -60,6 +60,25 @@ async def call_llm(
     )
 
 
+async def stream_llm(
+    messages: list[dict],
+    temperature: float = 0.7,
+    max_tokens: int = 1000,
+    api_key: str | None = None,
+):
+    """
+    Stream tokens from the active LLM provider.
+    Yields string token fragments in real time as they arrive from the model.
+    """
+    provider = get_provider("llm", api_key=api_key)
+    async for token in provider.stream_chat(
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    ):
+        yield token
+
+
 async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
     """
     Convert spoken audio to text (Speech-to-Text).

@@ -87,6 +87,38 @@ class OpenAIProvider(LLMProvider):
             model=self._model,
         )
 
+    async def stream_chat(
+        self,
+        messages: list[dict],
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+    ):
+        """Stream text tokens using the OpenAI-compatible streaming API."""
+        client = self._get_client()
+        stream = await client.chat.completions.create(
+            model=self._model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        accumulated_thoughts = []
+        emitted_any = False
+
+        async for chunk in stream:
+            if chunk.choices and len(chunk.choices) > 0:
+                delta = chunk.choices[0].delta
+                content = getattr(delta, "content", None)
+                reasoning = getattr(delta, "reasoning_content", None)
+                if reasoning:
+                    accumulated_thoughts.append(reasoning)
+                if content:
+                    emitted_any = True
+                    yield content
+
+        if not emitted_any and accumulated_thoughts:
+            yield "".join(accumulated_thoughts)
+
     async def transcribe(self, audio_bytes: bytes, filename: str) -> str:
         """Transcribe audio to text using the provider's STT endpoint."""
         client = self._get_client()

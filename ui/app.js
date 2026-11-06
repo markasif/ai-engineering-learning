@@ -523,6 +523,173 @@ function appendMessage(role, text, isThinking = false) {
 }
 
 /** Send the current input value or edited text to the appropriate chat endpoint with abort capability. */
+/**
+ * Streams real-time tokens from the smart-chat endpoint using Server-Sent Events (SSE).
+ */
+async function handleStreamingSmartChat(text, thinkingEl) {
+  const endpoint = `/api/sessions/${currentSessionId}/chat/smart/stream`;
+  const headers = getAuthHeaders();
+
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ message: text }),
+    signal: activeChatAbortController.signal,
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      thinkingEl.remove();
+      renderRateLimitNotice("chat");
+      playNotificationSound();
+      return;
+    }
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || `Server error ${response.status}`);
+  }
+
+  // Remove welcome / empty state
+  document.getElementById("empty-state")?.remove();
+
+  // Create message bubble
+  const wrapper = document.createElement("div");
+  wrapper.className = "message ai";
+
+  const label = document.createElement("span");
+  label.className = "role-label";
+  label.textContent = "Assistant";
+  wrapper.appendChild(label);
+
+  const card = document.createElement("div");
+  card.className = "smart-response-card";
+  wrapper.appendChild(card);
+
+  let headerEl = null;
+
+  const answerEl = document.createElement("div");
+  answerEl.className = "response-card-answer markdown-body";
+  card.appendChild(answerEl);
+
+  let accumulatedText = "";
+  let streamMeta = null;
+  let attached = false;
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() || ""; // retain incomplete chunk
+
+      for (const block of blocks) {
+        const trimmed = block.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) continue;
+
+        let payload;
+        try {
+          payload = JSON.parse(jsonStr);
+        } catch {
+          continue;
+        }
+
+        if (payload.type === "start") {
+          streamMeta = payload;
+          if (payload.chunks_used && payload.chunks_used.length > 0 && !headerEl) {
+            headerEl = document.createElement("div");
+            headerEl.className = "smart-response-header clean-citation-header";
+            headerEl.innerHTML = `
+              <span class="source-badge citation-badge">
+                <span class="badge-icon">📚</span>
+                <span>Knowledge Base (${payload.chunks_used.length} passage${payload.chunks_used.length !== 1 ? "s" : ""})</span>
+              </span>
+            `;
+            card.insertBefore(headerEl, answerEl);
+          }
+        } else if (payload.type === "token") {
+          if (!attached) {
+            thinkingEl.remove();
+            messageHistory.appendChild(wrapper);
+            attached = true;
+          }
+          accumulatedText += payload.token;
+          answerEl.innerHTML = formatMarkdownToHtml(accumulatedText) + '<span class="streaming-cursor">▌</span>';
+          messageHistory.scrollTop = messageHistory.scrollHeight;
+        } else if (payload.type === "done") {
+          if (!attached) {
+            thinkingEl.remove();
+            messageHistory.appendChild(wrapper);
+            attached = true;
+          }
+          accumulatedText = payload.answer || accumulatedText;
+          answerEl.innerHTML = formatMarkdownToHtml(accumulatedText);
+          streamMeta = payload;
+        } else if (payload.type === "error") {
+          throw new Error(payload.error || "Streaming failed");
+        }
+      }
+    }
+  } catch (streamErr) {
+    if (streamErr.name === "AbortError") {
+      if (!attached) {
+        thinkingEl.remove();
+        messageHistory.appendChild(wrapper);
+        attached = true;
+      }
+      answerEl.innerHTML = formatMarkdownToHtml(accumulatedText);
+      const stoppedTag = document.createElement("div");
+      stoppedTag.className = "stream-stopped-indicator";
+      stoppedTag.textContent = "⏹ Generation stopped";
+      card.appendChild(stoppedTag);
+      return;
+    }
+    throw streamErr;
+  } finally {
+    answerEl.querySelectorAll(".streaming-cursor").forEach(c => c.remove());
+  }
+
+  // Render supporting passages accordion if citations present
+  const hasCitations = Boolean(streamMeta?.chunks_used && streamMeta.chunks_used.length > 0);
+  if (hasCitations && !card.querySelector(".smart-chunks-toggle")) {
+    const chunksToggle = document.createElement("button");
+    chunksToggle.className = "smart-chunks-toggle";
+    chunksToggle.textContent = `▶ View ${streamMeta.chunks_used.length} supporting passage${streamMeta.chunks_used.length !== 1 ? "s" : ""}`;
+    card.appendChild(chunksToggle);
+
+    const chunksContainer = document.createElement("div");
+    chunksContainer.className = "smart-chunks-container";
+    chunksContainer.hidden = true;
+
+    streamMeta.chunks_used.forEach((chunk, i) => {
+      const chunkEl = document.createElement("div");
+      chunkEl.className = "smart-chunk-item";
+      chunkEl.innerHTML = `
+        <span class="result-filename-badge">${escapeHtml(chunk.filename || "Document")}</span>
+        <span class="result-chunk-meta">chunk ${chunk.chunk_index ?? i}</span>
+        <p class="result-text">${escapeHtml((chunk.text || "").slice(0, 240))}${(chunk.text || "").length > 240 ? "…" : ""}</p>
+      `;
+      chunksContainer.appendChild(chunkEl);
+    });
+    card.appendChild(chunksContainer);
+
+    chunksToggle.addEventListener("click", () => {
+      const hidden = chunksContainer.hidden;
+      chunksContainer.hidden = !hidden;
+      chunksToggle.textContent = `${hidden ? "▼ Hide" : "▶ View"} ${streamMeta.chunks_used.length} supporting passage${streamMeta.chunks_used.length !== 1 ? "s" : ""}`;
+    });
+  }
+
+  playNotificationSound();
+  if (currentSessionId) loadSessions();
+}
+
 async function sendMessage(overrideText = null, existingUserEl = null) {
   const text = (overrideText ?? chatInput.value).trim();
   if (!text) return;
@@ -559,13 +726,30 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     } catch {}
   }
 
-  // Feature 3: if a session is active, all messages go through the session endpoint.
-  // Feature 6: Smart Mode routes through /chat/smart which uses the Smart Router.
-  // Fall back to Feature 1/2 endpoints only when no session is active.
-  let endpoint;
+  // Feature 6: Smart Mode routes through real-time streaming endpoint /chat/smart/stream
   if (currentSessionId && isSmartMode) {
-    endpoint = `/api/sessions/${currentSessionId}/chat/smart`;
-  } else if (currentSessionId) {
+    try {
+      await handleStreamingSmartChat(text, thinkingEl);
+    } catch (err) {
+      thinkingEl.remove();
+      if (err.name === "AbortError") {
+        appendStoppedNotice("general");
+      } else if (err.message && (err.message.includes("429") || err.message.toLowerCase().includes("rate limit"))) {
+        renderRateLimitNotice("chat");
+      } else {
+        appendMessage("ai", `Error: ${err.message}. Is the server running?`);
+      }
+    } finally {
+      activeChatAbortController = null;
+      setButtonStopState(sendBtn, false, "Send message");
+      chatInput.focus();
+    }
+    return;
+  }
+
+  // Fall back to non-streaming endpoints when Smart Mode is toggled off
+  let endpoint;
+  if (currentSessionId) {
     endpoint = `/api/sessions/${currentSessionId}/chat`;
   } else if (isStructured) {
     endpoint = "/api/chat/structured";

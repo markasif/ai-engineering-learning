@@ -10184,3 +10184,31 @@ body.drawer-open {
     display: none !important;
   }
 }
+
+
+/* Real-time Streaming Cursor & Indicators */
+.streaming-cursor {
+  display: inline-block;
+  color: var(--color-matcha, #10b981);
+  font-weight: 700;
+  animation: streamBlink 0.75s infinite;
+  margin-left: 2px;
+  user-select: none;
+}
+
+@keyframes streamBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.stream-stopped-indicator {
+  font-size: 0.75rem;
+  color: var(--color-stone, #78716c);
+  margin-top: 6px;
+  font-style: italic;
+  opacity: 0.85;
+}
