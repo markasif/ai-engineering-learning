@@ -68,7 +68,13 @@
           <strong class="domain-value" id="header-domain-display">NeoIntelli HR &amp; Enterprise Operations</strong>
         </div>
 
-<span class="header-v-divider" aria-hidden="true"></span>
+        <!-- Demo Credits Capsule (LinkedIn Abuse Guard) -->
+        <div class="demo-quota-badge" id="demo-quota-badge" title="Free demo turns remaining in this conversation">
+          <span class="quota-bolt" aria-hidden="true">⚡</span>
+          <span class="quota-text" id="demo-quota-text">15 credits</span>
+        </div>
+
+        <span class="header-v-divider" aria-hidden="true"></span>
 
         <!-- Theme Toggle Button (Dark / Light Mode) -->
         <button id="theme-toggle-btn" class="btn-theme-toggle" type="button" aria-label="Toggle dark/light theme"
@@ -130,6 +136,31 @@
           <button id="new-chat-btn" class="btn btn-primary btn-full" type="button">
             + New Chat
           </button>
+
+          <!-- Demo Persona Switcher (RBAC Showcase) -->
+          <div class="sidebar-persona-card" id="persona-switcher" role="radiogroup" aria-label="Demo Persona Switcher">
+            <div class="sidebar-persona-header">
+              <span class="sidebar-persona-title">Active Persona</span>
+              <span class="sidebar-persona-tag">RBAC</span>
+            </div>
+            <div class="sidebar-persona-options">
+              <button type="button" class="persona-btn active" id="btn-persona-employee" data-role="employee" data-name="Rahul Sharma" data-code="EMP-101" role="radio" aria-checked="true" title="Active Persona: Rahul Sharma (Senior Frontend Dev · Employee)">
+                <span class="persona-icon" aria-hidden="true">👤</span>
+                <div class="persona-info">
+                  <span class="persona-name">Rahul</span>
+                  <span class="persona-badge badge-emp">Employee</span>
+                </div>
+              </button>
+              <button type="button" class="persona-btn" id="btn-persona-manager" data-role="manager" data-name="Sarah Jenkins" data-code="EMP-102" role="radio" aria-checked="false" title="Switch Persona: Sarah Jenkins (VP Eng · HR Manager)">
+                <span class="persona-icon" aria-hidden="true">👔</span>
+                <div class="persona-info">
+                  <span class="persona-name">Sarah</span>
+                  <span class="persona-badge badge-mgr">Manager</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <button id="sidebar-admin-btn" class="btn-sidebar-admin" type="button" title="Settings">
             <span class="admin-icon" aria-hidden="true">⚙️</span>
             <span class="admin-label">Settings</span>
@@ -208,7 +239,7 @@
                 <button type="button" class="doc-manager-trigger" id="doc-files-trigger" aria-haspopup="true" aria-expanded="false" title="View & manage uploaded documents">
                   <span class="doc-manager-dot" id="doc-manager-dot"></span>
                   <span class="doc-manager-icon">📄</span>
-                  <span class="doc-manager-label" id="doc-manager-label">No files</span>
+                  <span class="doc-manager-label" id="doc-manager-label">No document</span>
                   <span class="doc-manager-chevron">▾</span>
                 </button>
 
@@ -227,78 +258,6 @@
                   <div class="doc-popover-list" id="doc-popover-list">
                     <!-- Populated dynamically with file items and delete button -->
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- CHAT & AGENT TOP CONTROLS (Persona Switcher, Quota Capsule, Minimal Export) -->
-            <div class="tab-nav-chat-controls" id="tab-nav-chat-controls">
-              <!-- Demo Persona Switcher (RBAC Showcase) -->
-              <div class="persona-switcher" id="persona-switcher" role="radiogroup" aria-label="Demo Persona Switcher">
-                <button type="button" class="persona-btn active" id="btn-persona-employee" data-role="employee" data-name="Rahul Sharma" data-code="EMP-101" role="radio" aria-checked="true" title="Active Persona: Rahul Sharma (Senior Frontend Dev · Employee)">
-                  <span class="persona-icon" aria-hidden="true">👤</span>
-                  <span class="persona-info">
-                    <span class="persona-name">Rahul</span>
-                    <span class="persona-badge badge-emp">Employee</span>
-                  </span>
-                </button>
-                <button type="button" class="persona-btn" id="btn-persona-manager" data-role="manager" data-name="Sarah Jenkins" data-code="EMP-102" role="radio" aria-checked="false" title="Switch Persona: Sarah Jenkins (VP Eng · HR Manager)">
-                  <span class="persona-icon" aria-hidden="true">👔</span>
-                  <span class="persona-info">
-                    <span class="persona-name">Sarah</span>
-                    <span class="persona-badge badge-mgr">Manager</span>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Demo Credits Capsule (LinkedIn Abuse Guard) -->
-              <div class="demo-quota-badge" id="demo-quota-badge" title="Free demo turns remaining in this conversation">
-                <span class="quota-bolt" aria-hidden="true">⚡</span>
-                <span class="quota-text" id="demo-quota-text">15 credits</span>
-              </div>
-
-              <!-- Minimal Export Dropdown (PDF, CSV, MD, Copy) -->
-              <div class="export-dropdown" id="export-dropdown">
-                <button type="button" class="toolbar-pill-btn export-btn" id="export-btn" aria-haspopup="menu" aria-expanded="false" title="Export conversation">
-                  <span class="export-icon" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                  </span>
-                  <span class="export-label">Export</span>
-                  <span class="export-chevron" aria-hidden="true">▾</span>
-                </button>
-                <div class="export-menu" id="export-menu" role="menu" aria-label="Export options" hidden>
-                  <button type="button" class="export-menu-item" id="btn-export-pdf" role="menuitem">
-                    <span class="export-menu-icon" aria-hidden="true">📄</span>
-                    <div class="export-menu-text">
-                      <strong>Print / PDF</strong>
-                      <span>Clean branded report layout</span>
-                    </div>
-                  </button>
-                  <button type="button" class="export-menu-item" id="btn-export-csv" role="menuitem">
-                    <span class="export-menu-icon" aria-hidden="true">📊</span>
-                    <div class="export-menu-text">
-                      <strong>Export Tables (CSV)</strong>
-                      <span>Download claims &amp; records</span>
-                    </div>
-                  </button>
-                  <button type="button" class="export-menu-item" id="btn-export-md" role="menuitem">
-                    <span class="export-menu-icon" aria-hidden="true">📝</span>
-                    <div class="export-menu-text">
-                      <strong>Transcript (.md)</strong>
-                      <span>Markdown conversation record</span>
-                    </div>
-                  </button>
-                  <button type="button" class="export-menu-item" id="btn-copy-chat" role="menuitem">
-                    <span class="export-menu-icon" aria-hidden="true">📋</span>
-                    <div class="export-menu-text">
-                      <strong>Copy Text</strong>
-                      <span>Copy chat to clipboard</span>
-                    </div>
-                  </button>
                 </div>
               </div>
             </div>
@@ -439,18 +398,6 @@
           <section class="panel tab-panel modern-chat-panel" id="documents-panel" role="tabpanel" aria-labelledby="tab-documents" hidden>
             <!-- Native hidden file input for document uploads -->
             <input type="file" id="file-input" accept=".txt,.pdf,.docx" multiple class="sr-only" aria-label="Upload document file" />
-
-            <!-- Dynamic Document Grounding Notice Banner -->
-            <div id="doc-grounding-banner" class="doc-grounding-banner" style="display: none;">
-              <div class="grounding-info-row">
-                <span class="grounding-dot" aria-hidden="true"></span>
-                <div class="grounding-text">
-                  <strong id="grounding-title">Grounded in: Document</strong>
-                  <span id="grounding-subtitle">This chat answers strictly based on your uploaded document with verified citations.</span>
-                </div>
-              </div>
-              <span class="grounding-pill">100% Document Grounded</span>
-            </div>
 
             <!-- Real-Time Strategy Advisory Banner (Detects Large vs. Small Documents) -->
             <div id="doc-strategy-advisory" class="doc-strategy-advisory" style="display: none;" role="status"></div>

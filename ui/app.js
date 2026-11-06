@@ -511,6 +511,11 @@ function appendMessage(role, text, isThinking = false) {
     });
 
     actionsRow.appendChild(editBtn);
+
+    // Export button on the same line as the Edit button (available when messages exist)
+    const exportDropdown = createMsgExportDropdown("general");
+    actionsRow.appendChild(exportDropdown);
+
     wrapper.appendChild(actionsRow);
   }
 
@@ -644,6 +649,34 @@ async function handleStreamingSmartChat(text, thinkingEl) {
           accumulatedText = payload.answer || accumulatedText;
           answerEl.innerHTML = formatMarkdownToHtml(accumulatedText);
           streamMeta = payload;
+
+          if (!card.querySelector(".assistant-msg-actions")) {
+            const actionsRow = document.createElement("div");
+            actionsRow.className = "assistant-msg-actions";
+
+            const copyBtn = document.createElement("button");
+            copyBtn.type = "button";
+            copyBtn.className = "btn-msg-copy";
+            copyBtn.title = "Copy answer";
+            copyBtn.setAttribute("aria-label", "Copy answer");
+            copyBtn.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            `;
+            copyBtn.addEventListener("click", () => {
+              navigator.clipboard.writeText(answerEl.innerText.trim()).then(() => {
+                showToast("📋 Copied answer to clipboard!", "success");
+              });
+            });
+            actionsRow.appendChild(copyBtn);
+
+            const exportDropdown = createMsgExportDropdown("general");
+            actionsRow.appendChild(exportDropdown);
+            card.appendChild(actionsRow);
+          }
         } else if (payload.type === "error") {
           throw new Error(payload.error || "Streaming failed");
         }
@@ -1857,7 +1890,7 @@ async function loadDocuments() {
 
       if (docManagerDot) docManagerDot.classList.remove("active");
       if (docManagerLabel) {
-        docManagerLabel.textContent = "No files";
+        docManagerLabel.textContent = "No document";
         docManagerLabel.title = "No documents uploaded yet";
       }
       if (docPopoverBadge) docPopoverBadge.textContent = "0 files";
@@ -1896,12 +1929,6 @@ async function loadDocuments() {
       activeDocumentId = activeDoc ? activeDoc.id : null;
     }
     const activeDocName = activeDoc ? activeDoc.filename : "your document";
-
-    if (docGroundingBanner) {
-      docGroundingBanner.style.display = "flex";
-      if (groundingTitle) groundingTitle.textContent = `Grounded in: ${activeDocName}`;
-      if (groundingSubtitle) groundingSubtitle.textContent = `This chat answers strictly based on "${activeDocName}" with verified source citations.`;
-    }
 
     if (documentChatSection) {
       documentChatSection.style.display = "flex";
@@ -2374,6 +2401,11 @@ function appendDocChatMessage(role, text, isThinking = false) {
     });
 
     actionsRow.appendChild(editBtn);
+
+    // Export button on the same line as the Edit button (available when messages exist)
+    const exportDropdown = createMsgExportDropdown("doc");
+    actionsRow.appendChild(exportDropdown);
+
     wrapper.appendChild(actionsRow);
   }
 
@@ -3088,6 +3120,11 @@ function agentAppendUser(text) {
   });
 
   actionsRow.appendChild(editBtn);
+
+  // Export button on the same line as the Edit button (available when messages exist)
+  const exportDropdown = createMsgExportDropdown("agent");
+  actionsRow.appendChild(exportDropdown);
+
   wrapper.appendChild(actionsRow);
 
   agentHistory.appendChild(wrapper);
@@ -4948,8 +4985,103 @@ function hideDemoLimitModal() {
   if (modal) modal.hidden = true;
 }
 
-function exportChatAsCsv() {
-  const messagesEl = document.getElementById("message-history");
+function getActiveMessagesContainer(contextType = "general") {
+  if (contextType === "doc") return document.getElementById("doc-message-history");
+  if (contextType === "agent") return document.getElementById("agent-message-history");
+  return document.getElementById("message-history");
+}
+
+function createMsgExportDropdown(contextType = "general") {
+  const exportWrapper = document.createElement("div");
+  exportWrapper.className = "msg-export-wrapper";
+
+  const exportBtn = document.createElement("button");
+  exportBtn.type = "button";
+  exportBtn.className = "btn-msg-export";
+  exportBtn.title = "Export conversation";
+  exportBtn.setAttribute("aria-label", "Export conversation");
+  exportBtn.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    <span>Export</span>
+    <span class="export-chevron" aria-hidden="true">▾</span>
+  `;
+
+  const menu = document.createElement("div");
+  menu.className = "msg-export-menu";
+  menu.hidden = true;
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = `
+    <button type="button" class="export-menu-item" data-action="pdf" role="menuitem">
+      <span class="export-menu-icon" aria-hidden="true">📄</span>
+      <div class="export-menu-text">
+        <strong>Print / PDF</strong>
+        <span>Clean branded report layout</span>
+      </div>
+    </button>
+    <button type="button" class="export-menu-item" data-action="csv" role="menuitem">
+      <span class="export-menu-icon" aria-hidden="true">📊</span>
+      <div class="export-menu-text">
+        <strong>Export Tables (CSV)</strong>
+        <span>Download claims &amp; records</span>
+      </div>
+    </button>
+    <button type="button" class="export-menu-item" data-action="md" role="menuitem">
+      <span class="export-menu-icon" aria-hidden="true">📝</span>
+      <div class="export-menu-text">
+        <strong>Transcript (.md)</strong>
+        <span>Markdown conversation record</span>
+      </div>
+    </button>
+    <button type="button" class="export-menu-item" data-action="copy" role="menuitem">
+      <span class="export-menu-icon" aria-hidden="true">📋</span>
+      <div class="export-menu-text">
+        <strong>Copy Text</strong>
+        <span>Copy chat to clipboard</span>
+      </div>
+    </button>
+  `;
+
+  exportBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isHidden = menu.hidden;
+    document.querySelectorAll(".msg-export-menu:not([hidden])").forEach((m) => {
+      if (m !== menu) m.hidden = true;
+    });
+    menu.hidden = !isHidden;
+  });
+
+  menu.querySelectorAll(".export-menu-item").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.hidden = true;
+      const action = btn.dataset.action;
+      if (action === "pdf") window.print();
+      else if (action === "csv") exportChatAsCsv(contextType);
+      else if (action === "md") exportChatAsMarkdown(contextType);
+      else if (action === "copy") copyChatText(contextType);
+    });
+  });
+
+  exportWrapper.appendChild(exportBtn);
+  exportWrapper.appendChild(menu);
+  return exportWrapper;
+}
+
+// Global click listener to dismiss any open export menus
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".msg-export-wrapper")) {
+    document.querySelectorAll(".msg-export-menu:not([hidden])").forEach((m) => {
+      m.hidden = true;
+    });
+  }
+});
+
+function exportChatAsCsv(contextType = "general") {
+  const messagesEl = getActiveMessagesContainer(contextType);
   if (!messagesEl) return;
   const tables = messagesEl.querySelectorAll("table");
   let csvContent = "";
@@ -4991,8 +5123,8 @@ function exportChatAsCsv() {
   showToast("📊 Data table exported as CSV!", "success");
 }
 
-function exportChatAsMarkdown() {
-  const messagesEl = document.getElementById("message-history");
+function exportChatAsMarkdown(contextType = "general") {
+  const messagesEl = getActiveMessagesContainer(contextType);
   if (!messagesEl) return;
   const bubbles = messagesEl.querySelectorAll(".message");
   if (bubbles.length === 0) {
@@ -5024,8 +5156,8 @@ function exportChatAsMarkdown() {
   showToast("📝 Transcript exported as Markdown!", "success");
 }
 
-function copyChatText() {
-  const messagesEl = document.getElementById("message-history");
+function copyChatText(contextType = "general") {
+  const messagesEl = getActiveMessagesContainer(contextType);
   if (!messagesEl) return;
   const bubbles = messagesEl.querySelectorAll(".message");
   if (bubbles.length === 0) {
@@ -5049,11 +5181,11 @@ function copyChatText() {
 }
 
 function initPersonaAndExport() {
-  // Persona button listeners
+  // Persona button listeners (Sidebar Persona Switcher)
   document.getElementById("btn-persona-employee")?.addEventListener("click", () => setPersona("employee"));
   document.getElementById("btn-persona-manager")?.addEventListener("click", () => setPersona("manager"));
 
-  // Export dropdown
+  // Legacy export button listeners if present
   const exportBtn = document.getElementById("export-btn");
   const exportMenu = document.getElementById("export-menu");
   if (exportBtn && exportMenu) {
@@ -5079,17 +5211,17 @@ function initPersonaAndExport() {
 
   document.getElementById("btn-export-csv")?.addEventListener("click", () => {
     if (exportMenu) exportMenu.hidden = true;
-    exportChatAsCsv();
+    exportChatAsCsv("general");
   });
 
   document.getElementById("btn-export-md")?.addEventListener("click", () => {
     if (exportMenu) exportMenu.hidden = true;
-    exportChatAsMarkdown();
+    exportChatAsMarkdown("general");
   });
 
   document.getElementById("btn-copy-chat")?.addEventListener("click", () => {
     if (exportMenu) exportMenu.hidden = true;
-    copyChatText();
+    copyChatText("general");
   });
 
   // Demo limit modal listeners

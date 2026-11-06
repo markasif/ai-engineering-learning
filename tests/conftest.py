@@ -11,8 +11,12 @@ from app.main import app
 @pytest.fixture(scope="session", autouse=True)
 def configure_test_environment():
     """Ensure test environment variables are initialized for deterministic test runs."""
+    import os
+
     import shared.config as cfg
     from shared.providers import factory
+
+    os.environ["TESTING"] = "true"
 
     original_provider = cfg.settings.llm_provider
     original_key = cfg.settings.groq_api_key
