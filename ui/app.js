@@ -488,7 +488,7 @@ function appendMessage(role, text, isThinking = false) {
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
 
-  // Attach Edit button on user messages (Gemini / ChatGPT style)
+  // Attach Edit button on user messages (Gemini / ChatGPT style) — no export on user bubbles
   if (role === "user" && !isThinking) {
     const actionsRow = document.createElement("div");
     actionsRow.className = "user-msg-actions";
@@ -511,11 +511,6 @@ function appendMessage(role, text, isThinking = false) {
     });
 
     actionsRow.appendChild(editBtn);
-
-    // Export button on the same line as the Edit button (available when messages exist)
-    const exportDropdown = createMsgExportDropdown("general");
-    actionsRow.appendChild(exportDropdown);
-
     wrapper.appendChild(actionsRow);
   }
 
@@ -651,31 +646,11 @@ async function handleStreamingSmartChat(text, thinkingEl) {
           streamMeta = payload;
 
           if (!card.querySelector(".assistant-msg-actions")) {
-            const actionsRow = document.createElement("div");
-            actionsRow.className = "assistant-msg-actions";
-
-            const copyBtn = document.createElement("button");
-            copyBtn.type = "button";
-            copyBtn.className = "btn-msg-copy";
-            copyBtn.title = "Copy answer";
-            copyBtn.setAttribute("aria-label", "Copy answer");
-            copyBtn.innerHTML = `
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span>Copy</span>
-            `;
-            copyBtn.addEventListener("click", () => {
-              navigator.clipboard.writeText(answerEl.innerText.trim()).then(() => {
-                showToast("📋 Copied answer to clipboard!", "success");
-              });
-            });
-            actionsRow.appendChild(copyBtn);
-
-            const exportDropdown = createMsgExportDropdown("general");
-            actionsRow.appendChild(exportDropdown);
-            card.appendChild(actionsRow);
+            const detection = detectExportWorthy(accumulatedText);
+            if (detection.worthy) {
+              const actionsRow = buildSmartExportRow("general", detection, answerEl);
+              card.appendChild(actionsRow);
+            }
           }
         } else if (payload.type === "error") {
           throw new Error(payload.error || "Streaming failed");
@@ -1122,6 +1097,13 @@ function appendStructuredResponse(data) {
   answer.innerHTML = formatMarkdownToHtml(data.answer ?? "");
   card.appendChild(answer);
 
+  // ── Smart export: only attach if content is worth exporting ──
+  const detection = detectExportWorthy(data.answer ?? "");
+  if (detection.worthy) {
+    const actionsRow = buildSmartExportRow("general", detection, answer);
+    card.appendChild(actionsRow);
+  }
+
   wrapper.appendChild(label);
   wrapper.appendChild(card);
   messageHistory.appendChild(wrapper);
@@ -1212,6 +1194,15 @@ function appendSmartResponse(data) {
       chunksContainer.hidden = !hidden;
       chunksToggle.textContent = `${hidden ? "▼ Hide" : "▶ View"} ${data.chunks_used.length} supporting passage${data.chunks_used.length !== 1 ? "s" : ""}`;
     });
+  }
+
+  // ── Smart export: only attach if answer or citations make it worth exporting ──
+  const detection = detectExportWorthy(data.answer ?? "");
+  // Always worthy if retrieved citations exist
+  if (detection.worthy || hasCitations) {
+    const enrichedDetection = { ...detection, hasSources: detection.hasSources || hasCitations, worthy: true };
+    const actionsRow = buildSmartExportRow("general", enrichedDetection, answer);
+    card.appendChild(actionsRow);
   }
 
   wrapper.appendChild(label);
@@ -2441,10 +2432,6 @@ function appendDocChatMessage(role, text, isThinking = false) {
 
     actionsRow.appendChild(editBtn);
 
-    // Export button on the same line as the Edit button (available when messages exist)
-    const exportDropdown = createMsgExportDropdown("doc");
-    actionsRow.appendChild(exportDropdown);
-
     wrapper.appendChild(actionsRow);
   }
 
@@ -3160,10 +3147,6 @@ function agentAppendUser(text) {
 
   actionsRow.appendChild(editBtn);
 
-  // Export button on the same line as the Edit button (available when messages exist)
-  const exportDropdown = createMsgExportDropdown("agent");
-  actionsRow.appendChild(exportDropdown);
-
   wrapper.appendChild(actionsRow);
 
   agentHistory.appendChild(wrapper);
@@ -3287,6 +3270,16 @@ function agentAppendResponse(data) {
       stepsContainer.hidden = !hidden;
       stepsToggle.textContent = `${hidden ? "▼" : "🔧"} ${data.steps.length} step${data.steps.length !== 1 ? "s" : ""}`;
     });
+  }
+
+  // ── Smart export: agent responses with tool steps are always export-worthy ──
+  const agentDetection = detectExportWorthy(data.result ?? "");
+  const hasSteps = Boolean(data.steps?.length);
+  if (agentDetection.worthy || hasSteps) {
+    const enriched = { ...agentDetection, hasSources: agentDetection.hasSources || hasSteps, worthy: true };
+    const actionsRow = buildSmartExportRow("agent", enriched, answerEl);
+    actionsRow.className = "assistant-msg-actions";
+    card.appendChild(actionsRow);
   }
 
   wrapper.appendChild(label);
@@ -4963,6 +4956,109 @@ function getActiveMessagesContainer(contextType = "general") {
   if (contextType === "doc") return document.getElementById("doc-message-history");
   if (contextType === "agent") return document.getElementById("agent-history") || document.getElementById("agent-message-history");
   return document.getElementById("message-history");
+}
+
+/**
+ * Smart Content Detection — determines whether an AI response is "export-worthy".
+ * Only attach export controls when the response contains rich, structured data.
+ *
+ * Rules (any one match triggers):
+ *   - Contains a markdown table (|---|)
+ *   - Contains a code block (```)
+ *   - Has cited sources / retrieval (source numbers: [1], [Source:), "Sources:", "References:")
+ *   - Response word count >= 150 (meaningful long-form answer)
+ *
+ * Short conversational replies ("Sure!", "I don't know.") get NO button.
+ *
+ * @param {string} htmlOrText - The raw answer text or rendered HTML string
+ * @returns {{ worthy: boolean, hasTable: boolean, hasCode: boolean, hasSources: boolean, isLong: boolean }}
+ */
+function detectExportWorthy(htmlOrText) {
+  if (!htmlOrText) return { worthy: false };
+
+  const text = htmlOrText;
+
+  // 1. Markdown/HTML table
+  const hasTable = /<table[\s>]|^\|.+\|/m.test(text) || text.includes("<table");
+
+  // 2. Code block
+  const hasCode = text.includes("<code") || text.includes("<pre") || /```/.test(text);
+
+  // 3. Retrieval sources cited (RAG evidence)
+  const hasSources = /\[(\d+|Source[^\]]*)\]|Sources?:|References?:|Retrieved from|Chunk \d+/i.test(text);
+
+  // 4. Long-form answer (≥150 words)
+  const wordCount = text.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+  const isLong = wordCount >= 150;
+
+  const worthy = hasTable || hasCode || hasSources || isLong;
+  return { worthy, hasTable, hasCode, hasSources, isLong, wordCount };
+}
+
+/**
+ * Build an export action row with smart-detected contextual buttons.
+ * - Always: Copy button
+ * - If table detected: CSV Export button
+ * - If long/source/code: Full Export dropdown (PDF, MD)
+ *
+ * @param {string} contextType - "general" | "doc" | "agent"
+ * @param {Object} detection - result from detectExportWorthy()
+ * @param {HTMLElement} answerEl - the DOM element containing the answer (for copy)
+ * @returns {HTMLElement} actionsRow div
+ */
+function buildSmartExportRow(contextType, detection, answerEl) {
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "assistant-msg-actions";
+
+  // ── Always: Copy button ──
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "btn-msg-copy";
+  copyBtn.title = "Copy answer";
+  copyBtn.setAttribute("aria-label", "Copy answer");
+  copyBtn.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+    <span>Copy</span>
+  `;
+  copyBtn.addEventListener("click", () => {
+    const textToCopy = answerEl ? answerEl.innerText.trim() : "";
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showToast("Copied to clipboard", "success");
+    });
+  });
+  actionsRow.appendChild(copyBtn);
+
+  // ── If table: CSV export button ──
+  if (detection.hasTable) {
+    const csvBtn = document.createElement("button");
+    csvBtn.type = "button";
+    csvBtn.className = "btn-msg-copy btn-msg-csv";
+    csvBtn.title = "Export table as CSV";
+    csvBtn.setAttribute("aria-label", "Export table as CSV");
+    csvBtn.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      <span>CSV</span>
+    `;
+    csvBtn.addEventListener("click", () => exportChatAsCsv(contextType));
+    actionsRow.appendChild(csvBtn);
+  }
+
+  // ── If long/sources/code: full export dropdown ──
+  if (detection.isLong || detection.hasSources || detection.hasCode) {
+    const exportDropdown = createMsgExportDropdown(contextType);
+    actionsRow.appendChild(exportDropdown);
+  }
+
+  return actionsRow;
 }
 
 function createMsgExportDropdown(contextType = "general") {

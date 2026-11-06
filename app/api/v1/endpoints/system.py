@@ -17,19 +17,13 @@ from shared.eval_harness import EvalCase, EvalReport, run_eval
 router = APIRouter()
 _log = logging.getLogger(__name__)
 
-# Locate eval cases file flexibly
+# Evaluation cases are part of the production test suite.
 _ROOT_DIR = Path(__file__).resolve().parents[4]
-_EVAL_PATHS = [
-    _ROOT_DIR / "tests" / "eval" / "eval_cases_example.json",
-    _ROOT_DIR / "week-4-launch" / "feature-12-ship-it" / "tests" / "eval_cases_example.json",
-]
+_EVAL_PATH = _ROOT_DIR / "tests" / "eval" / "eval_cases_example.json"
 
 
 def _find_eval_cases() -> Path | None:
-    for p in _EVAL_PATHS:
-        if p.exists():
-            return p
-    return None
+    return _EVAL_PATH if _EVAL_PATH.exists() else None
 
 
 @router.get("/health", tags=["Infrastructure"])

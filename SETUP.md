@@ -223,10 +223,10 @@ OLLAMA_MODEL=llama3.1
 Navigate into the feature folder you're working on. For example, Feature 1:
 
 ```bash
-cd week-1-brain/feature-1-hello-ai/solution
+cd <repository-root>
 ```
 
-Then start the server:
+Then start the application server:
 
 ```bash
 uvicorn main:app --reload --port 8000

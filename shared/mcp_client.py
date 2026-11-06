@@ -41,10 +41,13 @@ PUBLIC API:
 """
 
 import json
+import logging
 import os
 import sys
 
 from shared.config import settings
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # MCP SDK import — graceful fallback if not installed
@@ -157,7 +160,7 @@ async def list_mcp_tools(use_cache: bool = True) -> list[dict]:
     Each entry is a dict with: name, description, inputSchema, server.
 
     =========================================================================
-    TODO (starter): Implement this function.
+    The servers are queried independently and failures are isolated.
 
     For each entry in SERVER_REGISTRY where entry["enabled"] is True:
       - Call: tools = await _list_tools_from_server(entry)
@@ -188,9 +191,7 @@ async def list_mcp_tools(use_cache: bool = True) -> list[dict]:
             _tool_cache[name] = tools
             all_tools.extend(tools)
         except Exception as exc:
-            print(
-                f"[mcp_client] Warning: could not list tools from '{name}': {exc}", file=sys.stderr
-            )
+            _log.warning("Could not list tools from MCP server '%s': %s", name, exc)
     return all_tools
 
 
@@ -224,7 +225,7 @@ async def call_mcp_tool(tool_name: str, arguments: dict) -> dict:
     and calls it.
 
     =========================================================================
-    TODO (starter): Implement this function.
+    The tool cache is populated on demand before resolving the owning server.
 
     1. Ensure the tool cache is populated: await list_mcp_tools()
     2. Find the server that owns tool_name:

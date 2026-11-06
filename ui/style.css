@@ -10704,6 +10704,30 @@ body.drawer-open {
   line-height: 1;
 }
 
+/* CSV-specific export button — green accent to signal table export */
+.btn-msg-csv {
+  color: #059669 !important;
+  border-color: rgba(5, 150, 105, 0.22) !important;
+  background: rgba(5, 150, 105, 0.07) !important;
+}
+
+.btn-msg-csv:hover {
+  color: #047857 !important;
+  background: rgba(5, 150, 105, 0.14) !important;
+  border-color: rgba(5, 150, 105, 0.35) !important;
+}
+
+[data-theme="dark"] .btn-msg-csv {
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.22) !important;
+  background: rgba(52, 211, 153, 0.08) !important;
+}
+
+[data-theme="dark"] .btn-msg-csv:hover {
+  color: #6ee7b7 !important;
+  background: rgba(52, 211, 153, 0.16) !important;
+}
+
 /* Floating Export Popover Menu */
 .msg-export-menu {
   position: absolute;

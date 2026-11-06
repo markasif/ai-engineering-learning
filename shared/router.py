@@ -201,7 +201,7 @@ def detect_modality(
 # The rest of the routing logic (LLM generation with context, source badge
 # in SmartChatResponse, session storage) is identical — only retrieval differs.
 #
-# INTEGRATION IN FEATURE 6'S SMART ROUTER (solution/main.py):
+# PageIndex integration in the production smart-router path:
 #   if classification["query_type"] == "professional_document" and settings.enable_pageindex:
 #       chunks_used = pageindex_retrieve(query)   # ← PageIndex path
 #       source = "pageindex"

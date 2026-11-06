@@ -154,9 +154,7 @@ def search(
     n_results = min(top_k, total)
 
     # Merge any caller-supplied filters with the tenant_id isolation filter.
-    # TODO (Feature 6, Part B): add where={"tenant_id": tenant_id} to this
-    # collection.query() call — without this line, tenant isolation does NOT
-    # work at the vector database level and is purely cosmetic (app-level).
+    # Apply tenant isolation at the vector database query boundary.
     effective_filters: dict = dict(filters) if filters else {}
     if settings.enable_multi_tenant and tenant_id:
         effective_filters["tenant_id"] = tenant_id

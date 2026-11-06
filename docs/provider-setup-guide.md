@@ -282,10 +282,10 @@ Source: [github.com/VectifyAI/PageIndex](https://github.com/VectifyAI/PageIndex)
 
 ## Verifying Your Setup
 
-After editing `.env`, start the server from any feature's `solution/` folder:
+After editing `.env`, start the server from the repository root:
 
 ```bash
-uvicorn main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
 Watch the terminal output. If there's a problem with your configuration (missing key, Ollama not running, etc.), you'll see a clear error message before the server finishes starting.

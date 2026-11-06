@@ -97,7 +97,7 @@ SLMs have smaller context windows than frontier models. This affects Feature 3 (
 | Llama 3.1 8B | 128,000 tokens | Full context — no limitations |
 | Qwen2.5 7B | 128,000 tokens | Full context — no limitations |
 
-For Phi-3 Mini, reduce `CONTEXT_WINDOW_SIZE` in `solution/main.py` from 20 to 8 to avoid prompt overflow errors.
+For Phi-3 Mini, reduce the configured context window in the active application settings from 20 to 8 to avoid prompt overflow errors.
 
 ---
 

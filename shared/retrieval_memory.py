@@ -84,11 +84,8 @@ async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
     """
     Build (or rebuild) a KnowledgeDigest from recent retrieval history.
 
-    THIS IS THE CORE TODO FOR PART C:
-    1. Get recent retrievals for this tenant.
-    2. Extract the unique queries (what the user has been asking about).
-    3. Make ONE summarization LLM call to produce a 2-3 sentence digest.
-    4. Store the digest in _digests[tenant_id] and return it.
+    Build the digest from recent retrievals, summarize it with one LLM call,
+    and cache the result per tenant.
 
     The digest is injected into the Smart Router's system prompt as:
     "Context about this user's history: {digest.summary}"
