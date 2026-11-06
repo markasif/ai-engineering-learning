@@ -4961,7 +4961,7 @@ function hideDemoLimitModal() {
 
 function getActiveMessagesContainer(contextType = "general") {
   if (contextType === "doc") return document.getElementById("doc-message-history");
-  if (contextType === "agent") return document.getElementById("agent-message-history");
+  if (contextType === "agent") return document.getElementById("agent-history") || document.getElementById("agent-message-history");
   return document.getElementById("message-history");
 }
 

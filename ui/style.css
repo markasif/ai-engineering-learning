@@ -20,6 +20,21 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius:    var(--radius-sm);
+
+  /* Semantic aliases & legacy compatibility tokens */
+  --almond:              var(--color-almond);
+  --pistache:            var(--color-pistache);
+  --carob:               var(--color-carob);
+  --color-coffee:        #5c5243;
+  --color-stone:         #78716c;
+  --border-color:        var(--color-pistache);
+  --border-light:        #e2e8f0;
+  --primary:             var(--color-matcha);
+  --surface:             var(--color-vanilla);
+  --surface-muted:       var(--color-almond);
+  --text:                var(--color-carob);
+  --text-muted:          var(--color-text-muted);
 
   --shadow-sm: 0 1px 3px rgba(70, 50, 20, 0.06);
   --shadow-md: 0 4px 14px rgba(70, 50, 20, 0.08);
@@ -7756,6 +7771,19 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   --color-vanilla:       #262B35;
   --color-sidebar-bg:    #1C1F26;
   --color-text-muted:    #94a3b8;
+  --almond:              var(--color-almond);
+  --pistache:            var(--color-pistache);
+  --carob:               var(--color-carob);
+  --color-coffee:        #cbd5e1;
+  --color-stone:         #94a3b8;
+  --radius:              var(--radius-sm);
+  --border-color:        var(--color-pistache);
+  --border-light:        rgba(255, 255, 255, 0.1);
+  --primary:             var(--color-matcha);
+  --surface:             var(--color-vanilla);
+  --surface-muted:       var(--color-sidebar-bg);
+  --text:                var(--color-carob);
+  --text-muted:          var(--color-text-muted);
   color-scheme: dark;
 }
 

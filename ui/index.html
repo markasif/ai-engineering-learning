@@ -347,12 +347,12 @@
               <div class="modern-chat-toolbar">
                 <div class="toolbar-left-group">
                   <label class="toolbar-pill-toggle" for="smart-toggle" title="Smart routing classifies intent before retrieval">
-                    <input type="checkbox" id="smart-toggle" role="switch" aria-checked="true" checked />
+                    <input type="checkbox" id="smart-toggle" role="switch" aria-checked="true" aria-label="Smart Routing Mode" checked />
                     <span class="pill-dot-indicator"></span>
                     <span>Smart Mode</span>
                   </label>
                   <label class="toolbar-pill-toggle" for="structured-toggle" title="Format output in structured JSON/schema">
-                    <input type="checkbox" id="structured-toggle" role="switch" aria-checked="true" checked />
+                    <input type="checkbox" id="structured-toggle" role="switch" aria-checked="true" aria-label="Structured JSON Response" checked />
                     <span class="pill-dot-indicator"></span>
                     <span>Structured</span>
                   </label>
@@ -366,7 +366,7 @@
                       <circle cx="12" cy="13" r="4"></circle>
                     </svg>
                   </label>
-                  <input type="file" id="image-input" accept="image/*" class="sr-only" />
+                  <input type="file" id="image-input" accept="image/*" class="sr-only" aria-label="Attach Image for Visual Analysis" />
                   <button id="send-btn" class="btn-circle-send" type="button" aria-label="Send message" title="Send message">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -628,8 +628,8 @@
                 <label id="upload-label" style="display: none;"></label>
               </div>
             </div>
-            <input type="text" id="search-input" style="display: none;" />
-            <button id="search-btn" style="display: none;"></button>
+            <input type="text" id="search-input" style="display: none;" aria-label="Fallback document search input" />
+            <button id="search-btn" style="display: none;" aria-label="Fallback document search button"></button>
             <div id="search-results" style="display: none;"></div>
             <div id="search-panel" hidden style="display: none;"></div>
           </section>
@@ -885,7 +885,7 @@
                         <label class="toggle-label" for="toggle-multi-tenant-switch" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
                           <span class="toggle-text" id="tenant-toggle-label-text">Multi-Tenant: <strong>Disabled</strong></span>
                           <span class="toggle-wrap">
-                            <input type="checkbox" id="toggle-multi-tenant-switch" role="switch" aria-checked="false" />
+                            <input type="checkbox" id="toggle-multi-tenant-switch" role="switch" aria-checked="false" aria-label="Toggle Multi-Tenant Workspace Isolation" />
                             <span class="toggle-track" aria-hidden="true"></span>
                           </span>
                         </label>
