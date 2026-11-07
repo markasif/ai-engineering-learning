@@ -5153,12 +5153,19 @@ input.modern-input-field:active,
   -webkit-appearance: none !important;
 }
 
-/* Camera button styling - circular companion on the right side before send button */
-.btn-camera-upload {
+/* Camera and Voice Mic button styling - identical circular companions before send button */
+.btn-camera-upload,
+.btn-voice-mic,
+#voice-btn {
   width: 34px !important;
   height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
   border-radius: 50% !important;
   padding: 0 !important;
+  margin: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -5167,21 +5174,42 @@ input.modern-input-field:active,
   cursor: pointer !important;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
   flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  outline: none !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
 }
 
-.btn-camera-upload:hover {
+.btn-camera-upload:hover,
+.btn-voice-mic:hover,
+#voice-btn:hover {
   background: #f3ede2 !important;
   border-color: var(--color-matcha, #10b981) !important;
   transform: scale(1.06);
 }
 
-.btn-camera-upload svg {
+.btn-camera-upload svg,
+.btn-voice-mic svg,
+#voice-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
   color: #57534e !important;
-  transition: color 0.15s ease;
+  stroke: currentColor !important;
+  transition: color 0.15s ease, stroke 0.15s ease;
+  display: block !important;
 }
 
-.btn-camera-upload:hover svg {
+.btn-camera-upload:hover svg,
+.btn-voice-mic:hover svg,
+#voice-btn:hover svg {
   color: var(--color-matcha, #10b981) !important;
+  stroke: var(--color-matcha, #10b981) !important;
 }
 
 /* Compact send button */
@@ -5190,45 +5218,17 @@ input.modern-input-field:active,
   height: 34px !important;
 }
 
-/* Voice Mic button styling - companion to camera button */
-.btn-voice-mic {
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 50% !important;
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: #faf7f2 !important;
-  border: 1px solid var(--color-pistache, #e0d6c5) !important;
-  cursor: pointer !important;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  flex-shrink: 0 !important;
-}
-
-.btn-voice-mic:hover {
-  background: #f3ede2 !important;
-  border-color: var(--color-matcha, #10b981) !important;
-  transform: scale(1.06);
-}
-
-.btn-voice-mic svg {
-  color: #57534e !important;
-  transition: color 0.15s ease;
-}
-
-.btn-voice-mic:hover svg {
-  color: var(--color-matcha, #10b981) !important;
-}
-
-.btn-voice-mic.recording {
+.btn-voice-mic.recording,
+#voice-btn.recording {
   background: #fef2f2 !important;
   border-color: #ef4444 !important;
   animation: pulseMicRecording 1.5s infinite ease-in-out;
 }
 
-.btn-voice-mic.recording svg {
+.btn-voice-mic.recording svg,
+#voice-btn.recording svg {
   color: #ef4444 !important;
+  stroke: #ef4444 !important;
 }
 
 @keyframes pulseMicRecording {
@@ -5410,19 +5410,22 @@ input.modern-input-field:active,
 }
 
 /* Dark Mode Voice Recording & Mic Styling */
-[data-theme="dark"] .btn-voice-mic {
+[data-theme="dark"] .btn-voice-mic,
+[data-theme="dark"] #voice-btn {
   background: #f5f0e6 !important;
   border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
 }
 
-[data-theme="dark"] .btn-voice-mic svg {
+[data-theme="dark"] .btn-voice-mic svg,
+[data-theme="dark"] #voice-btn svg {
   color: #1c1917 !important;
   stroke: #1c1917 !important;
 }
 
-[data-theme="dark"] .btn-voice-mic:hover {
+[data-theme="dark"] .btn-voice-mic:hover,
+[data-theme="dark"] #voice-btn:hover {
   background: #faf7f2 !important;
   border-color: #10b981 !important;
   color: #059669 !important;
@@ -5430,18 +5433,21 @@ input.modern-input-field:active,
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35) !important;
 }
 
-[data-theme="dark"] .btn-voice-mic:hover svg {
+[data-theme="dark"] .btn-voice-mic:hover svg,
+[data-theme="dark"] #voice-btn:hover svg {
   color: #059669 !important;
   stroke: #059669 !important;
 }
 
-[data-theme="dark"] .btn-voice-mic.recording {
+[data-theme="dark"] .btn-voice-mic.recording,
+[data-theme="dark"] #voice-btn.recording {
   background: #ef4444 !important;
   border-color: #f87171 !important;
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .btn-voice-mic.recording svg {
+[data-theme="dark"] .btn-voice-mic.recording svg,
+[data-theme="dark"] #voice-btn.recording svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
@@ -5489,9 +5495,15 @@ input.modern-input-field:active,
 
 /* Mobile responsive rules */
 @media (max-width: 600px) {
-  .btn-voice-mic {
+  .btn-camera-upload,
+  .btn-voice-mic,
+  #voice-btn {
     width: 28px !important;
     height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
   }
   .chatgpt-voice-recording-overlay {
     padding: 0.45rem 0.65rem;
@@ -9246,11 +9258,17 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
    High-visibility cream styling (#f5f0e6) matching mute and theme toggles
    ============================================================================= */
 
-/* 1. Camera / Image Upload button in Chat Input Box */
+/* 1. Camera / Image Upload and Voice Mic button in Chat Input Box */
 [data-theme="dark"] .btn-camera-upload,
+[data-theme="dark"] .btn-voice-mic,
+[data-theme="dark"] #voice-btn,
 [data-theme="dark"] label[for="image-input"].btn-camera-upload,
 [data-theme="dark"] .modern-chat-toolbar .btn-camera-upload,
-[data-theme="dark"] .modern-chat-box .btn-camera-upload {
+[data-theme="dark"] .modern-chat-toolbar .btn-voice-mic,
+[data-theme="dark"] .modern-chat-toolbar #voice-btn,
+[data-theme="dark"] .modern-chat-box .btn-camera-upload,
+[data-theme="dark"] .modern-chat-box .btn-voice-mic,
+[data-theme="dark"] .modern-chat-box #voice-btn {
   background: #f5f0e6 !important;
   border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
@@ -9259,15 +9277,23 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
 }
 
 [data-theme="dark"] .btn-camera-upload svg,
+[data-theme="dark"] .btn-voice-mic svg,
+[data-theme="dark"] #voice-btn svg,
 [data-theme="dark"] label[for="image-input"].btn-camera-upload svg,
-[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload svg {
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-voice-mic svg,
+[data-theme="dark"] .modern-chat-toolbar #voice-btn svg {
   color: #1c1917 !important;
   stroke: #1c1917 !important;
 }
 
 [data-theme="dark"] .btn-camera-upload:hover,
+[data-theme="dark"] .btn-voice-mic:hover,
+[data-theme="dark"] #voice-btn:hover,
 [data-theme="dark"] label[for="image-input"].btn-camera-upload:hover,
-[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover {
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover,
+[data-theme="dark"] .modern-chat-toolbar .btn-voice-mic:hover,
+[data-theme="dark"] .modern-chat-toolbar #voice-btn:hover {
   background: #faf7f2 !important;
   border-color: #10b981 !important;
   color: #059669 !important;
@@ -9276,8 +9302,12 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
 }
 
 [data-theme="dark"] .btn-camera-upload:hover svg,
+[data-theme="dark"] .btn-voice-mic:hover svg,
+[data-theme="dark"] #voice-btn:hover svg,
 [data-theme="dark"] label[for="image-input"].btn-camera-upload:hover svg,
-[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover svg {
+[data-theme="dark"] .modern-chat-toolbar .btn-camera-upload:hover svg,
+[data-theme="dark"] .modern-chat-toolbar .btn-voice-mic:hover svg,
+[data-theme="dark"] .modern-chat-toolbar #voice-btn:hover svg {
   color: #059669 !important;
   stroke: #059669 !important;
 }
@@ -9887,9 +9917,28 @@ body.drawer-open {
   }
 
   .btn-camera-upload,
-  [data-theme="dark"] .btn-camera-upload {
+  .btn-voice-mic,
+  #voice-btn,
+  [data-theme="dark"] .btn-camera-upload,
+  [data-theme="dark"] .btn-voice-mic,
+  [data-theme="dark"] #voice-btn {
     width: 28px !important;
     height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+  }
+
+  .btn-camera-upload svg,
+  .btn-voice-mic svg,
+  #voice-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
   }
 
   .btn-circle-send,
