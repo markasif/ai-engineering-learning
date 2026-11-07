@@ -24,15 +24,15 @@
 
 ## 🌟 Executive Summary: What is AskRaggy?
 
-**AskRaggy** is an AI assistant service designed for **Enterprise HR & Operations**. It provides the following capabilities:
+**AskRaggy** is an AI assistant platform designed for **Enterprise HR & Operations**. It provides the following capabilities:
 
 1. **Autonomous Tool-Calling Agents**: Solves operational tasks (employee directory queries, leave approvals, policy enforcement, expense filings) via **Model Context Protocol (MCP)** and local ReAct loops.
-2. **SQLite and Optional Cloud Sync**: Uses local **SQLite (WAL Mode)** persistence with optional Supabase mirroring. Configure cloud sync explicitly for deployments where local disks are ephemeral.
+2. **SQLite and Optional Cloud Sync**: Uses local **SQLite (WAL Mode)** persistence with optional Supabase mirroring. Long-term retrieval events and knowledge digests are stored durably in SQLite.
 3. **Real-Time Token Streaming**: Streams generated tokens directly to the browser via native **Server-Sent Events (SSE)** with a live typewriter effect and citation accordions — 100% free with zero third-party socket fees.
-4. **Frictionless RBAC Demo Switcher**: Allows visitors to test both **Employee** and **Manager** roles with 1-click toggling, enforcing Role-Based Access Control in both LLM prompts and backend tools without sign-up barriers.
-5. **Demo Protection**: Supports demo turn budgets, IP rate limiting, prompt guards, and optional **Bring-Your-Own-Key (BYOK)** configuration.
-6. **Smart Content-Aware Export**: Heuristic export detection providing instant **CSV** buttons for generated tables, and clean PDF, Markdown, and clipboard copy without visual clutter.
-7. **ChatGPT-Style Voice Interaction**: Powered by **ElevenLabs Scribe STT** with live pulsing soundwave visualizers, responsive mobile styling, and dark/light mode support.
+4. **Frictionless RBAC Role Switcher**: Allows users to test both **Employee** and **Manager** roles with 1-click toggling, enforcing Role-Based Access Control in both LLM prompts and backend tools without sign-up barriers.
+5. **Rate & Quota Protection**: Supports session turn budgets, IP rate limiting, prompt guards, and optional **Bring-Your-Own-Key (BYOK)** configuration.
+6. **Smart Content-Aware Export**: Heuristic export detection providing instant **CSV** buttons for generated tables, plus clean PDF, Markdown, and clipboard copy without visual clutter.
+7. **ChatGPT-Style Voice Interaction**: Powered by **ElevenLabs Scribe STT** with input-first live transcription, soundwave visualizers, responsive mobile styling, and dark/light mode support.
 
 ---
 
@@ -151,8 +151,8 @@ This repository is suitable for local development and demos. Before production d
   * **Secondary (Cloud)**: Asynchronous non-blocking mirror to **Supabase Cloud PostgreSQL** (`sessions`, `messages`, `tasks`). If the container restarts, conversations remain intact.
   * **Graceful Degradation**: If Supabase is offline or unconfigured, the app falls back to local SQLite with zero latency penalty (<100ms timeout).
 
-### 3. Role-Aware Demo Persona Switcher (RBAC)
-Showcase enterprise permission boundaries with 1-click toggling — no login friction for LinkedIn visitors:
+### 3. Role-Aware Persona Switcher (RBAC)
+Showcase enterprise permission boundaries with 1-click toggling — no login friction for visitors:
 
 | Capability | 👤 Rahul Sharma (`EMP-101`)<br>*(Individual Contributor · Employee)* | 👔 Sarah Jenkins (`EMP-102`)<br>*(VP Engineering · HR Manager)* |
 |:---|:---:|:---:|
@@ -183,21 +183,23 @@ AskRaggy will **never guess or pick arbitrarily**. It queries the directory, ide
   * **📝 Markdown Transcript (.md)**: Exports full conversation transcripts with metadata, personas, and citations.
   * **📋 Copy Text**: One-click clipboard copy of clean conversation prose.
 
-### 6. ChatGPT-Style Live Voice Input (ElevenLabs STT)
-* **One-Click Voice Dictation**: A sleek microphone button placed alongside the camera input in the chat toolbar.
-* **ChatGPT-Inspired Recording Overlay**: Displays live audio visualizer soundwave bars, pulsating red indicator, and real-time elapsed timer (`00:03`).
-* **High-Accuracy Speech-to-Text**: Transcribes spoken audio via **ElevenLabs Scribe STT** (`/v1/speech-to-text`) with automatic resilient fallback to Groq Whisper.
+### 6. ChatGPT-Style Live Voice Input (ElevenLabs STT & TTS)
+* **One-Click Voice Dictation**: A sleek microphone button placed alongside the camera input in the chat toolbar with matching dimensions across all screen sizes.
+* **ChatGPT-Inspired Recording Overlay**: Displays live audio visualizer soundwave bars, pulsating recording indicator, and real-time elapsed timer (`00:03`).
+* **Input-First Transcription**: When you finish speaking and click Done (✓), the overlay closes immediately, the input field shows `Transcribing with ElevenLabs…`, populates the translated text for a clear preview, and then submits your message to the chat first before the assistant outputs its response.
+* **High-Accuracy Speech-to-Text**: Powered by **ElevenLabs Scribe STT** (`scribe_v2`) with automatic resilient fallback to Groq Whisper.
+* **Optional Text-to-Speech (TTS)**: Synthesizes spoken answers using ElevenLabs multilingual audio models when TTS permissions are enabled on your key.
 * **Universal Responsiveness**: Scales seamlessly across mobile, tablet, and desktop with dedicated Light Mode and Dark Mode styling.
 
-### 7. LinkedIn Demo Token Protection & BYOK
-* **Session Turn Budget**: Demo sessions are capped at **15 high-quality turns** to prevent bot draining.
-* **Live Credit Indicator**: Top bar surfaces `⚡ 15 demo credits remaining`.
+### 7. Session Token Protection & BYOK
+* **Session Turn Budget**: Sessions are budgeted to **15 high-quality turns** to keep latency low and protect shared provider quotas.
+* **Live Credit Indicator**: Top bar surfaces `⚡ 15 credits remaining`.
 * **BYOK (Bring-Your-Own-Key)**: When credits reach 0, a modal invites the visitor to enter their own free Groq API key in Settings (⚙️) to unlock unlimited turns.
 * **Rate Limiting**: `slowapi` enforces IP-level limits (30 req/min for chat, 15 req/min for agents).
 
 ---
 
-## 🎯 Live Demo Guide: Try These Prompts!
+## 🎯 Interactive Feature Guide: Try These Prompts!
 
 Try these curated prompts to test every major architecture component:
 
@@ -284,19 +286,18 @@ SUPABASE_KEY=your_supabase_anon_or_service_key
 
 # Security & Multi-Tenancy
 ENABLE_MULTI_TENANT=true
-TENANT_ID=demo
+TENANT_ID=default
 TRUST_TENANT_HEADER=false
 
-# Optional ElevenLabs Speech-to-Text
+# Optional ElevenLabs Voice (Speech-to-Text & Text-to-Speech)
 VOICE_PROVIDER=elevenlabs
-ELEVENLABS_API_KEY=your_elevenlabs_key
+ELEVENLABS_API_KEY=sk_your_actual_secret_key_here
 ELEVENLABS_STT_MODEL=scribe_v2
 ```
 
 When `TRUST_TENANT_HEADER=false`, the server uses the configured `TENANT_ID`
-and ignores client-supplied tenant headers. This keeps the public demo simple
-while preventing visitors from selecting arbitrary tenants. Enable trusted
-tenant headers only when an authenticated gateway injects them.
+and ignores client-supplied tenant headers. Enable trusted tenant headers only
+when an authenticated gateway injects them.
 
 ### 3. Launch Development Server
 
