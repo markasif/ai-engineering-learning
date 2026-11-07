@@ -34,13 +34,9 @@ Public API:
 import json
 from datetime import UTC, datetime
 
+from shared.db import get_connection
 from shared.llm_client import call_llm
 from shared.models import KnowledgeDigest, RetrievalLogEntry
-
-# In-memory stores — parallels session_store.py pattern.
-# In production: replace with a database table (see Feature 11).
-_retrieval_log: list[RetrievalLogEntry] = []
-_digests: dict[str, KnowledgeDigest] = {}  # keyed by tenant_id
 
 
 def log_retrieval(
@@ -57,16 +53,18 @@ def log_retrieval(
     Over many sessions these entries accumulate into a picture of
     what the tenant cares about — the raw material for build_knowledge_digest().
     """
-    _retrieval_log.append(
-        RetrievalLogEntry(
-            session_id=session_id,
-            tenant_id=tenant_id,
-            query=query,
-            chunks_retrieved=chunk_ids,
-            timestamp=datetime.now(tz=UTC),
-            retrieval_method=retrieval_method,
-        )
-    )
+    timestamp = datetime.now(tz=UTC)
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute(
+                """INSERT INTO retrieval_logs
+                   (session_id, tenant_id, query, chunks_retrieved, timestamp, retrieval_method)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (session_id, tenant_id, query, json.dumps(chunk_ids), timestamp.isoformat(), retrieval_method),
+            )
+    finally:
+        conn.close()
 
 
 def get_recent_retrievals(tenant_id: str, limit: int = 50) -> list[RetrievalLogEntry]:
@@ -76,8 +74,26 @@ def get_recent_retrievals(tenant_id: str, limit: int = 50) -> list[RetrievalLogE
     Returns entries most-recent first, capped at `limit`.
     Used by GET /api/retrieval-memory/recent and by build_knowledge_digest().
     """
-    tenant_entries = [e for e in _retrieval_log if e.tenant_id == tenant_id]
-    return sorted(tenant_entries, key=lambda e: e.timestamp, reverse=True)[:limit]
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """SELECT session_id, tenant_id, query, chunks_retrieved, timestamp, retrieval_method
+               FROM retrieval_logs WHERE tenant_id = ? ORDER BY timestamp DESC LIMIT ?""",
+            (tenant_id, limit),
+        ).fetchall()
+    finally:
+        conn.close()
+    return [
+        RetrievalLogEntry(
+            session_id=row["session_id"],
+            tenant_id=row["tenant_id"],
+            query=row["query"],
+            chunks_retrieved=json.loads(row["chunks_retrieved"]),
+            timestamp=datetime.fromisoformat(row["timestamp"]),
+            retrieval_method=row["retrieval_method"],
+        )
+        for row in rows
+    ]
 
 
 async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
@@ -129,7 +145,18 @@ async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
             last_updated=datetime.now(tz=UTC),
             source_session_count=sessions_covered,
         )
-        _digests[tenant_id] = digest
+        conn = get_connection()
+        try:
+            with conn:
+                conn.execute(
+                    """INSERT OR REPLACE INTO retrieval_digests
+                       (tenant_id, summary, topics_covered, last_updated, source_session_count)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (tenant_id, digest.summary, json.dumps(digest.topics_covered),
+                     digest.last_updated.isoformat(), digest.source_session_count),
+                )
+        finally:
+            conn.close()
         return digest
     except Exception:
         return None
@@ -137,4 +164,21 @@ async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
 
 def get_current_digest(tenant_id: str) -> KnowledgeDigest | None:
     """Return the most recently built digest for a tenant, or None."""
-    return _digests.get(tenant_id)
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            """SELECT tenant_id, summary, topics_covered, last_updated, source_session_count
+               FROM retrieval_digests WHERE tenant_id = ?""",
+            (tenant_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+    return KnowledgeDigest(
+        tenant_id=row["tenant_id"],
+        summary=row["summary"],
+        topics_covered=json.loads(row["topics_covered"]),
+        last_updated=datetime.fromisoformat(row["last_updated"]),
+        source_session_count=row["source_session_count"],
+    )

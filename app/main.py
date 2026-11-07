@@ -18,6 +18,7 @@ from app.core.rate_limit import (
     _rate_limit_exceeded_handler,
     limiter,
 )
+from shared.config import settings
 from shared.logging_config import setup_logging
 from shared.middleware import RequestIDMiddleware, TimingMiddleware
 from shared.provider_check import check_provider_config
@@ -106,10 +107,13 @@ def create_application() -> FastAPI:
         openapi_tags=OPENAPI_TAGS,
     )
 
-    # 1. CORS Middleware (Safe public demo & cloud deployment config)
+    # 1. CORS Middleware. The UI is served by this same application, so no
+    # cross-origin access is needed by default. Set CORS_ALLOWED_ORIGINS only
+    # when hosting the frontend on a separate trusted origin.
+    cors_origins = [origin.strip() for origin in settings.cors_allowed_origins.split(",") if origin.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
@@ -118,6 +122,14 @@ def create_application() -> FastAPI:
     # 2. Custom Observability Middleware (Request ID and Latency Timing)
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(TimingMiddleware)
+
+    @app.middleware("http")
+    async def cache_static_assets(request, call_next):
+        response = await call_next(request)
+        path = request.url.path.lower()
+        if path.endswith((".js", ".css", ".png", ".jpg", ".jpeg", ".webp", ".ico")):
+            response.headers.setdefault("Cache-Control", "public, max-age=3600")
+        return response
 
     # 3. Rate Limiting Exception Handler
     if RATE_LIMITING_ENABLED and limiter is not None:

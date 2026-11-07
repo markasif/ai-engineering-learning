@@ -63,8 +63,8 @@ def get_tenant_id(request: Request) -> str:
     """
     from shared.config import settings
 
-    if not settings.enable_multi_tenant:
-        return DEFAULT_TENANT
+    if not settings.enable_multi_tenant or not settings.trust_tenant_header:
+        return settings.tenant_id.strip() or DEFAULT_TENANT
 
     tenant = request.headers.get("X-Tenant-ID", "").strip()
-    return tenant if tenant else DEFAULT_TENANT
+    return tenant if tenant else (settings.tenant_id.strip() or DEFAULT_TENANT)

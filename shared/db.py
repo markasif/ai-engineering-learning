@@ -85,6 +85,30 @@ def init_db() -> None:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_tasks_session ON tasks(session_id);
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS retrieval_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    query TEXT NOT NULL,
+                    chunks_retrieved TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    retrieval_method TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_retrieval_logs_tenant_time
+                ON retrieval_logs(tenant_id, timestamp DESC);
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS retrieval_digests (
+                    tenant_id TEXT PRIMARY KEY,
+                    summary TEXT NOT NULL,
+                    topics_covered TEXT NOT NULL,
+                    last_updated TEXT NOT NULL,
+                    source_session_count INTEGER NOT NULL
+                );
+            """)
     finally:
         conn.close()
 
@@ -99,6 +123,8 @@ def clear_test_db() -> None:
             conn.execute("DELETE FROM messages;")
             conn.execute("DELETE FROM sessions;")
             conn.execute("DELETE FROM tasks;")
+            conn.execute("DELETE FROM retrieval_logs;")
+            conn.execute("DELETE FROM retrieval_digests;")
     finally:
         conn.close()
 
