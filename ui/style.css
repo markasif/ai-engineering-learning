@@ -5610,7 +5610,7 @@ input.modern-input-field:active,
   font-weight: 600;
   color: #1c1917;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: none !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
@@ -5619,12 +5619,11 @@ input.modern-input-field:active,
 .strategy-trigger-btn.active,
 .strategy-trigger-btn[aria-expanded="true"] {
   border-color: var(--color-matcha, #10b981);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+  box-shadow: none !important;
 }
 
 .strategy-trigger-icon {
-  font-size: 0.85rem;
-  line-height: 1;
+  display: none !important;
 }
 
 .strategy-trigger-label {
@@ -5668,10 +5667,14 @@ input.modern-input-field:active,
   background: #ffffff;
   border: 1px solid var(--color-pistache, #e0d6c5);
   border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: none !important;
   padding: 0.75rem;
   box-sizing: border-box;
   animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.strategy-option-icon-box {
+  display: none !important;
 }
 
 .strategy-popover[hidden] {
@@ -9053,7 +9056,7 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   border: 1.5px solid #e0d6c5 !important;
   border-radius: 14px !important;
   color: #1c1917 !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: none !important;
 }
 
 .strategy-popover-header,
@@ -10177,7 +10180,7 @@ body.drawer-open {
   background: #f5f0e6 !important;
   border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .doc-manager-popover-header {
@@ -10727,54 +10730,39 @@ body.drawer-open {
     z-index: 1050 !important;
   }
 
+  .strategy-popover-header,
+  .strategy-popover-tag,
+  .strategy-popover-title-row,
+  .strategy-popover-title,
   .strategy-popover-subtitle {
     display: none !important;
   }
 
-  .strategy-popover-header {
-    padding-bottom: 0.30rem !important;
-    margin-bottom: 0.30rem !important;
-  }
-
-  .strategy-popover-tag {
-    font-size: 0.58rem !important;
-    padding: 0.05rem 0.25rem !important;
-  }
-
-  .strategy-popover-title {
-    font-size: 0.76rem !important;
-  }
-
   .strategy-options-list {
-    gap: 0.22rem !important;
+    gap: 0.25rem !important;
   }
 
   .strategy-option-item {
-    padding: 0.35rem 0.45rem !important;
-    gap: 0.4rem !important;
+    padding: 0.45rem 0.6rem !important;
+    gap: 0.3rem !important;
     border-radius: 8px !important;
   }
 
   .strategy-option-icon-box {
-    width: 22px !important;
-    height: 22px !important;
-    font-size: 0.75rem !important;
-    border-radius: 6px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .strategy-option-name {
-    font-size: 0.72rem !important;
-  }
-
-  .strategy-option-badge {
-    font-size: 0.56rem !important;
-    padding: 0.04rem 0.25rem !important;
+    display: none !important;
   }
 
   .strategy-option-desc {
-    font-size: 0.63rem !important;
-    line-height: 1.25 !important;
+    display: none !important;
+  }
+
+  .strategy-option-name {
+    font-size: 0.76rem !important;
+  }
+
+  .strategy-option-badge {
+    font-size: 0.58rem !important;
+    padding: 0.04rem 0.25rem !important;
   }
 
   /* 10. AGENT TOOLBAR: Remove connected server, show Quick & Multi-Step switcher */
