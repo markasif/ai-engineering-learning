@@ -4029,24 +4029,23 @@ function stopVoiceRecording(cancelled = false) {
 }
 
 /**
- * Send a recorded audio Blob to POST /api/voice/chat and handle the response.
- * Plays the TTS audio and shows the transcript + answer as chat messages.
+ * Send a recorded audio Blob to POST /api/voice/transcribe and handle the response.
+ * Displays the transcribed speech as the user's message FIRST in chat,
+ * followed by the assistant thinking indicator and answer.
  *
  * @param {Blob} audioBlob - the recorded audio in WebM format
  */
 async function sendVoiceMessage(audioBlob) {
   if (voiceStatusTxt) voiceStatusTxt.textContent = "Transcribing with ElevenLabs…";
-  const thinkingEl = appendMessage("ai", "", true);
 
   const formData = new FormData();
   formData.append("audio", audioBlob, "recording.webm");
-  if (currentSessionId) formData.append("session_id", currentSessionId);
 
   const headers = {};
   if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
 
   try {
-    const res = await fetch(`${API_BASE}/api/voice/chat`, {
+    const res = await fetch(`${API_BASE}/api/voice/transcribe`, {
       method: "POST",
       headers,
       body: formData,
@@ -4058,29 +4057,24 @@ async function sendVoiceMessage(audioBlob) {
     }
 
     const data = await res.json();
-    thinkingEl.remove();
+    const transcript = (data.text || "").trim();
 
-    // Show the transcript (what the user said) as a user bubble.
-    appendMessage("user", `🎤 "${data.transcript ?? ""}"`);
-
-    // Show the text answer.
-    const wrapper = appendMessage("ai", data.answer ?? "(no response)");
-    const detection = detectExportWorthy(data.answer ?? "");
-    if (detection.worthy && wrapper) {
-      const bubble = wrapper.querySelector(".bubble");
-      const actionsRow = buildSmartExportRow("general", detection, bubble);
-      wrapper.appendChild(actionsRow);
+    if (!transcript) {
+      showToast("No speech detected. Please try speaking again.", "info");
+      return;
     }
 
-    // Play the TTS audio if present.
-    if (data.audio_base64) {
-      playBase64Audio(data.audio_base64, data.audio_mime ?? "audio/mpeg");
-    }
+    // Hide recording overlay immediately
+    if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
+    if (voiceBtn) voiceBtn.classList.remove("recording");
 
-    if (currentSessionId) loadSessions();
+    // Put transcribed text into the input field and send via chat pipeline
+    // This displays the transcribed text as the user message FIRST in chat,
+    // then shows assistant thinking, and renders the assistant response below.
+    if (chatInput) chatInput.value = transcript;
+    await sendMessage(transcript);
 
   } catch (err) {
-    thinkingEl.remove();
     appendMessage("ai", `Voice error: ${err.message}. Check your ElevenLabs / STT settings in .env.`);
   } finally {
     if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
