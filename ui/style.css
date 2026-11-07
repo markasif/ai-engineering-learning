@@ -6915,7 +6915,7 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle {
   max-height: 30px !important;
   padding: 0 !important;
   border-radius: 8px !important;
-  display: none !important; /* Strictly hidden on desktop; enabled via mobile/tablet media queries below */
+  display: none; /* Hidden by default on desktop; enabled via mobile/tablet media queries below */
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
@@ -9442,7 +9442,11 @@ body.drawer-open {
    ============================================================================= */
 @media (min-width: 993px) {
   .btn-mobile-sidebar,
-  #mobile-sidebar-toggle {
+  #mobile-sidebar-toggle,
+  [data-theme="dark"] .btn-mobile-sidebar,
+  [data-theme="dark"] #mobile-sidebar-toggle,
+  [data-theme="light"] .btn-mobile-sidebar,
+  [data-theme="light"] #mobile-sidebar-toggle {
     display: none !important;
   }
 
@@ -9479,7 +9483,11 @@ body.drawer-open {
    ============================================================================= */
 @media (max-width: 992px) and (min-width: 769px) {
   .btn-mobile-sidebar,
-  #mobile-sidebar-toggle {
+  #mobile-sidebar-toggle,
+  [data-theme="dark"] .btn-mobile-sidebar,
+  [data-theme="dark"] #mobile-sidebar-toggle,
+  [data-theme="light"] .btn-mobile-sidebar,
+  [data-theme="light"] #mobile-sidebar-toggle {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -9614,7 +9622,11 @@ body.drawer-open {
   }
 
   .btn-mobile-sidebar,
-  #mobile-sidebar-toggle {
+  #mobile-sidebar-toggle,
+  [data-theme="dark"] .btn-mobile-sidebar,
+  [data-theme="dark"] #mobile-sidebar-toggle,
+  [data-theme="light"] .btn-mobile-sidebar,
+  [data-theme="light"] #mobile-sidebar-toggle {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
