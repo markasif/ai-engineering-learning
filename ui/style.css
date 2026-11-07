@@ -4862,6 +4862,25 @@ textarea:focus,
   transform: scale(0.95);
 }
 
+.btn-circle-send:disabled,
+.btn-circle-send.btn-disabled-voice {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: grayscale(0.6) !important;
+}
+
+[data-theme="dark"] .btn-circle-send:disabled,
+[data-theme="dark"] .btn-circle-send.btn-disabled-voice {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* --- Agent Mode Switcher Pill (Quick vs Multi-Step inside bar) --- */
 .agent-mode-switcher-pill {
   display: inline-flex;
