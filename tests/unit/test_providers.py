@@ -153,4 +153,3 @@ def test_get_provider_elevenlabs_voice(monkeypatch):
     assert provider.api_key == "sk_test_key_12345"
 
     factory.get_provider.cache_clear()
-

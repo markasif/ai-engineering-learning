@@ -124,7 +124,7 @@ async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
                 timeout=settings.provider_timeout_seconds,
             )
         except Exception as exc:
-            _log.warning(
+            logger.warning(
                 "ElevenLabs STT transcription failed (%s). Falling back to default voice provider.",
                 exc,
             )

@@ -61,7 +61,14 @@ def log_retrieval(
                 """INSERT INTO retrieval_logs
                    (session_id, tenant_id, query, chunks_retrieved, timestamp, retrieval_method)
                    VALUES (?, ?, ?, ?, ?, ?)""",
-                (session_id, tenant_id, query, json.dumps(chunk_ids), timestamp.isoformat(), retrieval_method),
+                (
+                    session_id,
+                    tenant_id,
+                    query,
+                    json.dumps(chunk_ids),
+                    timestamp.isoformat(),
+                    retrieval_method,
+                ),
             )
     finally:
         conn.close()
@@ -152,8 +159,13 @@ async def build_knowledge_digest(tenant_id: str) -> KnowledgeDigest | None:
                     """INSERT OR REPLACE INTO retrieval_digests
                        (tenant_id, summary, topics_covered, last_updated, source_session_count)
                        VALUES (?, ?, ?, ?, ?)""",
-                    (tenant_id, digest.summary, json.dumps(digest.topics_covered),
-                     digest.last_updated.isoformat(), digest.source_session_count),
+                    (
+                        tenant_id,
+                        digest.summary,
+                        json.dumps(digest.topics_covered),
+                        digest.last_updated.isoformat(),
+                        digest.source_session_count,
+                    ),
                 )
         finally:
             conn.close()

@@ -65,9 +65,7 @@ async def test_ask_documents_cag_mode():
     """Verify ask_documents endpoint executes in CAG mode with full document context."""
     doc = save_document("policy.pdf", tenant_id="default")
     doc_id = doc.id
-    raw_text = (
-        "Company policy allows 25 days of annual leave. Approval is required from department managers."
-    )
+    raw_text = "Company policy allows 25 days of annual leave. Approval is required from department managers."
     save_document_text(doc_id, raw_text)
     update_document(doc_id, status="ready", chunk_count=1, page_count=3, char_count=len(raw_text))
 

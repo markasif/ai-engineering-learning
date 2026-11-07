@@ -110,7 +110,9 @@ def create_application() -> FastAPI:
     # 1. CORS Middleware. The UI is served by this same application, so no
     # cross-origin access is needed by default. Set CORS_ALLOWED_ORIGINS only
     # when hosting the frontend on a separate trusted origin.
-    cors_origins = [origin.strip() for origin in settings.cors_allowed_origins.split(",") if origin.strip()]
+    cors_origins = [
+        origin.strip() for origin in settings.cors_allowed_origins.split(",") if origin.strip()
+    ]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,

@@ -4,8 +4,9 @@ Provider implementation for ElevenLabs Speech-to-Text (STT) and Text-to-Speech (
 Enables natural voice loops using ElevenLabs Scribe STT and multilingual TTS.
 """
 
-from collections.abc import AsyncIterator
 import logging
+from collections.abc import AsyncIterator
+
 import httpx
 
 from shared.config import settings
@@ -134,4 +135,3 @@ class ElevenLabsProvider(LLMProvider):
         self, image_bytes: bytes, prompt: str, detail: str = "auto"
     ) -> LLMResponse:
         raise NotImplementedError("ElevenLabs does not support vision/image analysis.")
-
