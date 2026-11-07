@@ -2028,10 +2028,30 @@ function buildDocumentCard(doc) {
   header.setAttribute("aria-expanded", "false");
   header.tabIndex = 0;
 
+  // Top row: Title and Delete action with ample breathing room
+  const topRow = document.createElement("div");
+  topRow.className = "document-card-top";
+
   const title = document.createElement("span");
   title.className = "document-card-title";
   title.textContent = doc.filename;
   title.title = doc.filename;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "btn-delete";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.setAttribute("aria-label", `Delete ${doc.filename}`);
+  deleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    deleteDocumentById(doc.id);
+  });
+
+  topRow.appendChild(title);
+  topRow.appendChild(deleteBtn);
+
+  // Bottom row: Status badge, strategy tag, and concise chunk info
+  const bottomRow = document.createElement("div");
+  bottomRow.className = "document-card-bottom";
 
   const badge = document.createElement("span");
   badge.className = "status-badge";
@@ -2043,25 +2063,21 @@ function buildDocumentCard(doc) {
   stratTag.className = "strategy-tag";
   stratTag.textContent = doc.chunking_strategy ?? "sentence";
 
+  // Concise description so it never crowds mobile cards
   const meta = document.createElement("span");
   meta.className = "document-card-meta";
   meta.textContent = doc.status === "ready"
-    ? `${doc.chunk_count} chunks · ${doc.chunk_count} vectors indexed`
+    ? `${doc.chunk_count} chunks`
     : "";
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "btn-delete";
-  deleteBtn.textContent = "Delete";
-  deleteBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    deleteDocumentById(doc.id);
-  });
+  bottomRow.appendChild(badge);
+  bottomRow.appendChild(stratTag);
+  if (meta.textContent) {
+    bottomRow.appendChild(meta);
+  }
 
-  header.appendChild(title);
-  header.appendChild(badge);
-  header.appendChild(stratTag);
-  header.appendChild(meta);
-  header.appendChild(deleteBtn);
+  header.appendChild(topRow);
+  header.appendChild(bottomRow);
   card.appendChild(header);
 
   // Clicking header expands/collapses chunks.

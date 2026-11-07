@@ -1593,9 +1593,9 @@ html, body {
 
 .document-card-header {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem 1.15rem;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1.15rem;
   cursor: pointer;
   user-select: none;
   transition: background 0.12s;
@@ -1605,8 +1605,25 @@ html, body {
   background: rgba(16, 185, 129, 0.05);
 }
 
+.document-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.document-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 .document-card-title {
   flex: 1;
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-carob);
@@ -1616,9 +1633,10 @@ html, body {
 }
 
 .document-card-meta {
-  font-size: 0.80rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
   white-space: nowrap;
+  margin-left: auto;
 }
 
 /* Status badges */
@@ -8475,6 +8493,7 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
 }
 
 /* --- Document Management & Grounded Features in Dark Mode --- */
+[data-theme="dark"] .document-card,
 [data-theme="dark"] .doc-card,
 [data-theme="dark"] .doc-manager-card,
 [data-theme="dark"] .agent-task-card,
@@ -8483,6 +8502,14 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #f1f5f9 !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .document-card-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .document-card-meta {
+  color: #94a3b8 !important;
 }
 
 [data-theme="dark"] .doc-dropzone {
@@ -9827,6 +9854,42 @@ body.drawer-open {
   .agent-mode-btn {
     padding: 0.22rem 0.45rem !important;
     font-size: 0.70rem !important;
+  }
+
+  /* Document Card on Mobile — Clean 2-row layout with breathing room */
+  .document-card {
+    border-radius: 12px !important;
+    margin-bottom: 0.65rem !important;
+  }
+
+  .document-card-header {
+    padding: 0.75rem 0.9rem !important;
+    gap: 0.45rem !important;
+  }
+
+  .document-card-top {
+    gap: 0.5rem !important;
+  }
+
+  .document-card-title {
+    font-size: 0.85rem !important;
+    max-width: calc(100% - 65px) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .document-card-bottom {
+    gap: 0.45rem !important;
+  }
+
+  .document-card-header .btn-delete {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .document-card-meta {
+    font-size: 0.74rem !important;
   }
 
   /* Main Workspace Content on Mobile */
