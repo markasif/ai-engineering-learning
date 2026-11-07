@@ -22,6 +22,7 @@ _VALID_PROVIDERS = {
     "bedrock",
     "vertex",
     "custom",
+    "elevenlabs",
 }
 
 
@@ -95,6 +96,12 @@ def _build_provider(provider_name: str, role: str = "llm") -> LLMProvider:
             base_url=settings.custom_base_url,
             model=model_name,
         )
+
+    if provider_name == "elevenlabs":
+        from shared.providers.elevenlabs_provider import ElevenLabsProvider
+
+        _validate_fields(provider_name, ["elevenlabs_api_key"])
+        return ElevenLabsProvider()
 
     raise ValueError(
         f"Unknown LLM_PROVIDER value: '{provider_name}'. "

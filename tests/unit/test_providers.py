@@ -138,3 +138,19 @@ class TestCohereTranslation:
         assert "parameter_definitions" in tool
         assert "parameters" not in tool
         assert tool["parameter_definitions"]["query"]["required"] is True
+
+
+def test_get_provider_elevenlabs_voice(monkeypatch):
+    """factory.get_provider('voice') returns ElevenLabsProvider when voice_provider is elevenlabs."""
+    from shared.providers.elevenlabs_provider import ElevenLabsProvider
+
+    monkeypatch.setattr(cfg.settings, "voice_provider", "elevenlabs")
+    monkeypatch.setattr(cfg.settings, "elevenlabs_api_key", "sk_test_key_12345")
+    factory.get_provider.cache_clear()
+
+    provider = factory.get_provider("voice")
+    assert isinstance(provider, ElevenLabsProvider)
+    assert provider.api_key == "sk_test_key_12345"
+
+    factory.get_provider.cache_clear()
+

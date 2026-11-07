@@ -108,10 +108,16 @@ async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
     Returns:
         The transcribed text as a plain string.
     """
-    if settings.elevenlabs_api_key and (
+    is_elevenlabs = (
         settings.effective_voice_provider().lower() == "elevenlabs"
         or settings.voice_provider.lower() == "elevenlabs"
-    ):
+    )
+
+    if settings.elevenlabs_api_key and is_elevenlabs:
+        provider = get_provider("voice")
+        return await provider.transcribe(audio_bytes, filename)
+
+    if settings.elevenlabs_api_key:
         try:
             return await asyncio.wait_for(
                 _transcribe_with_elevenlabs(audio_bytes, filename),
@@ -128,13 +134,24 @@ async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
 
 async def _transcribe_with_elevenlabs(audio_bytes: bytes, filename: str) -> str:
     """Transcribe a completed audio upload through ElevenLabs Scribe STT API."""
-    model_id = settings.elevenlabs_stt_model or "scribe_v1"
+    model_id = settings.elevenlabs_stt_model or "scribe_v2"
+    mime = "audio/webm"
+    low = filename.lower()
+    if low.endswith(".wav"):
+        mime = "audio/wav"
+    elif low.endswith(".mp3"):
+        mime = "audio/mpeg"
+    elif low.endswith(".m4a"):
+        mime = "audio/m4a"
+    elif low.endswith(".ogg"):
+        mime = "audio/ogg"
+
     async with httpx.AsyncClient(timeout=settings.provider_timeout_seconds) as client:
         response = await client.post(
             "https://api.elevenlabs.io/v1/speech-to-text",
             headers={"xi-api-key": settings.elevenlabs_api_key},
             data={"model_id": model_id},
-            files={"file": (filename or "recording.webm", audio_bytes)},
+            files={"file": (filename or "recording.webm", audio_bytes, mime)},
         )
         if response.status_code >= 400:
             err_msg = response.text
@@ -148,7 +165,7 @@ async def _transcribe_with_elevenlabs(audio_bytes: bytes, filename: str) -> str:
                         err_msg = detail
             except Exception:
                 pass
-            raise RuntimeError(f"ElevenLabs STT error ({response.status_code}): {err_msg}")
+            raise ValueError(f"ElevenLabs STT error: {err_msg}")
         payload = response.json()
         return str(payload.get("text", "")).strip()
 

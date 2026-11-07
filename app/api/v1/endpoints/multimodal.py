@@ -36,7 +36,11 @@ _SMART_SYSTEM_PROMPT = (
 async def voice_transcribe(audio: UploadFile = File(...)) -> dict[str, Any]:
     """Transcribe spoken audio input using Speech-to-Text (STT)."""
     audio_bytes = await audio.read()
-    text = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+    try:
+        text = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+    except Exception as exc:
+        _log.error("STT transcription error: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc))
     return {"text": text, "filename": audio.filename}
 
 
@@ -51,7 +55,11 @@ async def voice_chat(
     from app.api.v1.endpoints.chat import smart_chat
 
     audio_bytes = await audio.read()
-    transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+    try:
+        transcript = await transcribe_audio(audio_bytes, audio.filename or "audio.webm")
+    except Exception as exc:
+        _log.error("Voice STT error: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc))
 
     if session_id:
         session = get_session(session_id, tenant_id=tenant_id)
@@ -81,8 +89,8 @@ async def voice_chat(
     try:
         audio_out = await synthesize_speech(answer)
         audio_base64 = base64.b64encode(audio_out).decode()
-    except NotImplementedError:
-        pass
+    except (NotImplementedError, Exception) as exc:
+        _log.warning("TTS audio generation skipped or unavailable: %s", exc)
 
     return VoiceChatResponse(transcript=transcript, answer=answer, audio_base64=audio_base64)
 
