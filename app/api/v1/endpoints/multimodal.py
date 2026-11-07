@@ -3,9 +3,10 @@ Voice (STT + TTS), Vision (VLM), and Unified Modality Router endpoints.
 """
 
 import base64
+import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.api.deps import get_tenant_id
 from app.core.config import settings
@@ -24,6 +25,7 @@ from shared.llm_client import (
 from shared.router import detect_modality
 from shared.session_store import add_message, get_session
 
+_log = logging.getLogger(__name__)
 router = APIRouter()
 
 _SMART_SYSTEM_PROMPT = (
