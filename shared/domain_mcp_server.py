@@ -47,7 +47,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-101",
         "name": "Rahul Sharma",
-        "email": "rahul.sharma@neointelli.com",
+        "email": "rahul.sharma@enterprise.com",
         "phone": "+91 9876543210",
         "department": "Engineering",
         "role": "Senior Frontend Developer",
@@ -58,7 +58,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-102",
         "name": "Sarah Jenkins",
-        "email": "sarah.jenkins@neointelli.com",
+        "email": "sarah.jenkins@enterprise.com",
         "phone": "+1 415-555-0142",
         "department": "Engineering",
         "role": "VP of Engineering",
@@ -69,7 +69,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-103",
         "name": "Priya Patel",
-        "email": "priya.patel@neointelli.com",
+        "email": "priya.patel@enterprise.com",
         "phone": "+91 9123456789",
         "department": "HR & People Operations",
         "role": "Senior HR Specialist",
@@ -80,7 +80,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-104",
         "name": "David Kim",
-        "email": "david.kim@neointelli.com",
+        "email": "david.kim@enterprise.com",
         "phone": "+1 415-555-0188",
         "department": "Product",
         "role": "Principal Product Manager",
@@ -91,7 +91,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-105",
         "name": "Amit Verma",
-        "email": "amit.verma@neointelli.com",
+        "email": "amit.verma@enterprise.com",
         "phone": "+91 9988776655",
         "department": "Engineering",
         "role": "Staff Backend Engineer",
@@ -102,7 +102,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-106",
         "name": "Diya Sharma",
-        "email": "diya.sharma@neointelli.com",
+        "email": "diya.sharma@enterprise.com",
         "phone": "+91 9811223344",
         "department": "Engineering",
         "role": "Frontend Developer",
@@ -113,7 +113,7 @@ MOCK_EMPLOYEES: list[dict[str, Any]] = [
     {
         "employee_code": "EMP-107",
         "name": "Diya Patel",
-        "email": "diya.patel@neointelli.com",
+        "email": "diya.patel@enterprise.com",
         "phone": "+91 9822334455",
         "department": "Marketing",
         "role": "Growth Marketing Lead",
@@ -592,7 +592,7 @@ if _MCP_AVAILABLE:
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "Employee full name, email, employee code (e.g. 'Rahul Sharma', 'EMP-101', 'rahul.sharma@neointelli.com')",
+                                "description": "Employee full name, email, employee code (e.g. 'Rahul Sharma', 'EMP-101', 'rahul.sharma@enterprise.com')",
                             },
                         },
                         "required": ["query"],

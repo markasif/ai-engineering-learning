@@ -22,28 +22,28 @@
   },
   {
     "id": "dom-001",
-    "question": "What is NeoIntelli's remote work policy?",
+    "question": "What is company remote work policy?",
     "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-002",
-    "question": "How many vacation days do I get at NeoIntelli?",
+    "question": "How many vacation days do I get at the company?",
     "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-003",
-    "question": "What are the core values of NeoIntelli?",
+    "question": "What are the core values of the company?",
     "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []
   },
   {
     "id": "dom-004",
-    "question": "Who is the CEO of NeoIntelli?",
+    "question": "Who is the CEO of the company?",
     "expected_intent": "domain",
     "expected_source": null,
     "expected_answer_contains": []

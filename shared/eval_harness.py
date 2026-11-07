@@ -67,7 +67,7 @@ class EvalReport(BaseModel):
 
 
 _EVAL_SYSTEM = (
-    "You are a helpful HR Policy Assistant for NeoIntelli. "
+    "You are a helpful Enterprise Knowledge & Operations Assistant. "
     "Answer clearly and concisely in plain English."
 )
 

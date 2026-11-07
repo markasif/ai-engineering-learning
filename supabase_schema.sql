@@ -1,5 +1,5 @@
 -- =============================================================================
--- NeoIntelli HR & Enterprise Operations - Supabase Database Schema
+-- Enterprise HR & Operations - Supabase Database Schema
 -- Run this script in your Supabase SQL Editor:
 -- https://supabase.com/dashboard/project/<your-project-id>/sql/new
 -- =============================================================================
@@ -71,10 +71,10 @@ CREATE POLICY "Public access expenses" ON public.expenses FOR ALL USING (true) W
 INSERT INTO public.employees (employee_code, name, email, phone, department, role, manager_name, leave_balance, status)
 VALUES
     ('EMP-101', 'Rahul Sharma', 'apasif243@gmail.com', '+91 9876543210', 'Engineering', 'Senior Frontend Developer', 'Sarah Jenkins', 18, 'Active'),
-    ('EMP-102', 'Sarah Jenkins', 'sarah.jenkins@neointelli.com', '+1 415-555-0142', 'Engineering', 'VP of Engineering', 'Alex Vance', 22, 'Active'),
-    ('EMP-103', 'Priya Patel', 'priya.patel@neointelli.com', '+91 9123456789', 'HR & People Operations', 'Senior HR Specialist', 'Elena Rostova', 15, 'Active'),
-    ('EMP-104', 'David Kim', 'david.kim@neointelli.com', '+1 415-555-0188', 'Product', 'Principal Product Manager', 'Alex Vance', 14, 'Active'),
-    ('EMP-105', 'Amit Verma', 'amit.verma@neointelli.com', '+91 9988776655', 'Engineering', 'Staff Backend Engineer', 'Sarah Jenkins', 20, 'Active');
+    ('EMP-102', 'Sarah Jenkins', 'sarah.jenkins@enterprise.com', '+1 415-555-0142', 'Engineering', 'VP of Engineering', 'Alex Vance', 22, 'Active'),
+    ('EMP-103', 'Priya Patel', 'priya.patel@enterprise.com', '+91 9123456789', 'HR & People Operations', 'Senior HR Specialist', 'Elena Rostova', 15, 'Active'),
+    ('EMP-104', 'David Kim', 'david.kim@enterprise.com', '+1 415-555-0188', 'Product', 'Principal Product Manager', 'Alex Vance', 14, 'Active'),
+    ('EMP-105', 'Amit Verma', 'amit.verma@enterprise.com', '+91 9988776655', 'Engineering', 'Staff Backend Engineer', 'Sarah Jenkins', 20, 'Active');
 
 INSERT INTO public.leave_requests (request_code, employee_name, leave_type, days, start_date, end_date, reason, status)
 VALUES

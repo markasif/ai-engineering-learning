@@ -24,7 +24,7 @@
 
 ## 🌟 Executive Summary: What is AskRaggy?
 
-**AskRaggy** is an AI assistant service designed for **NeoIntelli HR & Operations**. It provides the following capabilities:
+**AskRaggy** is an AI assistant service designed for **Enterprise HR & Operations**. It provides the following capabilities:
 
 1. **Autonomous Tool-Calling Agents**: Solves operational tasks (employee directory queries, leave approvals, policy enforcement, expense filings) via **Model Context Protocol (MCP)** and local ReAct loops.
 2. **SQLite and Optional Cloud Sync**: Uses local **SQLite (WAL Mode)** persistence with optional Supabase mirroring. Configure cloud sync explicitly for deployments where local disks are ephemeral.
@@ -275,7 +275,7 @@ GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
 
 # Enterprise HR Domain Setting
-ENTERPRISE_DOMAIN=NeoIntelli HR & Enterprise Operations
+ENTERPRISE_DOMAIN=Enterprise HR & Operations
 ENABLE_DOMAIN_MCP_SERVER=true
 
 # Optional: Cloud Persistence Mirror (Free Tier)

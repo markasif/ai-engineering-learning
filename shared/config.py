@@ -195,8 +195,8 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Domain / assistant identity
     # -------------------------------------------------------------------------
-    assistant_name: str = "HR Policy Assistant for NeoIntelli"
-    domain_name: str = "NeoIntelli HR & Enterprise Operations"
+    assistant_name: str = "Enterprise Knowledge & Operations Assistant"
+    domain_name: str = "Enterprise HR & Operations"
     assistant_description: str = (
         "Enterprise AI assistant for HR policy, employee support, and operational knowledge."
     )

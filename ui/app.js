@@ -81,12 +81,12 @@ function renderRateLimitNotice(containerType = "chat") {
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem; color: #ff8c66;">
           <span style="font-size: 1.15rem;">⚠️</span>
-          <span>Free Demo Quota Reached</span>
+          <span>Rate Limit Reached</span>
         </div>
         <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(224,86,36,0.2); color: #ffab91; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Rate Limited</span>
       </div>
       <p style="margin: 0 0 0.85rem 0; font-size: 0.86rem; color: var(--color-silver, #b0b4ba); line-height: 1.5;">
-        AskRaggy is currently experiencing high public demo traffic. The shared demo quota has been reached for this minute.
+        AskRaggy is currently experiencing high traffic volume. The shared rate limit has been reached for this minute.
       </p>
       <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
         <button type="button" class="btn btn-sm btn-cream" onclick="switchTab('admin'); const inp = document.getElementById('byok-key-input'); if(inp) setTimeout(() => { inp.scrollIntoView({behavior: 'smooth', block: 'center'}); inp.focus(); }, 250);" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; cursor: pointer;">
@@ -868,7 +868,7 @@ chatInput.addEventListener("keydown", (e) => {
 // =============================================================================
 // Active Domain and Document State
 // =============================================================================
-let currentDomainName = "NeoIntelli HR & Enterprise Operations";
+let currentDomainName = "Enterprise HR & Operations";
 let activeDocumentId = null;
 let currentDocsCache = [];
 
@@ -1257,7 +1257,7 @@ const sessionLabel  = document.getElementById("session-label");
 
 /** Render a clean, transparent, minimalist welcome state for the main chat interface */
 function renderEmptyChatState() {
-  const domain = currentDomainName || "NeoIntelli HR & Enterprise Operations";
+  const domain = currentDomainName || "Enterprise HR & Operations";
   return `
     <div class="empty-state welcome-clean" id="empty-state">
       <div class="hero-logo-wrapper" aria-hidden="true">
@@ -4927,7 +4927,7 @@ function initByokSettings() {
     activeByokKey = val;
     localStorage.setItem(BYOK_STORAGE_KEY, val);
     updateStatusDisplay();
-    showToast("Custom API key saved! You now have unlimited demo access.", "success");
+    showToast("Custom API key saved! You now have unlimited access.", "success");
   });
 
   byokClearBtn?.addEventListener("click", () => {
@@ -5013,7 +5013,7 @@ function updateDemoQuotaDisplay(credits) {
     quotaBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
     quotaBadge.style.background = "rgba(16, 185, 129, 0.12)";
   } else {
-    quotaText.textContent = `${credits} demo credit${credits !== 1 ? "s" : ""}`;
+    quotaText.textContent = `${credits} credit${credits !== 1 ? "s" : ""}`;
     if (credits <= 3) {
       quotaBadge.style.color = "#ef4444";
       quotaBadge.style.borderColor = "rgba(239, 68, 68, 0.35)";
@@ -5269,7 +5269,7 @@ function exportChatAsCsv(contextType = "general") {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `askraggy-export-${currentSessionId ? currentSessionId.slice(0, 8) : "demo"}.csv`;
+  a.download = `askraggy-export-${currentSessionId ? currentSessionId.slice(0, 8) : "session"}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -5289,8 +5289,8 @@ function exportChatAsMarkdown(contextType = "general") {
   let md = `# AskRaggy Enterprise Intelligence — Chat Transcript\n\n`;
   md += `- **Date:** ${new Date().toLocaleString()}\n`;
   md += `- **Active Persona:** ${currentPersona.name} (${currentPersona.role.toUpperCase()})\n`;
-  md += `- **Session ID:** \`${currentSessionId || "demo"}\`\n`;
-  md += `- **Enterprise Domain:** NeoIntelli HR & Enterprise Operations\n\n---\n\n`;
+  md += `- **Session ID:** \`${currentSessionId || "session"}\`\n`;
+  md += `- **Enterprise Domain:** ${currentDomainName || "Enterprise HR & Operations"}\n\n---\n\n`;
 
   bubbles.forEach((b) => {
     const isUser = b.classList.contains("user");
@@ -5302,7 +5302,7 @@ function exportChatAsMarkdown(contextType = "general") {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `askraggy-transcript-${currentSessionId ? currentSessionId.slice(0, 8) : "demo"}.md`;
+  a.download = `askraggy-transcript-${currentSessionId ? currentSessionId.slice(0, 8) : "session"}.md`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
