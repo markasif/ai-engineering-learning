@@ -3933,16 +3933,39 @@ function buildMcpServerCard(server, tools) {
 // =============================================================================
 
 // ── DOM refs ──
-const voiceBtn       = document.getElementById("voice-btn");
-const voiceStopBtn   = document.getElementById("voice-stop-btn");
-const voiceStatusBar = document.getElementById("voice-status-bar");
-const voiceStatusTxt = document.getElementById("voice-status-text");
-const imageInput     = document.getElementById("image-input");
+const voiceBtn              = document.getElementById("voice-btn");
+const voiceStopBtn          = document.getElementById("voice-stop-btn");
+const voiceCancelBtn        = document.getElementById("voice-cancel-btn");
+const voiceRecordingOverlay = document.getElementById("voice-recording-overlay");
+const voiceStatusTxt        = document.getElementById("voice-status-text");
+const voiceTimer            = document.getElementById("voice-timer");
+const voiceStatusBar        = document.getElementById("voice-status-bar");
+const imageInput            = document.getElementById("image-input");
 
 /** Currently active MediaRecorder (null when not recording). */
 let mediaRecorder = null;
 /** Accumulated audio chunks during recording. */
 let audioChunks = [];
+let voiceTimerInterval = null;
+let voiceStartTime = 0;
+let isVoiceCancelled = false;
+
+function startVoiceTimer() {
+  voiceStartTime = Date.now();
+  if (voiceTimer) voiceTimer.textContent = "00:00";
+  clearInterval(voiceTimerInterval);
+  voiceTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - voiceStartTime) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, "0");
+    const s = (elapsed % 60).toString().padStart(2, "0");
+    if (voiceTimer) voiceTimer.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopVoiceTimer() {
+  clearInterval(voiceTimerInterval);
+  voiceTimerInterval = null;
+}
 
 /**
  * Start recording from the user's microphone via the MediaRecorder API.
@@ -3955,37 +3978,54 @@ async function startVoiceRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
+    isVoiceCancelled = false;
 
     mediaRecorder.addEventListener("dataavailable", (e) => {
       if (e.data.size > 0) audioChunks.push(e.data);
     });
 
     mediaRecorder.addEventListener("stop", async () => {
+      stopVoiceTimer();
       const blob = new Blob(audioChunks, { type: "audio/webm" });
       stream.getTracks().forEach((t) => t.stop());  // release mic
       mediaRecorder = null;
-      await sendVoiceMessage(blob);
+      if (!isVoiceCancelled) {
+        await sendVoiceMessage(blob);
+      } else {
+        if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
+        if (voiceBtn) voiceBtn.classList.remove("recording");
+      }
     });
 
     mediaRecorder.start();
 
-    // Show recording status bar.
-    if (voiceStatusBar) voiceStatusBar.removeAttribute("hidden");
-    if (voiceStatusTxt) voiceStatusTxt.textContent = "Recording — click Stop when done";
+    // Show ChatGPT recording overlay
+    if (voiceRecordingOverlay) {
+      voiceRecordingOverlay.style.display = "flex";
+    }
+    if (voiceStatusTxt) voiceStatusTxt.textContent = "Listening…";
     if (voiceBtn) voiceBtn.classList.add("recording");
+    startVoiceTimer();
 
   } catch (err) {
-    appendMessage("ai", `Microphone error: ${err.message}. Check browser permissions.`);
+    showToast(`Microphone error: ${err.message}. Check browser permissions.`, "error");
   }
 }
 
 /** Stop an active recording and trigger sendVoiceMessage via the "stop" event. */
-function stopVoiceRecording() {
+function stopVoiceRecording(cancelled = false) {
+  isVoiceCancelled = cancelled;
   if (mediaRecorder && mediaRecorder.state !== "inactive") {
     mediaRecorder.stop();
   }
-  if (voiceStatusBar) voiceStatusBar.setAttribute("hidden", "");
-  if (voiceBtn) voiceBtn.classList.remove("recording");
+  stopVoiceTimer();
+  if (cancelled) {
+    if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
+    if (voiceBtn) voiceBtn.classList.remove("recording");
+    showToast("Recording cancelled", "info");
+  } else {
+    if (voiceStatusTxt) voiceStatusTxt.textContent = "Transcribing with ElevenLabs…";
+  }
 }
 
 /**
@@ -3995,9 +4035,7 @@ function stopVoiceRecording() {
  * @param {Blob} audioBlob - the recorded audio in WebM format
  */
 async function sendVoiceMessage(audioBlob) {
-  if (voiceStatusTxt) voiceStatusTxt.textContent = "Processing…";
-  if (voiceStatusBar) voiceStatusBar.removeAttribute("hidden");
-
+  if (voiceStatusTxt) voiceStatusTxt.textContent = "Transcribing with ElevenLabs…";
   const thinkingEl = appendMessage("ai", "", true);
 
   const formData = new FormData();
@@ -4026,7 +4064,13 @@ async function sendVoiceMessage(audioBlob) {
     appendMessage("user", `🎤 "${data.transcript ?? ""}"`);
 
     // Show the text answer.
-    appendMessage("ai", data.answer ?? "(no response)");
+    const wrapper = appendMessage("ai", data.answer ?? "(no response)");
+    const detection = detectExportWorthy(data.answer ?? "");
+    if (detection.worthy && wrapper) {
+      const bubble = wrapper.querySelector(".bubble");
+      const actionsRow = buildSmartExportRow("general", detection, bubble);
+      wrapper.appendChild(actionsRow);
+    }
 
     // Play the TTS audio if present.
     if (data.audio_base64) {
@@ -4037,9 +4081,10 @@ async function sendVoiceMessage(audioBlob) {
 
   } catch (err) {
     thinkingEl.remove();
-    appendMessage("ai", `Voice error: ${err.message}. Is the Feature 10 server running?`);
+    appendMessage("ai", `Voice error: ${err.message}. Check your ElevenLabs / STT settings in .env.`);
   } finally {
-    if (voiceStatusBar) voiceStatusBar.setAttribute("hidden", "");
+    if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
+    if (voiceBtn) voiceBtn.classList.remove("recording");
   }
 }
 
@@ -4066,14 +4111,15 @@ function playBase64Audio(b64, mime = "audio/mpeg") {
 // 🎤 button: toggle recording on/off.
 voiceBtn?.addEventListener("click", () => {
   if (mediaRecorder) {
-    stopVoiceRecording();
+    stopVoiceRecording(false);
   } else {
     startVoiceRecording();
   }
 });
 
-// Stop button in the status bar.
-voiceStopBtn?.addEventListener("click", stopVoiceRecording);
+// Stop and Cancel buttons in the ChatGPT recording overlay.
+voiceStopBtn?.addEventListener("click", () => stopVoiceRecording(false));
+voiceCancelBtn?.addEventListener("click", () => stopVoiceRecording(true));
 
 /**
  * Send an image file to POST /api/vision/chat and show the result as a

@@ -367,11 +367,61 @@
                     </svg>
                   </label>
                   <input type="file" id="image-input" accept="image/*" class="sr-only" aria-label="Attach Image for Visual Analysis" />
+
+                  <!-- Voice STT Mic Button right after camera -->
+                  <button id="voice-btn" class="toolbar-icon-btn btn-multimodal btn-voice-mic" type="button"
+                    title="Voice input (ElevenLabs STT)" aria-label="Voice input">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="22"></line>
+                    </svg>
+                  </button>
+
                   <button id="send-btn" class="btn-circle-send" type="button" aria-label="Send message" title="Send message">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13"></line>
                       <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ChatGPT-style Live Voice Recording Overlay -->
+              <div class="chatgpt-voice-recording-overlay" id="voice-recording-overlay" style="display: none;" role="region" aria-label="Audio recording">
+                <div class="voice-recording-left">
+                  <span class="voice-live-dot" aria-hidden="true"></span>
+                  <span class="voice-status-label" id="voice-status-text">Listening…</span>
+                  <span class="voice-timer" id="voice-timer">00:00</span>
+                </div>
+                
+                <div class="voice-waveform-container" aria-hidden="true">
+                  <span class="waveform-bar bar-1"></span>
+                  <span class="waveform-bar bar-2"></span>
+                  <span class="waveform-bar bar-3"></span>
+                  <span class="waveform-bar bar-4"></span>
+                  <span class="waveform-bar bar-5"></span>
+                  <span class="waveform-bar bar-6"></span>
+                  <span class="waveform-bar bar-7"></span>
+                  <span class="waveform-bar bar-8"></span>
+                  <span class="waveform-bar bar-9"></span>
+                  <span class="waveform-bar bar-10"></span>
+                  <span class="waveform-bar bar-11"></span>
+                  <span class="waveform-bar bar-12"></span>
+                </div>
+
+                <div class="voice-recording-actions">
+                  <button type="button" class="btn-voice-cancel" id="voice-cancel-btn" title="Cancel recording" aria-label="Cancel recording">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-voice-done" id="voice-stop-btn" title="Stop & Transcribe with ElevenLabs" aria-label="Stop and send recording">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </button>
                 </div>

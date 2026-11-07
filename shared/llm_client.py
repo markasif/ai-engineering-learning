@@ -9,8 +9,12 @@ Quick reference:
     from shared.providers.base import LLMResponse
 """
 
+import asyncio
 import logging
 
+import httpx
+
+from shared.config import settings
 from shared.providers.base import LLMResponse
 from shared.providers.factory import get_provider
 
@@ -51,13 +55,23 @@ async def call_llm(
           .raw         — the original provider response dict, for debugging
     """
     provider = get_provider("llm", api_key=api_key)
-    return await provider.chat(
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        tools=tools,
-        response_format=response_format,
-    )
+    attempts = max(1, settings.provider_retry_attempts if not tools else 1)
+    for attempt in range(attempts):
+        try:
+            return await asyncio.wait_for(
+                provider.chat(
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    tools=tools,
+                    response_format=response_format,
+                ),
+                timeout=settings.provider_timeout_seconds,
+            )
+        except (TimeoutError, OSError, ConnectionError) as exc:
+            if attempt + 1 == attempts:
+                raise
+            logger.warning("LLM provider attempt %d/%d failed: %s", attempt + 1, attempts, exc)
 
 
 async def stream_llm(
@@ -94,8 +108,49 @@ async def transcribe_audio(audio_bytes: bytes, filename: str) -> str:
     Returns:
         The transcribed text as a plain string.
     """
+    if settings.elevenlabs_api_key and (
+        settings.effective_voice_provider().lower() == "elevenlabs"
+        or settings.voice_provider.lower() == "elevenlabs"
+    ):
+        try:
+            return await asyncio.wait_for(
+                _transcribe_with_elevenlabs(audio_bytes, filename),
+                timeout=settings.provider_timeout_seconds,
+            )
+        except Exception as exc:
+            _log.warning(
+                "ElevenLabs STT transcription failed (%s). Falling back to default voice provider.",
+                exc,
+            )
     provider = get_provider("voice")
     return await provider.transcribe(audio_bytes, filename)
+
+
+async def _transcribe_with_elevenlabs(audio_bytes: bytes, filename: str) -> str:
+    """Transcribe a completed audio upload through ElevenLabs Scribe STT API."""
+    model_id = settings.elevenlabs_stt_model or "scribe_v1"
+    async with httpx.AsyncClient(timeout=settings.provider_timeout_seconds) as client:
+        response = await client.post(
+            "https://api.elevenlabs.io/v1/speech-to-text",
+            headers={"xi-api-key": settings.elevenlabs_api_key},
+            data={"model_id": model_id},
+            files={"file": (filename or "recording.webm", audio_bytes)},
+        )
+        if response.status_code >= 400:
+            err_msg = response.text
+            try:
+                err_data = response.json()
+                if "detail" in err_data:
+                    detail = err_data["detail"]
+                    if isinstance(detail, dict):
+                        err_msg = detail.get("message", err_msg)
+                    elif isinstance(detail, str):
+                        err_msg = detail
+            except Exception:
+                pass
+            raise RuntimeError(f"ElevenLabs STT error ({response.status_code}): {err_msg}")
+        payload = response.json()
+        return str(payload.get("text", "")).strip()
 
 
 async def synthesize_speech(text: str, voice: str = "default") -> bytes:

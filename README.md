@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Production-Grade AI Operations Platform with Model Context Protocol (MCP), ReAct Tool-Calling Agents, Dual-Engine Persistence, Real-Time Token Streaming, and Role-Based Access Control (RBAC).</strong>
+  <strong>FastAPI-based enterprise AI assistant with RAG, MCP tool calling, streaming responses, multi-provider LLM support, and role-aware operations.</strong>
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat&logo=sqlite&logoColor=white" alt="SQLite" />
   <img src="https://img.shields.io/badge/Supabase-Cloud%20Sync-3ECF8E?style=flat&logo=supabase&logoColor=white" alt="Supabase" />
   <img src="https://img.shields.io/badge/Streaming-Server--Sent%20Events%20(SSE)-blueviolet?style=flat" alt="SSE Streaming" />
-  <img src="https://img.shields.io/badge/Tests-65%20Passed-brightgreen?style=flat" alt="Tests" />
+  <img src="https://img.shields.io/badge/Quality-Ruff%20%7C%20Pytest-brightgreen?style=flat" alt="Quality checks" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat" alt="License" />
 </p>
 
@@ -24,14 +24,15 @@
 
 ## 🌟 Executive Summary: What is AskRaggy?
 
-**AskRaggy** is an enterprise-ready AI intelligence microservice designed for **NeoIntelli HR & Operations**. It goes beyond simple chatbot wrappers by implementing full-lifecycle agentic AI engineering:
+**AskRaggy** is an AI assistant service designed for **NeoIntelli HR & Operations**. It provides the following capabilities:
 
 1. **Autonomous Tool-Calling Agents**: Solves operational tasks (employee directory queries, leave approvals, policy enforcement, expense filings) via **Model Context Protocol (MCP)** and local ReAct loops.
-2. **Dual-Engine Persistence**: Pairs ultra-fast local **SQLite (WAL Mode)** caching with non-blocking cloud mirroring to **Supabase PostgreSQL**, surviving container restarts and cloud ephemeral disk wipes.
+2. **SQLite and Optional Cloud Sync**: Uses local **SQLite (WAL Mode)** persistence with optional Supabase mirroring. Configure cloud sync explicitly for deployments where local disks are ephemeral.
 3. **Real-Time Token Streaming**: Streams generated tokens directly to the browser via native **Server-Sent Events (SSE)** with a live typewriter effect and citation accordions — 100% free with zero third-party socket fees.
 4. **Frictionless RBAC Demo Switcher**: Allows visitors to test both **Employee** and **Manager** roles with 1-click toggling, enforcing Role-Based Access Control in both LLM prompts and backend tools without sign-up barriers.
-5. **Enterprise Token Protection**: Budgets public demo sessions to 15 turns with IP rate limiting and prompt guards, offering seamless **Bring-Your-Own-Key (BYOK)** unlock for unlimited testing.
-6. **Multi-Format Export**: One-click client export to clean **PDF** (via `@media print`), **CSV** (data tables and expense claims), **Markdown (.md)** transcripts, and plain clipboard text.
+5. **Demo Protection**: Supports demo turn budgets, IP rate limiting, prompt guards, and optional **Bring-Your-Own-Key (BYOK)** configuration.
+6. **Smart Content-Aware Export**: Heuristic export detection providing instant **CSV** buttons for generated tables, and clean PDF, Markdown, and clipboard copy without visual clutter.
+7. **ChatGPT-Style Voice Interaction**: Powered by **ElevenLabs Scribe STT** with live pulsing soundwave visualizers, responsive mobile styling, and dark/light mode support.
 
 ---
 
@@ -136,6 +137,8 @@ sequenceDiagram
 
 ## ⚡ Core Capabilities
 
+This repository is suitable for local development and demos. Before production deployment, configure restricted CORS, durable shared persistence, authentication, monitoring, and backup/recovery procedures.
+
 ### 1. Real-Time Token Streaming (Native Server-Sent Events)
 * **Zero External Fees**: Built natively using FastAPI `StreamingResponse(media_type="text/event-stream")` and browser `ReadableStream`.
 * **Multi-Provider Support**: Streams live tokens from **Groq (Llama-3.3-70B)**, **OpenAI**, and **NVIDIA Nemotron** (handling both `reasoning_content` deltas and `content` deltas).
@@ -171,14 +174,22 @@ Enterprise databases often have employees with identical first names. When a use
 
 AskRaggy will **never guess or pick arbitrarily**. It queries the directory, identifies duplicates (**Diya Sharma** in Engineering vs. **Diya Patel** in Marketing), outputs a candidate comparison table, and requests the exact Employee Code before taking action.
 
-### 5. Multi-Format Minimal Export
-Discreet 32px header button providing 4 instant export options:
-* **📄 Print / PDF**: Dedicated `@media print` layout that hides chat chrome and renders an executive report.
-* **📊 Export Tables (CSV)**: Automatically scans chat messages for tables (staff directories, expense claims, leave rosters) and exports them into an Excel/Sheets-compatible `.csv`.
-* **📝 Markdown Transcript (.md)**: Exports full conversation transcripts with timestamps, persona metadata, and citations.
-* **📋 Copy Text**: One-click clipboard copy of clean conversation prose.
+### 5. Smart Content-Aware Export (Zero-Clutter UI)
+* **Intelligent Heuristics**: Export controls only appear on AI bubbles that contain structured or rich data (tables, code snippets, cited retrieval sources, or detailed answers $\ge$ 150 words). Simple conversational replies remain clean and unbloated.
+* **Contextual Quick Actions**: When a table is generated, an instant 📊 **CSV** export button surfaces directly on the bubble.
+* **Full Multi-Format Export**:
+  * **📄 Print / PDF**: Dedicated `@media print` layout that renders an executive summary without UI chrome.
+  * **📊 Export Tables (CSV)**: Automatically extracts parsed tables into spreadsheet-ready `.csv` files.
+  * **📝 Markdown Transcript (.md)**: Exports full conversation transcripts with metadata, personas, and citations.
+  * **📋 Copy Text**: One-click clipboard copy of clean conversation prose.
 
-### 6. LinkedIn Demo Token Protection & BYOK
+### 6. ChatGPT-Style Live Voice Input (ElevenLabs STT)
+* **One-Click Voice Dictation**: A sleek microphone button placed alongside the camera input in the chat toolbar.
+* **ChatGPT-Inspired Recording Overlay**: Displays live audio visualizer soundwave bars, pulsating red indicator, and real-time elapsed timer (`00:03`).
+* **High-Accuracy Speech-to-Text**: Transcribes spoken audio via **ElevenLabs Scribe STT** (`/v1/speech-to-text`) with automatic resilient fallback to Groq Whisper.
+* **Universal Responsiveness**: Scales seamlessly across mobile, tablet, and desktop with dedicated Light Mode and Dark Mode styling.
+
+### 7. LinkedIn Demo Token Protection & BYOK
 * **Session Turn Budget**: Demo sessions are capped at **15 high-quality turns** to prevent bot draining.
 * **Live Credit Indicator**: Top bar surfaces `⚡ 15 demo credits remaining`.
 * **BYOK (Bring-Your-Own-Key)**: When credits reach 0, a modal invites the visitor to enter their own free Groq API key in Settings (⚙️) to unlock unlimited turns.
@@ -228,7 +239,7 @@ Try these curated prompts to test every major architecture component:
 | **LLM Inference** | **Groq Llama-3.3-70B** | Sub-second inference latency for classification and synthesis |
 | **Multi-Provider SDK** | **OpenAI, Anthropic, Cohere, Ollama** | Unified abstraction across commercial & open-source models |
 | **Frontend UI** | **HTML5, Vanilla CSS3, Vanilla JS** | Lightweight, accessible, zero-dependency SPA with Dark/Light theme |
-| **Testing & Quality** | **Pytest, pytest-asyncio, Ruff** | 65 automated tests + strict linting & formatting |
+| **Testing & Quality** | **Pytest, pytest-asyncio, Ruff** | Unit/integration tests plus static linting |
 
 ---
 
@@ -273,7 +284,19 @@ SUPABASE_KEY=your_supabase_anon_or_service_key
 
 # Security & Multi-Tenancy
 ENABLE_MULTI_TENANT=true
+TENANT_ID=demo
+TRUST_TENANT_HEADER=false
+
+# Optional ElevenLabs Speech-to-Text
+VOICE_PROVIDER=elevenlabs
+ELEVENLABS_API_KEY=your_elevenlabs_key
+ELEVENLABS_STT_MODEL=scribe_v2
 ```
+
+When `TRUST_TENANT_HEADER=false`, the server uses the configured `TENANT_ID`
+and ignores client-supplied tenant headers. This keeps the public demo simple
+while preventing visitors from selecting arbitrary tenants. Enable trusted
+tenant headers only when an authenticated gateway injects them.
 
 ### 3. Launch Development Server
 
@@ -293,7 +316,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 The repository includes a comprehensive test suite covering unit logic, integration endpoints, and evaluation gates:
 
 ```bash
-# Run full test suite (65 tests)
+# Run the full test suite
 pytest -v
 
 # Run fast unit tests without network calls
@@ -335,10 +358,10 @@ ai-engineering-learning/
 │   ├── style.css                # Enterprise design system, Dark/Light, @media print
 │   └── app.js                   # SSE stream consumer, RBAC state, export handlers
 │
-├── data/                        # Persistent Storage Mount
-│   └── app_state.db             # Local SQLite database (WAL mode)
+├── data/                        # Runtime data (ignored by Git)
+│   └── app_state.db             # Local SQLite database when enabled
 │
-├── tests/                       # Test Suite (65 Passed)
+├── tests/                       # Unit, integration, and evaluation tests
 │   ├── unit/                    # Deterministic unit tests (streaming, RBAC, quota)
 │   └── integration/             # FastAPI TestClient endpoint & smoke tests
 │
@@ -351,4 +374,4 @@ ai-engineering-learning/
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. Free for educational, commercial, and research use.
+This project is licensed under the **MIT License**.

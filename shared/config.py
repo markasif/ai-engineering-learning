@@ -121,6 +121,15 @@ class Settings(BaseSettings):
     # derived from the X-Tenant-ID request header.
     enable_multi_tenant: bool = False
 
+    # Demo-safe tenant selection. Client-supplied tenant headers are supported
+    # in multi-tenant environments and test harnesses.
+    tenant_id: str = "default"
+    trust_tenant_header: bool = True
+
+    # Comma-separated browser origins. Empty keeps the public demo permissive;
+    # set this in deployment environments to restrict browser access.
+    cors_allowed_origins: str = ""
+
     # Enable long-term retrieval memory (Part C — enterprise extension).
     # When True, retrieval events are logged and can be summarised into a
     # KnowledgeDigest that is injected into the smart chat system prompt.
@@ -166,6 +175,8 @@ class Settings(BaseSettings):
     # Feature 10: Voice + Vision models
     # -------------------------------------------------------------------------
     stt_model: str = "whisper-large-v3-turbo"  # speech-to-text (Groq default)
+    elevenlabs_api_key: str = ""
+    elevenlabs_stt_model: str = "scribe_v2"
     tts_model: str = ""  # text-to-speech (OpenAI default when set)
     vlm_model: str = ""  # vision-language model (Ollama default)
 
@@ -178,6 +189,8 @@ class Settings(BaseSettings):
     # Rate limiting (Feature 12)
     # -------------------------------------------------------------------------
     rate_limit_per_minute: int = 60
+    provider_timeout_seconds: float = 45.0
+    provider_retry_attempts: int = 2
 
     # -------------------------------------------------------------------------
     # Domain / assistant identity
