@@ -109,6 +109,12 @@ def init_db() -> None:
                     source_session_count INTEGER NOT NULL
                 );
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS metrics_store (
+                    key TEXT PRIMARY KEY,
+                    value REAL NOT NULL
+                );
+            """)
     finally:
         conn.close()
 
@@ -125,6 +131,7 @@ def clear_test_db() -> None:
             conn.execute("DELETE FROM tasks;")
             conn.execute("DELETE FROM retrieval_logs;")
             conn.execute("DELETE FROM retrieval_digests;")
+            conn.execute("DELETE FROM metrics_store;")
     finally:
         conn.close()
 

@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from app.core.config import settings
 from app.core.rate_limit import RATE_LIMITING_ENABLED
 from shared import metrics
+from shared.circuit_breaker import llm_circuit_breaker
 from shared.eval_harness import EvalCase, EvalReport, run_eval
 
 router = APIRouter()
@@ -69,6 +70,53 @@ async def provider_info() -> dict[str, Any]:
         "assistant_name": settings.assistant_name,
         "domain_name": settings.effective_domain(),
         "assistant_description": settings.assistant_description,
+    }
+
+
+@router.get("/capabilities", tags=["Infrastructure"])
+async def capabilities() -> dict[str, Any]:
+    """
+    Report active LLM and multimodal runtime capabilities, timeouts, retries,
+    and circuit breaker operational health.
+    """
+    llm_name = settings.llm_provider.lower().strip()
+    voice_name = settings.effective_voice_provider().lower().strip()
+    vlm_name = settings.effective_vlm_provider().lower().strip()
+
+    # Tool calling support across providers
+    tools_supported = llm_name in {"openai", "groq", "anthropic", "azure", "bedrock", "vertex"}
+    streaming_supported = True
+    cag_supported = True
+    stt_supported = bool(
+        settings.elevenlabs_api_key or settings.groq_api_key or settings.openai_api_key
+    )
+    tts_supported = bool(settings.elevenlabs_api_key or settings.openai_api_key)
+    vision_supported = (vlm_name == "openai" and "gpt-4" in settings.openai_model) or (
+        vlm_name == "ollama" and "llava" in settings.ollama_model
+    )
+
+    return {
+        "status": "operational",
+        "provider": {
+            "llm": llm_name,
+            "voice": voice_name,
+            "vlm": vlm_name,
+        },
+        "resilience": {
+            "timeout_seconds": settings.provider_timeout_seconds,
+            "retry_attempts": settings.provider_retry_attempts,
+            "circuit_breaker": llm_circuit_breaker.get_status(),
+        },
+        "features": {
+            "streaming": streaming_supported,
+            "tool_calling": tools_supported,
+            "context_caching_cag": cag_supported,
+            "audio_speech_to_text": stt_supported,
+            "audio_text_to_speech": tts_supported,
+            "vision_analysis": vision_supported,
+            "byok_custom_keys": True,
+            "mcp_agent_tools": True,
+        },
     }
 
 

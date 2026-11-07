@@ -126,8 +126,16 @@ def create_application() -> FastAPI:
     app.add_middleware(TimingMiddleware)
 
     @app.middleware("http")
-    async def cache_static_assets(request, call_next):
+    async def security_and_cache_middleware(request, call_next):
         response = await call_next(request)
+        # Production security headers
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(self), geolocation=()"
+        )
+
         path = request.url.path.lower()
         if path.endswith((".js", ".css")):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

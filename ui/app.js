@@ -51,7 +51,10 @@ applyTheme(currentTheme);
 // BYOK (Bring Your Own Key) & Centralized Request Headers
 // =============================================================================
 const BYOK_STORAGE_KEY = "askraggy_byok_key";
-let activeByokKey = localStorage.getItem(BYOK_STORAGE_KEY) || "";
+let activeByokKey =
+  sessionStorage.getItem(BYOK_STORAGE_KEY) ||
+  localStorage.getItem(BYOK_STORAGE_KEY) ||
+  "";
 let activeTenantId = "";
 
 /**
@@ -4932,6 +4935,7 @@ function initByokSettings() {
 
   byokClearBtn?.addEventListener("click", () => {
     activeByokKey = "";
+    sessionStorage.removeItem(BYOK_STORAGE_KEY);
     localStorage.removeItem(BYOK_STORAGE_KEY);
     if (byokInput) byokInput.value = "";
     updateStatusDisplay();

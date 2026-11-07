@@ -14,6 +14,7 @@ import logging
 
 import httpx
 
+from shared.circuit_breaker import CircuitBreakerOpenException, llm_circuit_breaker
 from shared.config import settings
 from shared.providers.base import LLMResponse
 from shared.providers.factory import get_provider
@@ -54,11 +55,17 @@ async def call_llm(
           .model       — which model was used
           .raw         — the original provider response dict, for debugging
     """
+    if not api_key and not llm_circuit_breaker.can_execute():
+        raise CircuitBreakerOpenException(
+            "Primary LLM circuit is OPEN due to repeated upstream failures. "
+            f"Cooling down ({llm_circuit_breaker.recovery_timeout_seconds}s). Please retry shortly."
+        )
+
     provider = get_provider("llm", api_key=api_key)
     attempts = max(1, settings.provider_retry_attempts if not tools else 1)
     for attempt in range(attempts):
         try:
-            return await asyncio.wait_for(
+            resp = await asyncio.wait_for(
                 provider.chat(
                     messages=messages,
                     temperature=temperature,
@@ -68,7 +75,12 @@ async def call_llm(
                 ),
                 timeout=settings.provider_timeout_seconds,
             )
+            if not api_key:
+                llm_circuit_breaker.record_success()
+            return resp
         except (TimeoutError, OSError, ConnectionError) as exc:
+            if not api_key and attempt + 1 == attempts:
+                llm_circuit_breaker.record_failure(exc)
             if attempt + 1 == attempts:
                 raise
             logger.warning("LLM provider attempt %d/%d failed: %s", attempt + 1, attempts, exc)
