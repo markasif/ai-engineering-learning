@@ -127,7 +127,9 @@ def create_application() -> FastAPI:
     async def cache_static_assets(request, call_next):
         response = await call_next(request)
         path = request.url.path.lower()
-        if path.endswith((".js", ".css", ".png", ".jpg", ".jpeg", ".webp", ".ico")):
+        if path.endswith((".js", ".css")):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        elif path.endswith((".png", ".jpg", ".jpeg", ".webp", ".ico")):
             response.headers.setdefault("Cache-Control", "public, max-age=3600")
         return response
 

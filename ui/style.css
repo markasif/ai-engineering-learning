@@ -4768,6 +4768,13 @@ textarea:focus,
   color: #a8a29e;
 }
 
+.modern-input-field.transcribing,
+[data-theme="dark"] .modern-input-field.transcribing {
+  color: var(--color-matcha, #10b981) !important;
+  font-style: italic !important;
+  opacity: 0.9 !important;
+}
+
 /* --- Modern Chat Toolbar Row --- */
 .modern-chat-toolbar {
   display: flex;
@@ -4860,25 +4867,6 @@ textarea:focus,
 
 .btn-circle-send:active {
   transform: scale(0.95);
-}
-
-.btn-circle-send:disabled,
-.btn-circle-send.btn-disabled-voice {
-  opacity: 0.42 !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-  transform: none !important;
-  box-shadow: none !important;
-  filter: grayscale(0.6) !important;
-}
-
-[data-theme="dark"] .btn-circle-send:disabled,
-[data-theme="dark"] .btn-circle-send.btn-disabled-voice {
-  opacity: 0.35 !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-  transform: none !important;
-  box-shadow: none !important;
 }
 
 /* --- Agent Mode Switcher Pill (Quick vs Multi-Step inside bar) --- */

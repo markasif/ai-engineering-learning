@@ -712,14 +712,6 @@ async function handleStreamingSmartChat(text, thinkingEl) {
 }
 
 async function sendMessage(overrideText = null, existingUserEl = null) {
-  // Prevent sending duplicate messages if voice recording or transcribing is underway
-  if (typeof isVoiceBusy !== "undefined" && isVoiceBusy && overrideText === null) {
-    return;
-  }
-  if (typeof mediaRecorder !== "undefined" && mediaRecorder && mediaRecorder.state === "recording") {
-    return;
-  }
-
   const text = (overrideText ?? chatInput.value).trim();
   if (!text) return;
 
@@ -857,8 +849,6 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
 
 // Send on button click or Enter key (supports stopping while generating).
 sendBtn.addEventListener("click", () => {
-  if (typeof isVoiceBusy !== "undefined" && isVoiceBusy) return;
-  if (typeof mediaRecorder !== "undefined" && mediaRecorder && mediaRecorder.state === "recording") return;
   if (activeChatAbortController) {
     activeChatAbortController.abort();
     activeChatAbortController = null;
@@ -870,8 +860,6 @@ sendBtn.addEventListener("click", () => {
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    if (typeof isVoiceBusy !== "undefined" && isVoiceBusy) return;
-    if (typeof mediaRecorder !== "undefined" && mediaRecorder && mediaRecorder.state === "recording") return;
     if (activeChatAbortController) return;
     sendMessage();
   }
@@ -3961,34 +3949,6 @@ let audioChunks = [];
 let voiceTimerInterval = null;
 let voiceStartTime = 0;
 let isVoiceCancelled = false;
-/** State flag indicating active voice recording or ElevenLabs transcription */
-let isVoiceBusy = false;
-
-/**
- * Enable or disable input controls (including the send/arrow button)
- * while voice recording or transcription is actively in progress.
- */
-function setVoiceBusy(busy) {
-  isVoiceBusy = busy;
-  if (sendBtn) {
-    sendBtn.disabled = busy;
-    if (busy) {
-      sendBtn.classList.add("btn-disabled-voice");
-      sendBtn.setAttribute("aria-disabled", "true");
-      sendBtn.title = "Transcribing voice with ElevenLabs…";
-    } else {
-      sendBtn.classList.remove("btn-disabled-voice");
-      sendBtn.removeAttribute("aria-disabled");
-      sendBtn.title = "Send message";
-    }
-  }
-  if (chatInput) {
-    chatInput.disabled = busy;
-    if (!busy && document.activeElement !== chatInput) {
-      chatInput.focus();
-    }
-  }
-}
 
 function startVoiceTimer() {
   voiceStartTime = Date.now();
@@ -4012,14 +3972,13 @@ function stopVoiceTimer() {
  * Stores chunks in audioChunks; sendVoiceMessage() is called on dataavailable.
  */
 async function startVoiceRecording() {
-  if (mediaRecorder || isVoiceBusy) return;  // already recording or transcribing
+  if (mediaRecorder) return;  // already recording
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
     isVoiceCancelled = false;
-    setVoiceBusy(true);
 
     mediaRecorder.addEventListener("dataavailable", (e) => {
       if (e.data.size > 0) audioChunks.push(e.data);
@@ -4033,7 +3992,6 @@ async function startVoiceRecording() {
       if (!isVoiceCancelled) {
         await sendVoiceMessage(blob);
       } else {
-        setVoiceBusy(false);
         if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
         if (voiceBtn) voiceBtn.classList.remove("recording");
       }
@@ -4050,7 +4008,6 @@ async function startVoiceRecording() {
     startVoiceTimer();
 
   } catch (err) {
-    setVoiceBusy(false);
     showToast(`Microphone error: ${err.message}. Check browser permissions.`, "error");
   }
 }
@@ -4062,28 +4019,47 @@ function stopVoiceRecording(cancelled = false) {
     mediaRecorder.stop();
   }
   stopVoiceTimer();
+  if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
+  if (voiceBtn) voiceBtn.classList.remove("recording");
+
+  const activeInput = (document.getElementById("doc-chat-panel") && document.getElementById("doc-chat-panel").style.display !== "none")
+    ? document.getElementById("doc-chat-input")
+    : (document.getElementById("chat-input") || chatInput);
+
   if (cancelled) {
-    setVoiceBusy(false);
-    if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
-    if (voiceBtn) voiceBtn.classList.remove("recording");
     showToast("Recording cancelled", "info");
+    if (activeInput && activeInput.classList.contains("transcribing")) {
+      activeInput.classList.remove("transcribing");
+      activeInput.disabled = false;
+      activeInput.value = "";
+    }
   } else {
-    // Keep arrow button disabled while transcribing with ElevenLabs
-    setVoiceBusy(true);
-    if (voiceStatusTxt) voiceStatusTxt.textContent = "Transcribing with ElevenLabs…";
+    // Show "Transcribing with ElevenLabs…" directly in the user input box
+    if (activeInput) {
+      activeInput.value = "Transcribing with ElevenLabs…";
+      activeInput.disabled = true;
+      activeInput.classList.add("transcribing");
+    }
   }
 }
 
 /**
  * Send a recorded audio Blob to POST /api/voice/transcribe and handle the response.
- * Displays the transcribed speech as the user's message FIRST in chat,
- * followed by the assistant thinking indicator and answer.
+ * Displays the transcribed speech inside the input box first,
+ * then sends it as the user's message in chat, followed by the assistant response.
  *
  * @param {Blob} audioBlob - the recorded audio in WebM format
  */
 async function sendVoiceMessage(audioBlob) {
-  setVoiceBusy(true);
-  if (voiceStatusTxt) voiceStatusTxt.textContent = "Transcribing with ElevenLabs…";
+  const activeInput = (document.getElementById("doc-chat-panel") && document.getElementById("doc-chat-panel").style.display !== "none")
+    ? document.getElementById("doc-chat-input")
+    : (document.getElementById("chat-input") || chatInput);
+
+  if (activeInput) {
+    activeInput.value = "Transcribing with ElevenLabs…";
+    activeInput.disabled = true;
+    activeInput.classList.add("transcribing");
+  }
 
   const formData = new FormData();
   formData.append("audio", audioBlob, "recording.webm");
@@ -4107,31 +4083,46 @@ async function sendVoiceMessage(audioBlob) {
     const transcript = (data.text || "").trim();
 
     if (!transcript) {
-      setVoiceBusy(false);
-      showToast("No speech detected. Please try speaking again.", "info");
+      if (activeInput) {
+        activeInput.disabled = false;
+        activeInput.classList.remove("transcribing");
+        activeInput.value = "";
+      }
+      showToast("No speech detected. Please speak into the mic.", "info");
       return;
     }
 
-    // Hide recording overlay immediately
-    if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
-    if (voiceBtn) voiceBtn.classList.remove("recording");
+    // 1. Put the transcribed text directly into the user input field
+    if (activeInput) {
+      activeInput.disabled = false;
+      activeInput.classList.remove("transcribing");
+      activeInput.value = transcript;
+      activeInput.focus();
+    }
 
-    // Re-enable send button and input before sending message
-    setVoiceBusy(false);
+    // 2. Brief visual pause (450ms) so user sees the speech translated into their input box
+    await new Promise((r) => setTimeout(r, 450));
 
-    // Put transcribed text into the input field and send via chat pipeline
-    // This displays the transcribed text as the user message FIRST in chat,
-    // then shows assistant thinking, and renders the assistant response below.
-    if (chatInput) chatInput.value = transcript;
+    // 3. Send message via standard pipeline:
+    // User message bubble appears in chat FIRST, then assistant thinking bubble, then assistant answer!
     await sendMessage(transcript);
 
   } catch (err) {
-    setVoiceBusy(false);
+    if (activeInput) {
+      activeInput.disabled = false;
+      activeInput.classList.remove("transcribing");
+      activeInput.value = "";
+    }
+    showToast(`Voice error: ${err.message}`, "error");
     appendMessage("ai", `Voice error: ${err.message}. Check your ElevenLabs / STT settings in .env.`);
   } finally {
-    setVoiceBusy(false);
     if (voiceRecordingOverlay) voiceRecordingOverlay.style.display = "none";
     if (voiceBtn) voiceBtn.classList.remove("recording");
+    if (activeInput && activeInput.classList.contains("transcribing")) {
+      activeInput.disabled = false;
+      activeInput.classList.remove("transcribing");
+      activeInput.value = "";
+    }
   }
 }
 
