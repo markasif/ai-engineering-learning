@@ -250,7 +250,7 @@ function appendStoppedNotice(context = "general") {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Assistant";
+  label.style.display = "none";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble stopped-bubble";
@@ -472,7 +472,11 @@ function appendMessage(role, text, isThinking = false) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = role === "user" ? "You" : "Assistant";
+  if (role === "user") {
+    label.textContent = "You";
+  } else {
+    label.style.display = "none";
+  }
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
@@ -570,7 +574,7 @@ async function handleStreamingSmartChat(text, thinkingEl) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Assistant";
+  label.style.display = "none";
   wrapper.appendChild(label);
 
   const card = document.createElement("div");
@@ -1088,7 +1092,7 @@ function appendStructuredResponse(data) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Assistant";
+  label.style.display = "none";
 
   // Card body
   const card = document.createElement("div");
@@ -1144,7 +1148,7 @@ function appendSmartResponse(data) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Assistant";
+  label.style.display = "none";
 
   const card = document.createElement("div");
   card.className = "smart-response-card";
@@ -4255,7 +4259,7 @@ function appendVisionResponse(data, thumbUrl) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = "Assistant";
+  label.style.display = "none";
 
   const card = document.createElement("div");
   card.className = "vision-response-card";
