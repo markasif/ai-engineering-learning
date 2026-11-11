@@ -4736,6 +4736,47 @@ textarea:focus,
   margin: 1.25rem auto 0;
 }
 
+/* --- Minimal Grounding Context Notice (Unobtrusive) --- */
+.default-handbook-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.85rem auto 0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.74rem;
+  color: var(--color-stone, #78716c);
+  text-align: center;
+  flex-wrap: wrap;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .default-handbook-note {
+  color: #94a3b8;
+}
+
+.default-handbook-note .btn-note-upload {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--color-matcha, #10b981);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2.5px;
+  transition: color 0.15s ease;
+}
+
+.default-handbook-note .btn-note-upload:hover {
+  color: var(--color-matcha-hover, #059669);
+}
+
+[data-theme="dark"] .default-handbook-note .btn-note-upload {
+  color: #34d399;
+}
+
 .clean-prompt-card {
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid rgba(0, 0, 0, 0.08);

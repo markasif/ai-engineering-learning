@@ -1825,6 +1825,18 @@ btnAdminBackChat?.addEventListener("click", () => {
   switchTab("chat");
 });
 
+const btnGotoDocUpload = document.getElementById("btn-goto-doc-upload");
+btnGotoDocUpload?.addEventListener("click", () => {
+  switchTab("documents");
+  if (window.innerWidth <= 992 && typeof toggleMobileSidebar === "function") {
+    toggleMobileSidebar(false);
+  }
+  const fileInputEl = document.getElementById("file-input");
+  if (fileInputEl) {
+    fileInputEl.click();
+  }
+});
+
 // =============================================================================
 // Feature 4: Document ingestion
 // =============================================================================

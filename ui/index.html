@@ -31,7 +31,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=7.12.0" />
   <link rel="shortcut icon" href="favicon.ico?v=7.12.0" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.12.0" />
-  <link rel="stylesheet" href="style.css?v=8.1.0" />
+  <link rel="stylesheet" href="style.css?v=8.2.0" />
   <script>
     (function() {
       var saved = localStorage.getItem("askraggy_theme") || "dark";
@@ -358,6 +358,14 @@
                     <span class="clean-prompt-desc">Receipts &amp; policy caps</span>
                   </button>
                 </div>
+
+                <!-- Grounding Context Notice (Minimal, unobtrusive) -->
+                <div class="default-handbook-note" id="chat-handbook-note">
+                  <span class="note-text">No document uploaded &mdash; sample Acme Handbook applied.</span>
+                  <button type="button" class="btn-note-upload" id="btn-goto-doc-upload" title="Switch to Documents tab to upload your own files">
+                    Upload your file &rarr;
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -530,9 +538,9 @@
                       </svg>
                     </span>
                     <div class="doc-hint-text">
-                      <strong>No documents uploaded yet</strong>
-                      <span class="doc-hint-desc-desktop">Click <em>Attach file</em> or drag &amp; drop a PDF, DOCX, or TXT file into the chat bar below to start.</span>
-                      <span class="doc-hint-desc-mobile">Attach or drop a PDF, DOCX, or TXT file below to start.</span>
+                      <strong>Sample Acme Enterprise Handbook applied</strong>
+                      <span class="doc-hint-desc-desktop">Default policy handbook active. Click <em>Attach file</em> or drop a PDF, DOCX, or TXT file to query your own.</span>
+                      <span class="doc-hint-desc-mobile">Default handbook active. Attach or drop your file to query your own.</span>
                     </div>
                   </div>
                 </div>
@@ -1224,7 +1232,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=8.1.0" defer></script>
+  <script src="app.js?v=8.2.0" defer></script>
 </body>
 
 </html>

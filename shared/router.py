@@ -78,6 +78,64 @@ _QUICK_GREETINGS = {
     "goodbye",
 }
 
+_DOMAIN_RETRIEVAL_KEYWORDS = {
+    "policy",
+    "policies",
+    "leave",
+    "pto",
+    "vacation",
+    "holiday",
+    "holidays",
+    "sick",
+    "expense",
+    "expenses",
+    "reimburse",
+    "reimbursement",
+    "manager",
+    "managers",
+    "staff",
+    "director",
+    "directory",
+    "reporting",
+    "handbook",
+    "rule",
+    "rules",
+    "guideline",
+    "guidelines",
+    "salary",
+    "compensation",
+    "benefit",
+    "benefits",
+    "allowance",
+    "stipend",
+    "receipt",
+    "receipts",
+    "approval",
+    "approvals",
+    "who is",
+    "who are",
+    "team",
+    "hire",
+    "hiring",
+    "onboarding",
+    "security",
+    "password",
+    "2fa",
+    "compliance",
+    "document",
+    "documents",
+    "contract",
+    "contracts",
+    "file",
+    "files",
+    "clause",
+    "procedure",
+    "procedures",
+    "acme",
+    "rahul",
+    "sarah",
+}
+
 
 async def classify_query(query: str, api_key: str | None = None) -> dict:
     """
@@ -107,6 +165,15 @@ async def classify_query(query: str, api_key: str | None = None) -> dict:
             "confidence": 1.0,
             "reasoning": "Quick match: common conversational greeting.",
             "query_type": "general",
+        }
+
+    # Fast-path heuristic: Enterprise terminology directly routes to RAG without an extra LLM roundtrip
+    if any(kw in normalized for kw in _DOMAIN_RETRIEVAL_KEYWORDS):
+        return {
+            "needs_retrieval": True,
+            "confidence": 0.95,
+            "reasoning": "Fast heuristic match: contains enterprise domain/policy terminology.",
+            "query_type": "domain",
         }
 
     result = await call_llm(
