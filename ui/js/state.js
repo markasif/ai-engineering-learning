@@ -28,11 +28,19 @@ export const DEMO_PERSONAS = {
   },
 };
 
+const getStorage = (type, key) => {
+  try {
+    return (typeof window !== "undefined" && window[type]) ? window[type].getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const state = {
   currentSessionId: null,
   currentPersona: DEMO_PERSONAS.employee,
   activeTenantId: "",
-  activeByokKey: sessionStorage.getItem(BYOK_STORAGE_KEY) || localStorage.getItem(BYOK_STORAGE_KEY) || "",
+  activeByokKey: getStorage("sessionStorage", BYOK_STORAGE_KEY) || getStorage("localStorage", BYOK_STORAGE_KEY) || "",
   currentDomainName: "Enterprise HR & Operations",
   activeDocumentId: null,
   currentDocsCache: [],
@@ -41,7 +49,7 @@ export const state = {
   activeAgentAbortController: null,
   activeMultiStepAbortController: null,
   metricsRefreshInterval: null,
-  soundNotificationsEnabled: localStorage.getItem(SOUND_STORAGE_KEY) !== "false",
+  soundNotificationsEnabled: getStorage("localStorage", SOUND_STORAGE_KEY) !== "false",
   currentDemoCredits: DEMO_MAX_MESSAGES_PER_SESSION,
   activeTab: "chat",
 };

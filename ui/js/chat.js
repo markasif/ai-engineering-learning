@@ -756,7 +756,7 @@ function renderEmptyChatState() {
   return `
     <div class="empty-state welcome-clean" id="empty-state">
       <div class="hero-logo-wrapper" aria-hidden="true">
-          <img src="askraggy-logo-mark.png?v=5.9.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+          <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
         </div>
       <h1 class="hero-heading">How can I assist you today?</h1>
       <p class="hero-desc">

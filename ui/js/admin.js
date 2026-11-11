@@ -7,6 +7,27 @@ import { API_BASE, getAuthHeaders } from "./api.js";
 import { loadDocuments } from "./documents.js";
 import { loadSessions } from "./chat.js";
 
+// Multi-Tenant & Telemetry Elements
+export let isMultiTenantEnabled = false;
+
+export const tenantIdInput = document.getElementById("tenant-id-input");
+export const tenantApplyBtn = document.getElementById("tenant-apply-btn");
+export const tenantClearBtn = document.getElementById("tenant-clear-btn");
+export const tenantInfoCard = document.getElementById("tenant-info-card");
+export const toggleMultiTenantSwitch = document.getElementById("toggle-multi-tenant-switch");
+export const tenantToggleLabelText = document.getElementById("tenant-toggle-label-text");
+export const sidebarTenantPill = document.getElementById("sidebar-tenant-pill");
+export const digestRebuildBtn = document.getElementById("digest-rebuild-btn");
+export const digestViewBtn = document.getElementById("digest-view-btn");
+export const digestCard = document.getElementById("digest-card");
+export const retrievalsLoadBtn = document.getElementById("retrievals-load-btn");
+export const retrievalsList = document.getElementById("retrievals-list");
+export const metricsRefreshDot = document.getElementById("metrics-refresh-dot");
+export const metricsGrid = document.getElementById("metrics-grid");
+export const evalRunBtn = document.getElementById("eval-run-btn");
+export const evalResults = document.getElementById("eval-results");
+export const evalStatus = document.getElementById("eval-status");
+
 // Multi-Tenant Management
 export function updateMultiTenantUI(info) {
   const enabled = Boolean(info?.multi_tenant_enabled);
@@ -199,8 +220,6 @@ digestViewBtn?.addEventListener("click", async () => {
 
 
 // Production Design - Metrics & Eval Harness
-const metricsRefreshDot = document.getElementById("metrics-refresh-dot");
-
 /**
  * Fetch GET /api/metrics and render the four metric cards.
  * Called on Admin tab open and every 5 s while the tab is active.

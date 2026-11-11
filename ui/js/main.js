@@ -10,7 +10,10 @@ import {
 import {
   showToast,
   applyResponsivePlaceholders,
-  initSound
+  initSound,
+  exportChatAsCsv,
+  exportChatAsMarkdown,
+  copyChatText
 } from "./utils.js";
 import {
   loadProviderInfo
@@ -21,7 +24,9 @@ import {
   clearChat,
   setPersona,
   updateDemoQuotaDisplay,
-  getActiveMessagesContainer
+  getActiveMessagesContainer,
+  createNewSession,
+  hideDemoLimitModal
 } from "./chat.js";
 import {
   initDocuments,
@@ -155,7 +160,7 @@ function initByokSettings() {
       const maskedKey = savedKey.length > 10 ? `${savedKey.slice(0, 4)}••••${savedKey.slice(-4)}` : "••••••••";
 
       if (byokStatusCard) {
-        byokStatusCard.style.display = "block";
+        if (byokStatusCard.style) byokStatusCard.style.display = "block";
         byokStatusCard.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
             <div>
@@ -171,18 +176,22 @@ function initByokSettings() {
       }
       if (byokHeaderBadge) {
         byokHeaderBadge.textContent = "Custom Key Active";
-        byokHeaderBadge.style.color = "#2ecc71";
-        byokHeaderBadge.style.borderColor = "rgba(46, 204, 113, 0.3)";
+        if (byokHeaderBadge.style) {
+          byokHeaderBadge.style.color = "#2ecc71";
+          byokHeaderBadge.style.borderColor = "rgba(46, 204, 113, 0.3)";
+        }
       }
     } else {
       if (byokStatusCard) {
-        byokStatusCard.style.display = "none";
+        if (byokStatusCard.style) byokStatusCard.style.display = "none";
         byokStatusCard.innerHTML = "";
       }
       if (byokHeaderBadge) {
         byokHeaderBadge.textContent = "Optional · Unlimited";
-        byokHeaderBadge.style.color = "";
-        byokHeaderBadge.style.borderColor = "";
+        if (byokHeaderBadge.style) {
+          byokHeaderBadge.style.color = "";
+          byokHeaderBadge.style.borderColor = "";
+        }
       }
     }
   }
@@ -282,7 +291,7 @@ function initPersonaAndExport() {
   document.getElementById("demo-limit-modal-close")?.addEventListener("click", hideDemoLimitModal);
   document.getElementById("demo-limit-modal-newchat")?.addEventListener("click", () => {
     hideDemoLimitModal();
-    newChat();
+    createNewSession();
   });
   document.getElementById("demo-limit-modal-settings")?.addEventListener("click", () => {
     hideDemoLimitModal();

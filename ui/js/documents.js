@@ -15,7 +15,13 @@ import {
 } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
 
+export const uploadArea = document.getElementById("upload-area");
 export const fileInput = document.getElementById("file-input");
+export const uploadLabel = document.getElementById("upload-label");
+export const uploadProgress = document.getElementById("upload-progress");
+export const uploadProgressText = document.getElementById("upload-progress-text");
+export const documentList = document.getElementById("document-list");
+export const strategySelect = document.getElementById("strategy-select");
 export const uploadBtn = document.getElementById("upload-btn");
 export const uploadSpinner = document.getElementById("upload-spinner");
 export const uploadStatus = document.getElementById("upload-status");
@@ -29,6 +35,7 @@ export const docSendBtn = document.getElementById("doc-send-btn");
 export const docMessageHistory = document.getElementById("doc-message-history");
 export const docEmptyState = document.getElementById("doc-empty-state");
 export const docFilterSelect = document.getElementById("search-doc-filter");
+export const searchDocFilter = document.getElementById("search-doc-filter");
 
 // Document Ingestion & Cards
 export async function uploadFile(file) {
@@ -1131,7 +1138,6 @@ searchInput?.addEventListener("keydown", (e) => {
       }
     });
   }
-})();
 
 /**
  * Real-time Document Size Detection & Strategy Advisory

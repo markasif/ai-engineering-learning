@@ -13,9 +13,12 @@ import {
 } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
 
-export const agentChatInput = document.getElementById("agent-chat-input");
+export const agentInput = document.getElementById("agent-input");
+export const agentChatInput = agentInput;
 export const agentSendBtn = document.getElementById("agent-send-btn");
-export const agentMessageHistory = document.getElementById("agent-message-history");
+export const agentHistory = document.getElementById("agent-history");
+export const agentMessageHistory = agentHistory;
+export const agentNoSession = document.getElementById("agent-no-session");
 export const agentEmptyState = document.getElementById("agent-empty-state");
 
 // ReAct Agent functions

@@ -168,7 +168,25 @@ export function appendStoppedNotice(context = "general") {
   wrapper.appendChild(bubble);
 
   if (context === "doc") {
+    const docMessageHistory = document.getElementById("doc-message-history");
     if (docMessageHistory) {
+      docMessageHistory.appendChild(wrapper);
+      docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
+    }
+  } else if (context === "agent") {
+    const agentHistory = document.getElementById("agent-history");
+    if (agentHistory) {
+      agentHistory.appendChild(wrapper);
+      agentHistory.scrollTop = agentHistory.scrollHeight;
+    }
+  } else {
+    const messageHistory = document.getElementById("message-history");
+    if (messageHistory) {
+      messageHistory.appendChild(wrapper);
+      messageHistory.scrollTop = messageHistory.scrollHeight;
+    }
+  }
+}
 
 
 // --- Thinking Percentage Timer ---
@@ -243,7 +261,7 @@ export function startThinkingPercentage(wrapper, percentEl) {
  * @param {string} text
  * @param {boolean} [isThinking=false]  - show animated dots instead of text
  * @returns {HTMLElement} the created message element (useful for updating it later)
-
+ */
 
 // --- Toast & Confirmation Modal ---
 export function showToast(message, type = "info") {
