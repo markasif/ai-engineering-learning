@@ -60,7 +60,7 @@ export async function uploadFile(file) {
   formData.append("strategy", strategy);
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/documents/upload`, {
@@ -189,7 +189,7 @@ export async function loadDocuments() {
   const docChatInput = document.getElementById("doc-chat-input");
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/documents`, { headers });
@@ -443,7 +443,7 @@ export async function deleteDocumentById(docId) {
   if (!confirmed) return;
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/documents/${docId}`, { method: "DELETE", headers });

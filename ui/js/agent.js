@@ -11,7 +11,8 @@ import {
   playNotificationSound,
   startThinkingPercentage
 } from "./utils.js";
-import { API_BASE, getAuthHeaders } from "./api.js";
+import { API_BASE, getAuthHeaders, recordVisitorSession } from "./api.js";
+import { setActiveSession, loadSessions } from "./chat.js";
 
 export const agentInput = document.getElementById("agent-input");
 export const agentChatInput = agentInput;
@@ -238,7 +239,7 @@ export async function runAgent(overrideText = null, existingUserEl = null) {
   if (!state.currentSessionId) {
     try {
       const headers = {};
-      if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+      if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
       const sRes = await fetch(`${API_BASE}/api/sessions`, {
         method: "POST",
         headers,
@@ -271,9 +272,9 @@ export async function runAgent(overrideText = null, existingUserEl = null) {
         headers,
         body: JSON.stringify({
           message: text,
-          persona: currentPersona.role,
-          user_name: currentPersona.name,
-          user_code: currentPersona.code,
+          persona: state.currentPersona.role,
+          user_name: state.currentPersona.name,
+          user_code: state.currentPersona.code,
         }),
         signal: state.activeAgentAbortController.signal,
       },
@@ -500,20 +501,20 @@ export async function runMultiStepAgent(overrideText = null, existingUserEl = nu
     userEl = agentAppendUser(text);
   }
 
-  activeAgentAbortController = new AbortController();
+  state.activeAgentAbortController = new AbortController();
   setButtonStopState(agentSendBtn, true, "Run agent");
 
   // Auto-provision session in background if none active
-  if (!currentSessionId) {
+  if (!state.currentSessionId) {
     try {
       const headers = {};
-      if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+      if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
       const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
       if (sRes.ok) {
         const sData = await sRes.json();
-        currentSessionId = sData.session_id;
-        recordVisitorSession(currentSessionId);
-        setActiveSession(currentSessionId);
+        state.currentSessionId = sData.session_id;
+        recordVisitorSession(state.currentSessionId);
+        setActiveSession(state.currentSessionId);
         await loadSessions();
       }
     } catch {}
@@ -524,13 +525,13 @@ export async function runMultiStepAgent(overrideText = null, existingUserEl = nu
   const progressCard = agentAppendPlanningCard(text);
 
   const headers = { "Content-Type": "application/json" };
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/agent/plan`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ message: text, session_id: currentSessionId }),
+      body: JSON.stringify({ message: text, session_id: state.currentSessionId }),
     });
 
     if (!res.ok) {
@@ -553,7 +554,7 @@ export async function runMultiStepAgent(overrideText = null, existingUserEl = nu
       steps_completed: [],
     });
   } finally {
-    activeAgentAbortController = null;
+    state.activeAgentAbortController = null;
     setButtonStopState(agentSendBtn, false, "Run agent");
     agentInput?.focus();
   }
@@ -679,7 +680,7 @@ export function updatePlanningCard(card, task) {
 export async function pollTaskStatus(taskId, card) {
   return new Promise((resolve) => {
     const interval = setInterval(async () => {
-      if (activeAgentAbortController?.signal?.aborted) {
+      if (state.activeAgentAbortController?.signal?.aborted) {
         clearInterval(interval);
         updatePlanningCard(card, {
           status: "error",
@@ -692,7 +693,7 @@ export async function pollTaskStatus(taskId, card) {
       }
       try {
         const res = await fetch(`${API_BASE}/api/agent/status/${taskId}`, {
-          signal: activeAgentAbortController?.signal,
+          signal: state.activeAgentAbortController?.signal,
         });
         if (!res.ok) return;  // keep polling on transient errors
         const task = await res.json();

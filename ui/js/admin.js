@@ -5,7 +5,7 @@ import { state } from "./state.js";
 import { escapeHtml, showToast } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
 import { loadDocuments } from "./documents.js";
-import { loadSessions } from "./chat.js";
+import { loadSessions, clearChat, setActiveSession } from "./chat.js";
 
 // Multi-Tenant & Telemetry Elements
 export let isMultiTenantEnabled = false;
@@ -102,7 +102,7 @@ export async function applyTenant(newTenantId, announce = true) {
   }
 
   // Clear current active session because switching tenant changes security domain
-  currentSessionId = null;
+  state.currentSessionId = null;
   clearChat();
   setActiveSession(null);
 
@@ -409,7 +409,7 @@ retrievalsLoadBtn?.addEventListener("click", async () => {
   if (!retrievalsList) return;
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/retrieval-memory/recent?limit=10`, { headers });

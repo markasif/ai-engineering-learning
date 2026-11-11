@@ -1,7 +1,7 @@
 /**
  * AskRaggy Enterprise Platform - Centralized API & Networking Module
  */
-import { state, VISITOR_SESSIONS_STORAGE_KEY } from "./state.js";
+import { state, VISITOR_SESSIONS_STORAGE_KEY, BYOK_STORAGE_KEY } from "./state.js";
 import { escapeHtml } from "./utils.js";
 
 export const API_BASE = "";
@@ -70,24 +70,24 @@ export async function loadProviderInfo() {
       state.currentDomainName = info.domain_name || info.assistant_name;
       const domainDisplay = document.getElementById("welcome-domain-display");
       if (domainDisplay) {
-        domainDisplay.textContent = currentDomainName;
+        domainDisplay.textContent = state.currentDomainName;
       }
       const domainDesc = document.getElementById("welcome-domain-desc");
       if (domainDesc) {
-        domainDesc.textContent = currentDomainName;
+        domainDesc.textContent = state.currentDomainName;
       }
       const agentDomainDisplay = document.getElementById("agent-domain-display");
       if (agentDomainDisplay) {
-        agentDomainDisplay.textContent = currentDomainName;
+        agentDomainDisplay.textContent = state.currentDomainName;
       }
       const headerDomainDisplay = document.getElementById("header-domain-display");
       if (headerDomainDisplay) {
-        headerDomainDisplay.textContent = currentDomainName;
+        headerDomainDisplay.textContent = state.currentDomainName;
       }
     }
 
     card.innerHTML = `
-      <span>Domain: <strong class="domain-info-badge">${escapeHtml(currentDomainName)}</strong></span>
+      <span>Domain: <strong class="domain-info-badge">${escapeHtml(state.currentDomainName)}</strong></span>
       <span>LLM Provider: <span class="badge">${info.llm_provider ?? "—"}</span></span>
       <span>Model: <code>${info.llm_model ?? "—"}</code></span>
       ${info.voice_provider ? `<span>Voice: <span class="badge">${info.voice_provider}</span> (${info.voice_model ?? "—"})</span>` : ""}

@@ -14,7 +14,8 @@ import {
   renderRateLimitNotice,
   detectExportWorthy,
   buildSmartExportRow,
-  createMsgExportDropdown
+  createMsgExportDropdown,
+  toggleMobileSidebar
 } from "./utils.js";
 import {
   API_BASE,
@@ -24,6 +25,7 @@ import {
   removeVisitorSession
 } from "./api.js";
 
+export const sessionSidebar = document.getElementById("session-sidebar");
 export const messageHistory = document.getElementById("message-history");
 export const chatInput = document.getElementById("chat-input");
 export const sendBtn = document.getElementById("send-btn");
@@ -130,7 +132,7 @@ export async function handleGeneralChatEdit(msgWrapper, newText) {
     if (state.currentSessionId) {
       try {
         const headers = { "Content-Type": "application/json" };
-        if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+        if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
         await fetch(`${API_BASE}/api/sessions/${state.currentSessionId}/truncate`, {
           method: "POST",
           headers,
@@ -165,7 +167,7 @@ export async function handleAgentChatEdit(msgWrapper, newText) {
     if (state.currentSessionId) {
       try {
         const headers = { "Content-Type": "application/json" };
-        if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+        if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
         await fetch(`${API_BASE}/api/sessions/${state.currentSessionId}/truncate`, {
           method: "POST",
           headers,
@@ -288,9 +290,9 @@ export async function handleStreamingSmartChat(text, thinkingEl) {
     headers,
     body: JSON.stringify({
       message: text,
-      persona: currentPersona.role,
-      user_name: currentPersona.name,
-      user_code: currentPersona.code,
+      persona: state.currentPersona.role,
+      user_name: state.currentPersona.name,
+      user_code: state.currentPersona.code,
     }),
     signal: state.activeChatAbortController.signal,
   });
@@ -549,9 +551,9 @@ export async function sendMessage(overrideText = null, existingUserEl = null) {
       headers,
       body: JSON.stringify({
         message: text,
-        persona: currentPersona.role,
-        user_name: currentPersona.name,
-        user_code: currentPersona.code,
+        persona: state.currentPersona.role,
+        user_name: state.currentPersona.name,
+        user_code: state.currentPersona.code,
       }),
       signal: state.activeChatAbortController.signal,
     });
@@ -852,7 +854,7 @@ export async function loadSessions() {
   if (!sessionList) return;
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/sessions`, { headers });
@@ -863,7 +865,7 @@ export async function loadSessions() {
     // Filter sessions: in default demo mode, isolate sidebar to this visitor's browser.
     // If user configured a specific enterprise tenant in Settings (⚙️), show all sessions for that tenant.
     const myIds = getVisitorSessionIds();
-    const isCustomTenant = Boolean(activeTenantId && activeTenantId !== "default");
+    const isCustomTenant = Boolean(state.activeTenantId && state.activeTenantId !== "default");
     const displaySessions = sessions.filter((s) => {
       const hasContentOrActive = s.message_count > 0 || s.id === state.currentSessionId;
       if (isCustomTenant) {
@@ -922,7 +924,7 @@ export async function loadSessions() {
 
         try {
           const delHeaders = {};
-          if (activeTenantId) delHeaders["X-Tenant-ID"] = activeTenantId;
+          if (state.activeTenantId) delHeaders["X-Tenant-ID"] = state.activeTenantId;
           const delRes = await fetch(`${API_BASE}/api/sessions/${s.id}`, { method: "DELETE", headers: delHeaders });
           if (!delRes.ok) throw new Error(`Server returned ${delRes.status}`);
           removeVisitorSession(s.id);
@@ -964,7 +966,7 @@ export async function createNewSession() {
   }
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
@@ -988,7 +990,7 @@ export async function createNewSession() {
  */
 export async function switchToSession(sessionId) {
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/history`, { headers });
@@ -1054,7 +1056,7 @@ export function updateDemoQuotaDisplay(credits) {
   const quotaBadge = document.getElementById("demo-quota-badge");
   if (!quotaText || !quotaBadge) return;
 
-  if (credits < 0 || activeByokKey) {
+  if (credits < 0 || state.activeByokKey) {
     quotaText.textContent = "⚡ Unlimited (BYOK)";
     quotaBadge.style.color = "#10b981";
     quotaBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";

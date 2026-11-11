@@ -879,7 +879,8 @@ export function exportChatAsCsv(contextType = "general") {
     const bubbles = messagesEl.querySelectorAll(".message");
     bubbles.forEach((b) => {
       const isUser = b.classList.contains("user");
-      const speaker = isUser ? `User (${currentPersona.name})` : "AskRaggy Assistant";
+      const persona = state.currentPersona || { name: "User", role: "employee" };
+      const speaker = isUser ? `User (${persona.name})` : "AskRaggy Assistant";
       const time = new Date().toLocaleTimeString();
       const text = b.innerText.replace(/"/g, '""');
       csvContent += `"${time}","${speaker}","${text}"\n`;
@@ -890,7 +891,7 @@ export function exportChatAsCsv(contextType = "general") {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `askraggy-export-${currentSessionId ? currentSessionId.slice(0, 8) : "session"}.csv`;
+  a.download = `askraggy-export-${state.currentSessionId ? state.currentSessionId.slice(0, 8) : "session"}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -907,15 +908,16 @@ export function exportChatAsMarkdown(contextType = "general") {
     return;
   }
 
+  const persona = state.currentPersona || { name: "User", role: "employee" };
   let md = `# AskRaggy Enterprise Intelligence — Chat Transcript\n\n`;
   md += `- **Date:** ${new Date().toLocaleString()}\n`;
-  md += `- **Active Persona:** ${currentPersona.name} (${currentPersona.role.toUpperCase()})\n`;
-  md += `- **Session ID:** \`${currentSessionId || "session"}\`\n`;
-  md += `- **Enterprise Domain:** ${currentDomainName || "Enterprise HR & Operations"}\n\n---\n\n`;
+  md += `- **Active Persona:** ${persona.name} (${persona.role.toUpperCase()})\n`;
+  md += `- **Session ID:** \`${state.currentSessionId || "session"}\`\n`;
+  md += `- **Enterprise Domain:** ${state.currentDomainName || "Enterprise HR & Operations"}\n\n---\n\n`;
 
   bubbles.forEach((b) => {
     const isUser = b.classList.contains("user");
-    const speaker = isUser ? `👤 User (${currentPersona.name})` : `🤖 AskRaggy Assistant`;
+    const speaker = isUser ? `👤 User (${persona.name})` : `🤖 AskRaggy Assistant`;
     md += `### ${speaker}\n\n${b.innerText.trim()}\n\n---\n\n`;
   });
 
@@ -923,7 +925,7 @@ export function exportChatAsMarkdown(contextType = "general") {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `askraggy-transcript-${currentSessionId ? currentSessionId.slice(0, 8) : "session"}.md`;
+  a.download = `askraggy-transcript-${state.currentSessionId ? state.currentSessionId.slice(0, 8) : "session"}.md`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -940,11 +942,12 @@ export function copyChatText(contextType = "general") {
     return;
   }
 
+  const persona = state.currentPersona || { name: "User", role: "employee" };
   let text = `AskRaggy Enterprise Chat Transcript\n`;
-  text += `Persona: ${currentPersona.name} (${currentPersona.role}) | Date: ${new Date().toLocaleString()}\n\n`;
+  text += `Persona: ${persona.name} (${persona.role}) | Date: ${new Date().toLocaleString()}\n\n`;
   bubbles.forEach((b) => {
     const isUser = b.classList.contains("user");
-    const speaker = isUser ? `User (${currentPersona.name})` : "AskRaggy Assistant";
+    const speaker = isUser ? `User (${persona.name})` : "AskRaggy Assistant";
     text += `[${speaker}]\n${b.innerText.trim()}\n\n`;
   });
 
@@ -953,6 +956,31 @@ export function copyChatText(contextType = "general") {
   }).catch(() => {
     showToast("Unable to copy to clipboard.", "error");
   });
+}
+
+// Mobile sidebar drawer manager
+export function toggleMobileSidebar(forceClose = false) {
+  const sessionSidebar = document.getElementById("session-sidebar");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
+  if (!sessionSidebar) return;
+  if (forceClose) {
+    sessionSidebar.classList.remove("sidebar-open");
+    if (sidebarBackdrop) {
+      sidebarBackdrop.hidden = true;
+      sidebarBackdrop.classList.remove("visible");
+    }
+    mobileSidebarToggle?.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("drawer-open");
+    return;
+  }
+  const isOpen = sessionSidebar.classList.toggle("sidebar-open");
+  if (sidebarBackdrop) {
+    sidebarBackdrop.hidden = !isOpen;
+    sidebarBackdrop.classList.toggle("visible", isOpen);
+  }
+  mobileSidebarToggle?.setAttribute("aria-expanded", String(isOpen));
+  document.body.classList.toggle("drawer-open", isOpen);
 }
 
 

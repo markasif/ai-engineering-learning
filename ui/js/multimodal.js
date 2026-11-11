@@ -135,7 +135,7 @@ export async function sendVoiceMessage(audioBlob) {
   formData.append("audio", audioBlob, "recording.webm");
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/voice/transcribe`, {
@@ -245,7 +245,7 @@ export async function sendImageMessage(file) {
 
   const userQuery = chatInput?.value?.trim() || "";
   if (chatInput) chatInput.value = "";
-  const prompt = userQuery || `Describe this image in the context of ${currentDomainName || "enterprise documentation"}.`;
+  const prompt = userQuery || `Describe this image in the context of ${state.currentDomainName || "enterprise documentation"}.`;
 
   const formData = new FormData();
   formData.append("image", file, file.name);
@@ -254,7 +254,7 @@ export async function sendImageMessage(file) {
   if (state.currentSessionId) formData.append("session_id", state.currentSessionId);
 
   const headers = {};
-  if (activeTenantId) headers["X-Tenant-ID"] = activeTenantId;
+  if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
   try {
     const res = await fetch(`${API_BASE}/api/vision/chat`, {

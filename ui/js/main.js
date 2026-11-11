@@ -13,7 +13,8 @@ import {
   initSound,
   exportChatAsCsv,
   exportChatAsMarkdown,
-  copyChatText
+  copyChatText,
+  toggleMobileSidebar
 } from "./utils.js";
 import {
   loadProviderInfo
@@ -80,46 +81,77 @@ export function initTheme() {
   applyTheme(currentTheme);
 }
 
-// Mobile Sidebar
-export function toggleMobileSidebar(forceState) {
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebar-overlay");
-  const hamburger = document.getElementById("hamburger-btn");
-  if (!sidebar) return;
-
-  const isCurrentlyOpen = sidebar.classList.contains("mobile-open");
-  const shouldOpen = typeof forceState === "boolean" ? forceState : !isCurrentlyOpen;
-
-  if (shouldOpen) {
-    sidebar.classList.add("mobile-open");
-    overlay?.classList.add("active");
-    hamburger?.classList.add("is-active");
-    hamburger?.setAttribute("aria-expanded", "true");
-    document.body.style.overflow = "hidden";
-  } else {
-    sidebar.classList.remove("mobile-open");
-    overlay?.classList.remove("active");
-    hamburger?.classList.remove("is-active");
-    hamburger?.setAttribute("aria-expanded", "false");
-    document.body.style.overflow = "";
-  }
-}
-
 // Tab Switching
 export function switchTab(tabName) {
+  if (tabName === "search") tabName = "documents";
   state.activeTab = tabName;
-  document.querySelectorAll(".tab-content").forEach((panel) => {
-    panel.classList.toggle("active", panel.id === `tab-${tabName}`);
+
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabPanels = document.querySelectorAll(".tab-panel");
+  const sidebarAdminBtn = document.getElementById("sidebar-admin-btn");
+
+  tabButtons.forEach((btn) => {
+    const active = btn.dataset.tab === tabName;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
   });
 
-  document.querySelectorAll(".tab-btn, .mobile-tab-btn").forEach((btn) => {
-    const isActive = btn.dataset.tab === tabName;
-    btn.classList.toggle("active", isActive);
-    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  if (sidebarAdminBtn) {
+    const isAdmin = tabName === "admin";
+    sidebarAdminBtn.classList.toggle("active", isAdmin);
+    sidebarAdminBtn.setAttribute("aria-selected", String(isAdmin));
+  }
+
+  tabPanels.forEach((panel) => {
+    const show = panel.id === `${tabName}-panel`;
+    panel.toggleAttribute("hidden", !show);
   });
+
+  // Toggle top-right chat & persona controls in navigation bar
+  const chatNavControls = document.getElementById("tab-nav-chat-controls");
+  if (chatNavControls) {
+    chatNavControls.style.display = (tabName === "chat" || tabName === "agent") ? "flex" : "none";
+  }
+
+  // Toggle top-right document controls in navigation bar
+  const docNavControls = document.getElementById("tab-nav-doc-controls");
+  if (docNavControls) {
+    docNavControls.style.display = tabName === "documents" ? "flex" : "none";
+  }
+
+  // Dismiss document popover when switching away
+  const docPop = document.getElementById("doc-manager-popover");
+  if (docPop) docPop.hidden = true;
+  document.getElementById("doc-files-trigger")?.classList.remove("active");
+  document.getElementById("doc-files-trigger")?.setAttribute("aria-expanded", "false");
+
+  // Dismiss chunking strategy popover when switching away
+  const stratPop = document.getElementById("strategy-popover");
+  if (stratPop) stratPop.hidden = true;
+  document.getElementById("strategy-trigger-btn")?.classList.remove("active");
+  document.getElementById("strategy-trigger-btn")?.setAttribute("aria-expanded", "false");
+
+  // Toggle top-right agent controls in navigation bar
+  const agentNavControls = document.getElementById("tab-nav-agent-controls");
+  if (agentNavControls) {
+    agentNavControls.style.display = tabName === "agent" ? "flex" : "none";
+  }
+
+  // Dismiss MCP popover if open when switching away
+  const mcpBody = document.getElementById("mcp-services-body");
+  if (mcpBody) mcpBody.hidden = true;
+  document.getElementById("mcp-services-toggle")?.setAttribute("aria-expanded", "false");
+  const mcpChevron = document.querySelector("#mcp-services-toggle .mcp-toggle-chevron");
+  if (mcpChevron) mcpChevron.textContent = "▼";
+
+  if (tabName === "documents") {
+    loadDocuments();
+  }
 
   if (tabName === "admin") {
+    loadTenantInfo();
     loadMetrics();
+    loadLastEval();
     if (!state.metricsRefreshInterval) {
       state.metricsRefreshInterval = setInterval(loadMetrics, 5000);
     }
@@ -130,13 +162,15 @@ export function switchTab(tabName) {
 
   if (tabName === "agent") {
     checkAgentSessionState();
+    refreshMcpCount();
   }
 
-  toggleMobileSidebar(false);
+  toggleMobileSidebar(true);
 }
 
 // Attach switchTab to window for backward compatibility with inline calls
 window.switchTab = switchTab;
+window.toggleMobileSidebar = toggleMobileSidebar;
 
 // BYOK Settings UI Manager
 function initByokSettings() {
@@ -313,10 +347,41 @@ export async function initApp() {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 
-  const hamburgerBtn = document.getElementById("hamburger-btn");
-  const sidebarOverlay = document.getElementById("sidebar-overlay");
-  hamburgerBtn?.addEventListener("click", () => toggleMobileSidebar());
-  sidebarOverlay?.addEventListener("click", () => toggleMobileSidebar(false));
+  const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
+  const sessionSidebar = document.getElementById("session-sidebar");
+
+  mobileSidebarToggle?.addEventListener("click", () => toggleMobileSidebar());
+  sidebarBackdrop?.addEventListener("click", () => toggleMobileSidebar(true));
+  sidebarCloseBtn?.addEventListener("click", () => toggleMobileSidebar(true));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && sessionSidebar?.classList.contains("sidebar-open")) {
+      toggleMobileSidebar(true);
+    }
+  });
+
+  const sidebarAdminBtn = document.getElementById("sidebar-admin-btn");
+  sidebarAdminBtn?.addEventListener("click", () => {
+    switchTab("admin");
+    if (window.innerWidth <= 992 || sessionSidebar?.classList.contains("sidebar-open")) {
+      toggleMobileSidebar(true);
+    }
+  });
+
+  const btnAdminBackChat = document.getElementById("btn-admin-back-chat");
+  btnAdminBackChat?.addEventListener("click", () => {
+    switchTab("chat");
+  });
+
+  const btnGotoDocUpload = document.getElementById("btn-goto-doc-upload");
+  btnGotoDocUpload?.addEventListener("click", () => {
+    switchTab("documents");
+    if (window.innerWidth <= 992) toggleMobileSidebar(true);
+    const fileInputEl = document.getElementById("file-input");
+    if (fileInputEl) fileInputEl.click();
+  });
 
   initChat();
   initDocuments();
