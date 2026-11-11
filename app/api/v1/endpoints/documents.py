@@ -45,7 +45,8 @@ async def upload_document(
     tenant_id: str = Depends(get_tenant_id),
 ) -> Document:
     """Upload and index documents (PDF, DOCX, TXT) into vector storage."""
-    if strategy not in CHUNKING_STRATEGIES:
+    valid_strategies = set(CHUNKING_STRATEGIES.keys()) | {"auto"}
+    if strategy not in valid_strategies:
         raise HTTPException(status_code=400, detail=f"Unknown strategy '{strategy}'.")
 
     filename = file.filename or "unknown"
@@ -60,13 +61,19 @@ async def upload_document(
                 detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB).",
             )
 
-        def _process() -> tuple[int, int, int]:
+        def _process() -> tuple[int, int, int, str]:
             text = extract_text(file_bytes, filename)
             save_document_text(doc.id, text)
             pages = extract_pages(file_bytes, filename)
             page_count = len(pages) if pages else 1
             char_count = len(text)
-            chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
+
+            # Adaptive auto strategy: CAG for compact files (<= 50 pages & <= 120k chars), else sentence RAG
+            effective_strategy = strategy
+            if strategy == "auto":
+                effective_strategy = "cag" if (page_count <= 50 and char_count <= 120_000) else "sentence"
+
+            chunk_dicts = CHUNKING_STRATEGIES[effective_strategy](text, pages)
 
             for cd in chunk_dicts:
                 save_chunk(
@@ -85,14 +92,14 @@ async def upload_document(
                 [{"filename": filename, "chunk_index": cd["chunk_index"]} for cd in chunk_dicts],
                 tenant_id=tenant_id,
             )
-            return len(chunk_dicts), page_count, char_count
+            return len(chunk_dicts), page_count, char_count, effective_strategy
 
-        chunk_count, page_count, char_count = await asyncio.to_thread(_process)
+        chunk_count, page_count, char_count, resolved_strategy = await asyncio.to_thread(_process)
         update_document(
             doc.id,
             status="ready",
             chunk_count=chunk_count,
-            chunking_strategy=strategy,
+            chunking_strategy=resolved_strategy,
             page_count=page_count,
             char_count=char_count,
         )

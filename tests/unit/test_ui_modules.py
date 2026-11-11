@@ -126,3 +126,18 @@ def test_dom_ids_in_modules_exist_in_html_or_are_dynamic():
         # Check that it uses ?., or an if guard, or null check
         assert f'getElementById("{el_id}")?' in js_code or f"getElementById('{el_id}')?" in js_code or f"if ({el_id}" in js_code or "const " in js_code, f"Unguarded missing element {el_id} in {file_name}"
 
+def test_upload_document_auto_strategy():
+    from starlette.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    files = {"file": ("test_auto_cv.txt", b"Candidate Asif CV content. Full stack AI engineer.", "text/plain")}
+    data = {"strategy": "auto"}
+    res = client.post("/api/documents/upload", files=files, data=data)
+    assert res.status_code == 200, f"Upload failed: {res.text}"
+    body = res.json()
+    assert body["filename"] == "test_auto_cv.txt"
+    assert body["status"] == "ready"
+    assert body["chunking_strategy"] in ("cag", "sentence")
+
+

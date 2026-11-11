@@ -39,7 +39,7 @@ export const searchDocFilter = document.getElementById("search-doc-filter");
 
 // Document Ingestion & Cards
 export async function uploadFile(file) {
-  const strategy = strategySelect?.value ?? "sentence";
+  const strategy = strategySelect?.value || "auto";
   showToast(`Uploading and indexing "${file.name}"…`, "info");
 
   // Show spinner, hide label.
@@ -1256,12 +1256,8 @@ document.addEventListener("keydown", (e) => {
 
 
 export function initDocuments() {
-  fileInput?.addEventListener("change", () => {
-    if (fileInput.files.length > 0) uploadFile(fileInput.files[0]);
-  });
-
   uploadBtn?.addEventListener("click", () => {
-    if (fileInput.files.length > 0) uploadFile(fileInput.files[0]);
+    if (fileInput?.files?.length > 0) uploadFile(fileInput.files[0]);
   });
 
   docDropzone?.addEventListener("dragover", (e) => {
