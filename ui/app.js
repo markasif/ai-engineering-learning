@@ -458,8 +458,21 @@ async function handleAgentChatEdit(msgWrapper, newText) {
  * @param {HTMLElement} wrapper - message wrapper element
  * @param {HTMLElement} percentEl - the percentage display element
  */
+/**
+ * Starts an animated percentage progress counter synchronized with backend retrieval phases.
+ *
+ * Pipeline Phases:
+ *   0% - 25%: Query classification & routing (~0.8s)
+ *  25% - 60%: Knowledge base vector retrieval in ChromaDB
+ *  60% - 85%: Context synthesis & model connection (triggered upon SSE 'start' event)
+ *  85% - 100%: Generation ready (triggered upon first SSE token)
+ *
+ * @param {HTMLElement} wrapper - message wrapper element
+ * @param {HTMLElement} percentEl - the percentage display element
+ */
 function startThinkingPercentage(wrapper, percentEl) {
-  let progress = 0;
+  let currentProgress = 0;
+  let targetProgress = 25; // Phase 1: Query analysis & routing
   const startTime = Date.now();
 
   const timer = setInterval(() => {
@@ -468,25 +481,42 @@ function startThinkingPercentage(wrapper, percentEl) {
       return;
     }
     const elapsed = (Date.now() - startTime) / 1000;
-    // Fast initial climb (0 to 40% in ~0.6s) to show immediate responsiveness
-    if (progress < 40) {
-      progress += Math.floor(Math.random() * 6) + 4;
-    } else if (progress < 75) {
-      progress += Math.floor(Math.random() * 4) + 2;
-    } else if (progress < 90) {
-      progress += Math.floor(Math.random() * 3) + 1;
-    } else if (progress < 98) {
-      // Natural deceleration approaching 98%
-      if (Math.random() > 0.4) progress += 1;
-    } else if (progress === 98 && elapsed > 5) {
-      // Occasional creep to 99% if request takes longer
-      if (Math.random() > 0.8) progress = 99;
+
+    // Dynamically advance targetProgress based on real pipeline timing
+    // if no explicit server SSE event has overridden it yet:
+    if (targetProgress < 60 && elapsed >= 0.8) {
+      targetProgress = 60; // Phase 2: Vector retrieval in progress
+    } else if (targetProgress < 85 && elapsed >= 2.5) {
+      targetProgress = 85; // Phase 3: Synthesizing context & connecting to LLM
+    } else if (targetProgress < 95 && elapsed >= 5.0) {
+      targetProgress = 94; // Phase 4: Long context / generation buffer
     }
-    if (progress > 99) progress = 99;
-    percentEl.textContent = `${progress}%`;
-  }, 75);
+
+    // Smooth ease toward targetProgress to avoid sudden jumps or freezing
+    if (currentProgress < targetProgress) {
+      const remaining = targetProgress - currentProgress;
+      const step = Math.max(0.4, remaining * 0.12);
+      currentProgress = Math.min(targetProgress, currentProgress + step);
+    }
+
+    if (currentProgress > 98 && targetProgress < 100) {
+      currentProgress = 98;
+    }
+
+    percentEl.textContent = `${Math.round(currentProgress)}%`;
+  }, 50);
 
   wrapper._thinkingTimer = timer;
+
+  // Real-time synchronization hook called when backend retrieval/token events arrive
+  wrapper.updateThinkingProgress = function (newTarget) {
+    targetProgress = Math.max(targetProgress, newTarget);
+    if (newTarget >= 100) {
+      currentProgress = 100;
+      percentEl.textContent = "100%";
+      clearInterval(timer);
+    }
+  };
 
   // Intercept wrapper.remove() for immediate cleanup
   const origRemove = wrapper.remove ? wrapper.remove.bind(wrapper) : null;
@@ -676,6 +706,11 @@ async function handleStreamingSmartChat(text, thinkingEl) {
 
         if (payload.type === "start") {
           streamMeta = payload;
+          // Notify thinking indicator that retrieval has finished on the server
+          if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
+            const hasChunks = Boolean(payload.chunks_used && payload.chunks_used.length > 0);
+            thinkingEl.updateThinkingProgress(hasChunks ? 78 : 72);
+          }
           if (typeof payload.demo_credits_left === "number") {
             updateDemoQuotaDisplay(payload.demo_credits_left);
           }
@@ -692,6 +727,9 @@ async function handleStreamingSmartChat(text, thinkingEl) {
           }
         } else if (payload.type === "token") {
           if (!attached) {
+            if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
+              thinkingEl.updateThinkingProgress(100);
+            }
             thinkingEl.remove();
             messageHistory.appendChild(wrapper);
             attached = true;
@@ -876,6 +914,9 @@ async function sendMessage(overrideText = null, existingUserEl = null) {
     }
 
     const data = await response.json();
+    if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
+      thinkingEl.updateThinkingProgress(100);
+    }
     thinkingEl.remove();
     if (typeof data.demo_credits_left === "number") {
       updateDemoQuotaDisplay(data.demo_credits_left);
