@@ -10574,8 +10574,12 @@ body.drawer-open {
     display: none !important;
   }
 
-  /* REMOVE ICONS FROM PROMPT CARDS ON MOBILE */
-  .clean-prompt-icon {
+  /* REMOVE ALL ICONS FROM PROMPT CARDS ON MOBILE */
+  .clean-prompt-icon,
+  .clean-prompt-card svg,
+  .clean-prompt-card .clean-prompt-icon,
+  .clean-prompt-header .clean-prompt-icon,
+  .clean-prompt-header svg {
     display: none !important;
   }
 
