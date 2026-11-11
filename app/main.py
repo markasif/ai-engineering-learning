@@ -83,6 +83,13 @@ async def lifespan(app: FastAPI):
     setup_logging()
     try:
         await check_provider_config()
+        try:
+            from shared.seed_data import seed_default_knowledge_if_empty
+
+            seed_default_knowledge_if_empty()
+        except Exception as seed_exc:
+            _log.debug("Knowledge pre-seed notice: %s", seed_exc)
+
         _log.info(
             "Production AI Assistant Application initialized successfully",
             extra={"event": "startup"},
