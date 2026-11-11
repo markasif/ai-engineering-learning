@@ -10574,13 +10574,30 @@ body.drawer-open {
     display: none !important;
   }
 
-  /* REMOVE ALL ICONS FROM PROMPT CARDS ON MOBILE */
+  /* REMOVE ALL ICONS FROM PROMPT CARDS ON MOBILE (Overriding Dark Theme Specificity) */
   .clean-prompt-icon,
+  [data-theme] .clean-prompt-icon,
+  [data-theme="dark"] .clean-prompt-icon,
+  html[data-theme="dark"] .clean-prompt-icon,
+  body .clean-prompt-icon,
   .clean-prompt-card svg,
+  [data-theme="dark"] .clean-prompt-card svg,
   .clean-prompt-card .clean-prompt-icon,
+  [data-theme="dark"] .clean-prompt-card .clean-prompt-icon,
   .clean-prompt-header .clean-prompt-icon,
-  .clean-prompt-header svg {
+  [data-theme="dark"] .clean-prompt-header .clean-prompt-icon,
+  .clean-prompt-header svg,
+  [data-theme="dark"] .clean-prompt-header svg {
     display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Headings: left-aligned, no extra padding */
