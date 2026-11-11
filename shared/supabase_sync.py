@@ -131,3 +131,44 @@ def sync_fetch_tasks() -> list[dict[str, Any]] | None:
     if isinstance(res, list):
         return res
     return None
+
+
+def ping_supabase() -> dict[str, Any]:
+    """
+    Execute a lightweight query against Supabase to keep the project active
+    and reset the 7-day free tier inactivity pause counter.
+    """
+    url, key = _get_supabase_config()
+    if not (url and key):
+        return {
+            "configured": False,
+            "status": "unconfigured",
+            "message": "SUPABASE_URL and SUPABASE_KEY not set in environment.",
+        }
+    try:
+        with httpx.Client(timeout=4.0) as client:
+            headers = _get_supabase_headers(key)
+            # Query chat_sessions table with limit 1
+            resp = client.get(f"{url}/rest/v1/chat_sessions?select=id&limit=1", headers=headers)
+            # If the table doesn't exist yet, query PostgREST root which always responds
+            if resp.status_code == 404:
+                resp = client.get(f"{url}/rest/v1/", headers=headers)
+
+            is_ok = resp.status_code in (200, 204, 206)
+            return {
+                "configured": True,
+                "status_code": resp.status_code,
+                "status": "active" if is_ok else "reachable",
+                "message": (
+                    "Supabase kept alive successfully."
+                    if is_ok
+                    else f"Supabase responded with HTTP {resp.status_code}"
+                ),
+            }
+    except Exception as exc:
+        logger.warning("Supabase keepalive ping failed: %s", exc)
+        return {
+            "configured": True,
+            "status": "error",
+            "message": str(exc),
+        }

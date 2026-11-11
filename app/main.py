@@ -154,10 +154,17 @@ def create_application() -> FastAPI:
 
     # Root health check alias
     @app.get("/health", tags=["Infrastructure"], include_in_schema=False)
-    async def root_health():
+    async def root_health(ping_db: bool = False):
         from app.api.v1.endpoints.system import health
 
-        return await health()
+        return await health(ping_db=ping_db)
+
+    # Root keep-alive alias (for external cron pingers targeting Render + Supabase)
+    @app.get("/keepalive", tags=["Infrastructure"], include_in_schema=False)
+    async def root_keepalive():
+        from app.api.v1.endpoints.system import keepalive
+
+        return await keepalive()
 
     # OpenAI Compatibility aliases (e.g. GET /v1/models called by external clients)
     @app.get("/v1/models", tags=["OpenAI Compatibility"], include_in_schema=False)

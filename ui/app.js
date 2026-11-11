@@ -452,6 +452,58 @@ async function handleAgentChatEdit(msgWrapper, newText) {
 }
 
 /**
+ * Starts an animated percentage progress counter (0% -> 99%) inside the thinking bubble.
+ * Cleans itself up automatically when the thinking wrapper is removed.
+ *
+ * @param {HTMLElement} wrapper - message wrapper element
+ * @param {HTMLElement} percentEl - the percentage display element
+ */
+function startThinkingPercentage(wrapper, percentEl) {
+  let progress = 0;
+  const startTime = Date.now();
+
+  const timer = setInterval(() => {
+    if (!wrapper || !wrapper.isConnected) {
+      clearInterval(timer);
+      return;
+    }
+    const elapsed = (Date.now() - startTime) / 1000;
+    // Fast initial climb (0 to 40% in ~0.6s) to show immediate responsiveness
+    if (progress < 40) {
+      progress += Math.floor(Math.random() * 6) + 4;
+    } else if (progress < 75) {
+      progress += Math.floor(Math.random() * 4) + 2;
+    } else if (progress < 90) {
+      progress += Math.floor(Math.random() * 3) + 1;
+    } else if (progress < 98) {
+      // Natural deceleration approaching 98%
+      if (Math.random() > 0.4) progress += 1;
+    } else if (progress === 98 && elapsed > 5) {
+      // Occasional creep to 99% if request takes longer
+      if (Math.random() > 0.8) progress = 99;
+    }
+    if (progress > 99) progress = 99;
+    percentEl.textContent = `${progress}%`;
+  }, 75);
+
+  wrapper._thinkingTimer = timer;
+
+  // Intercept wrapper.remove() for immediate cleanup
+  const origRemove = wrapper.remove ? wrapper.remove.bind(wrapper) : null;
+  if (origRemove) {
+    wrapper.remove = function () {
+      if (wrapper._thinkingTimer) {
+        clearInterval(wrapper._thinkingTimer);
+        wrapper._thinkingTimer = null;
+      }
+      origRemove();
+    };
+  }
+
+  return timer;
+}
+
+/**
  * Append a message bubble to the conversation history.
  * Adds an Edit button for user messages to allow editing prior prompts.
  *
@@ -482,12 +534,17 @@ function appendMessage(role, text, isThinking = false) {
   bubble.className = "bubble";
 
   if (isThinking) {
-    // Animated typing indicator — three bouncing dots.
+    // Animated typing indicator — three bouncing dots + loader percentage.
     for (let i = 0; i < 3; i++) {
       const dot = document.createElement("span");
       dot.className = "dot";
       bubble.appendChild(dot);
     }
+    const percentEl = document.createElement("span");
+    percentEl.className = "thinking-percent";
+    percentEl.textContent = "0%";
+    bubble.appendChild(percentEl);
+    startThinkingPercentage(wrapper, percentEl);
   } else {
     bubble.textContent = text;
   }
@@ -2422,6 +2479,11 @@ function appendDocChatMessage(role, text, isThinking = false) {
       dot.className = "dot";
       bubble.appendChild(dot);
     }
+    const percentEl = document.createElement("span");
+    percentEl.className = "thinking-percent";
+    percentEl.textContent = "0%";
+    bubble.appendChild(percentEl);
+    startThinkingPercentage(wrapper, percentEl);
   } else {
     bubble.innerHTML = formatMarkdownToHtml(text);
   }
@@ -3191,6 +3253,11 @@ function agentAppendThinking() {
     dot.className = "dot";
     bubble.appendChild(dot);
   }
+  const percentEl = document.createElement("span");
+  percentEl.className = "thinking-percent";
+  percentEl.textContent = "0%";
+  bubble.appendChild(percentEl);
+  startThinkingPercentage(wrapper, percentEl);
   wrapper.appendChild(label);
   wrapper.appendChild(bubble);
   agentHistory.appendChild(wrapper);

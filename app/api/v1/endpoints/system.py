@@ -4,6 +4,7 @@ System infrastructure, health checks, provider status, metrics, and eval harness
 
 import json
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,16 +29,40 @@ def _find_eval_cases() -> Path | None:
 
 
 @router.get("/health", tags=["Infrastructure"])
-async def health() -> dict[str, Any]:
+async def health(ping_db: bool = False) -> dict[str, Any]:
     """
     Health check with live metrics snapshot.
     Returns status, version, active provider, and request metrics.
+    Optionally pings Supabase if ping_db=true.
     """
-    return {
+    data: dict[str, Any] = {
         "status": "ok",
         "version": "12.0.0",
         "provider": settings.llm_provider,
         "metrics": metrics.get_metrics(),
+    }
+    if ping_db:
+        from shared.supabase_sync import ping_supabase
+
+        data["supabase"] = ping_supabase()
+    return data
+
+
+@router.get("/keepalive", tags=["Infrastructure"])
+async def keepalive() -> dict[str, Any]:
+    """
+    Dual keep-alive endpoint:
+    1. Keeps Render alive by receiving HTTP traffic (prevents 15-minute inactivity spin-down).
+    2. Pings Supabase PostgREST API to keep cloud Postgres active (prevents 7-day inactivity pause).
+    """
+    from shared.supabase_sync import ping_supabase
+
+    supabase_status = ping_supabase()
+    return {
+        "status": "ok",
+        "render": "awake",
+        "supabase": supabase_status,
+        "timestamp": int(datetime.now(UTC).timestamp()),
     }
 
 

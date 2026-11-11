@@ -1,0 +1,43 @@
+name: Keep-Alive (Render & Supabase)
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier from sleeping (15 min inactivity threshold)
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Optional custom URL to ping'
+        required: false
+        default: ''
+
+jobs:
+  ping:
+    name: Ping Service & Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Keep-Alive Endpoint
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || vars.RENDER_APP_URL || github.event.inputs.target_url }}
+        run: |
+          TARGET="${RENDER_APP_URL%/}"
+          if [ -z "$TARGET" ]; then
+            echo "::warning ::RENDER_APP_URL is not set in GitHub Secrets/Variables. Please add RENDER_APP_URL in repo Settings -> Secrets and variables -> Actions."
+            exit 0
+          fi
+
+          echo "Pinging ${TARGET}/keepalive..."
+          RESPONSE=$(curl -sSL -w "\n%{http_code}" --max-time 30 "${TARGET}/keepalive")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response code: $HTTP_CODE"
+          echo "Response body: $BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            echo "Service and Supabase are active!"
+          else
+            echo "::error ::Keepalive ping returned HTTP status $HTTP_CODE"
+            exit 1
+          fi
+

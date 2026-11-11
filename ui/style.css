@@ -401,6 +401,38 @@ html, body {
   40%           { transform: translateY(-6px); }
 }
 
+.thinking-percent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  letter-spacing: 0.03em;
+  min-width: 38px;
+  box-sizing: border-box;
+  user-select: none;
+  animation: fadeInPercent 0.2s ease-out;
+}
+
+@keyframes fadeInPercent {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+[data-theme="dark"] .thinking-percent {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.25);
+}
+
 /* input row */
 .chat-input-row {
   display: flex;
