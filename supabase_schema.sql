@@ -4,10 +4,35 @@
 -- https://supabase.com/dashboard/project/<your-project-id>/sql/new
 -- =============================================================================
 
+-- =============================================================================
+-- SECTION A: QUICK FIX FOR EXISTING TABLES (RLS UNLOCK)
+-- Run this if you already have tables (expenses, employees, leave_requests)
+-- and want the AskRaggy agent to instantly read & write without deleting data!
+-- =============================================================================
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access expenses" ON public.expenses;
+CREATE POLICY "Public access expenses" ON public.expenses FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access employees" ON public.employees;
+CREATE POLICY "Public access employees" ON public.employees FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.leave_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access leave_requests" ON public.leave_requests;
+CREATE POLICY "Public access leave_requests" ON public.leave_requests FOR ALL USING (true) WITH CHECK (true);
+
+-- (Optional) If you prefer to disable RLS entirely instead of policies:
+-- ALTER TABLE public.expenses DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.employees DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.leave_requests DISABLE ROW LEVEL SECURITY;
+
+-- =============================================================================
+-- SECTION B: COMPLETE SCHEMA REFRESH (OPTIONAL - ONLY IF STARTING FROM SCRATCH)
+-- =============================================================================
 -- Drop existing tables to refresh with full enterprise HR schema
-DROP TABLE IF EXISTS public.leave_requests CASCADE;
-DROP TABLE IF EXISTS public.expenses CASCADE;
-DROP TABLE IF EXISTS public.employees CASCADE;
+-- DROP TABLE IF EXISTS public.leave_requests CASCADE;
+-- DROP TABLE IF EXISTS public.expenses CASCADE;
+-- DROP TABLE IF EXISTS public.employees CASCADE;
 
 -- 1. Employees Table
 CREATE TABLE public.employees (

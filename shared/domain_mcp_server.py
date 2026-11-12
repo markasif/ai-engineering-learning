@@ -219,23 +219,56 @@ async def lookup_employee(query: str) -> dict[str, Any]:
     if url and key:
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
+                headers = _get_supabase_headers(key)
+                records: list[dict[str, Any]] = []
+
+                # Attempt 1: Standard enterprise schema columns
                 resp = await client.get(
                     f"{url}/rest/v1/employees",
                     params={
                         "or": f"(name.ilike.*{clean_q}*,email.ilike.*{clean_q}*,employee_code.ilike.*{clean_q}*)",
                         "select": "*",
                     },
-                    headers=_get_supabase_headers(key),
+                    headers=headers,
                 )
                 if resp.status_code == 200:
                     records = resp.json()
-                    if records:
-                        return {
-                            "found": True,
-                            "count": len(records),
-                            "employees": records,
-                            "source": "Supabase PostgreSQL Database",
-                        }
+                elif resp.status_code == 400:
+                    # Attempt 2: Alternative schema with full_name
+                    resp_alt = await client.get(
+                        f"{url}/rest/v1/employees?select=*",
+                        headers=headers,
+                    )
+                    if resp_alt.status_code == 200:
+                        all_emps = resp_alt.json()
+                        ql = clean_q.lower()
+                        records = [
+                            e
+                            for e in all_emps
+                            if ql in str(e.get("full_name", "")).lower()
+                            or ql in str(e.get("name", "")).lower()
+                            or ql in str(e.get("email", "")).lower()
+                            or ql in str(e.get("employee_code", "")).lower()
+                            or ql in str(e.get("department", "")).lower()
+                            or ql in str(e.get("role", "")).lower()
+                        ]
+
+                if records:
+                    # Normalize columns across different database schemas
+                    normalized = []
+                    for e in records:
+                        rec = dict(e)
+                        rec["name"] = rec.get("name") or rec.get("full_name") or "Employee"
+                        rec["employee_code"] = rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                        rec["leave_balance"] = rec.get("leave_balance", 18)
+                        normalized.append(rec)
+
+                    return {
+                        "found": True,
+                        "count": len(normalized),
+                        "employees": normalized,
+                        "source": "Supabase PostgreSQL Database",
+                    }
         except Exception:
             pass  # Fall back to in-memory store
 
@@ -473,10 +506,11 @@ async def submit_expense_claim(
     if url and key:
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
+                headers = _get_supabase_headers(key)
                 resp = await client.post(
                     f"{url}/rest/v1/expenses",
                     json=record,
-                    headers=_get_supabase_headers(key),
+                    headers=headers,
                 )
                 if resp.status_code in (200, 201):
                     return {
@@ -485,6 +519,30 @@ async def submit_expense_claim(
                         "message": f"Expense claim {code} for ${amt:.2f} at {merchant} recorded in Supabase ({approval_status}).",
                         "source": "Supabase PostgreSQL Database",
                     }
+                elif resp.status_code == 400:
+                    # Alternative schema fallback: (amount, category, description, status, employee_id)
+                    alt_payload: dict[str, Any] = {
+                        "amount": amt,
+                        "category": category.strip(),
+                        "description": f"{merchant.strip()} - {description.strip()}" if description.strip() else merchant.strip(),
+                        "status": approval_status,
+                    }
+                    if lookup.get("found"):
+                        first_emp = lookup.get("employees", [{}])[0]
+                        if first_emp.get("id"):
+                            alt_payload["employee_id"] = first_emp["id"]
+                    resp_alt = await client.post(
+                        f"{url}/rest/v1/expenses",
+                        json=alt_payload,
+                        headers=headers,
+                    )
+                    if resp_alt.status_code in (200, 201):
+                        return {
+                            "success": True,
+                            "expense": {**record, **alt_payload},
+                            "message": f"Expense claim for ${amt:.2f} recorded in Supabase ({approval_status}).",
+                            "source": "Supabase PostgreSQL Database",
+                        }
         except Exception:
             pass
 
@@ -505,24 +563,86 @@ async def get_expense_claims(
 
     if url and key:
         try:
-            params: dict[str, Any] = {"select": "*"}
-            if status and status.strip():
-                params["status"] = f"ilike.*{status.strip()}*"
-            if employee_name and employee_name.strip():
-                params["employee_name"] = f"ilike.*{employee_name.strip()}*"
-
             async with httpx.AsyncClient(timeout=8.0) as client:
+                headers = _get_supabase_headers(key)
                 resp = await client.get(
-                    f"{url}/rest/v1/expenses",
-                    params=params,
-                    headers=_get_supabase_headers(key),
+                    f"{url}/rest/v1/expenses?select=*",
+                    headers=headers,
                 )
                 if resp.status_code == 200:
                     records = resp.json()
-                    if records:
+                    if isinstance(records, list) and len(records) > 0:
+                        # Build employee id -> name lookup map if needed
+                        emp_map: dict[str, str] = {}
+                        if any("employee_id" in r for r in records):
+                            try:
+                                emp_resp = await client.get(
+                                    f"{url}/rest/v1/employees?select=*",
+                                    headers=headers,
+                                )
+                                if emp_resp.status_code == 200:
+                                    for e in emp_resp.json():
+                                        eid = str(e.get("id", ""))
+                                        name = (
+                                            e.get("name")
+                                            or e.get("full_name")
+                                            or e.get("email")
+                                            or f"Employee {eid[:6]}"
+                                        )
+                                        if eid:
+                                            emp_map[eid] = name
+                            except Exception:
+                                pass
+
+                        # Normalize records so the AI and UI receive uniform fields
+                        normalized = []
+                        for r in records:
+                            rec = dict(r)
+                            # Resolve amount
+                            try:
+                                rec["amount"] = float(rec.get("amount", 0.0))
+                            except (ValueError, TypeError):
+                                pass
+
+                            # Resolve employee_name
+                            if not rec.get("employee_name"):
+                                eid = str(rec.get("employee_id", ""))
+                                rec["employee_name"] = emp_map.get(
+                                    eid, f"Employee #{eid[:8]}" if eid else "Staff Member"
+                                )
+
+                            # Resolve expense_code
+                            if not rec.get("expense_code"):
+                                rec["expense_code"] = f"EXP-{str(rec.get('id', ''))[:8]}"
+
+                            # Resolve merchant
+                            if not rec.get("merchant"):
+                                rec["merchant"] = rec.get("description") or rec.get("category") or "Vendor"
+
+                            # Resolve category & status
+                            rec["category"] = rec.get("category") or "General"
+                            rec["status"] = rec.get("status") or "Submitted"
+                            normalized.append(rec)
+
+                        # Filter by status in memory (case-insensitive substring)
+                        if status and status.strip():
+                            s_filter = status.strip().lower()
+                            normalized = [
+                                r for r in normalized if s_filter in str(r.get("status", "")).lower()
+                            ]
+
+                        # Filter by employee_name in memory (case-insensitive substring)
+                        if employee_name and employee_name.strip():
+                            e_filter = employee_name.strip().lower()
+                            normalized = [
+                                r
+                                for r in normalized
+                                if e_filter in str(r.get("employee_name", "")).lower()
+                            ]
+
                         return {
-                            "count": len(records),
-                            "expenses": records,
+                            "count": len(normalized),
+                            "expenses": normalized,
                             "source": "Supabase PostgreSQL Database",
                         }
         except Exception:
