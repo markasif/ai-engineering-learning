@@ -39,7 +39,11 @@ export const searchDocFilter = document.getElementById("search-doc-filter");
 
 // Document Ingestion & Cards
 export async function uploadFile(file) {
-  const strategy = strategySelect?.value || "auto";
+  let strategy = strategySelect?.value || "auto";
+  const displayStrategy = strategy;
+  if (strategy === "auto" || strategy === "adaptive" || strategy === "cag" || !strategy) {
+    strategy = "sentence";
+  }
   showToast(`Uploading and indexing "${file.name}"…`, "info");
 
   // Show spinner, hide label.
@@ -52,7 +56,7 @@ export async function uploadFile(file) {
     uploadProgress.style.display = "flex";
   }
   if (uploadProgressText) {
-    uploadProgressText.textContent = `Uploading & indexing "${file.name}" (${strategy})…`;
+    uploadProgressText.textContent = `Uploading & indexing "${file.name}" (${displayStrategy})…`;
   }
 
   const formData = new FormData();
@@ -303,6 +307,30 @@ export async function loadDocuments() {
 
     if (typeof updateStrategyAdvisory === "function") {
       updateStrategyAdvisory();
+    }
+
+    // Dynamic update for minimal default document notice in chat & documents view
+    const chatDefaultNotice = document.getElementById("chat-default-doc-notice");
+    if (chatDefaultNotice) {
+      if (!activeDoc || activeDoc.filename.includes("Acme_Enterprise_Handbook")) {
+        chatDefaultNotice.innerHTML = `<span>Default document applied (Acme Enterprise Handbook).</span><button type="button" class="btn-notice-switch-tab" id="btn-goto-doc-upload">Upload your document ➔</button>`;
+      } else {
+        chatDefaultNotice.innerHTML = `<span>Grounded in <strong>${escapeHtml(activeDocName)}</strong></span><button type="button" class="btn-notice-switch-tab" id="btn-goto-doc-upload">Switch / Upload ➔</button>`;
+      }
+      chatDefaultNotice.querySelector("#btn-goto-doc-upload")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.switchTab?.("documents");
+        setTimeout(() => document.getElementById("file-input")?.click(), 150);
+      });
+    }
+
+    const docHintStatus = document.getElementById("doc-hint-status");
+    if (docHintStatus) {
+      if (!activeDoc || activeDoc.filename.includes("Acme_Enterprise_Handbook")) {
+        docHintStatus.textContent = "Default document active (Acme Enterprise Handbook)";
+      } else {
+        docHintStatus.textContent = `Custom document active (${activeDocName})`;
+      }
     }
 
     loadSearchDocumentFilter(docs);
@@ -1315,5 +1343,10 @@ export function initDocuments() {
       const docInput = document.getElementById("file-input");
       if (docInput) docInput.click();
     }, 150);
+  });
+
+  const btnDocHintUpload = document.getElementById("btn-doc-hint-upload");
+  btnDocHintUpload?.addEventListener("click", () => {
+    document.getElementById("file-input")?.click();
   });
 }
