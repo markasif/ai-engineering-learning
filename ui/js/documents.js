@@ -11,7 +11,10 @@ import {
   setButtonStopState,
   appendStoppedNotice,
   playNotificationSound,
-  startThinkingPercentage
+  startThinkingPercentage,
+  sanitizeDocText,
+  getDocPlaceholder,
+  renderRateLimitNotice
 } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
 
@@ -120,9 +123,17 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
 
   if (!docs || !docs.length) {
     popoverListEl.innerHTML = `
-      <div class="popover-empty-notice">
-        <strong>No documents uploaded yet</strong><br>
-        Click "+ Upload More Documents" above to upload PDF, DOCX, or TXT.
+      <div class="doc-popover-item is-active" title="Default enterprise knowledge base">
+        <div class="doc-popover-item-left">
+          <span class="doc-file-type-icon">📄</span>
+          <div class="doc-popover-item-details">
+            <span class="doc-popover-item-name">Acme Enterprise Handbook (Default)</span>
+            <span class="doc-popover-item-meta">Standard enterprise policies • Active</span>
+          </div>
+        </div>
+        <div class="doc-popover-item-actions">
+          <span class="doc-active-badge">Active</span>
+        </div>
       </div>
     `;
     return;
@@ -209,7 +220,7 @@ export async function loadDocuments() {
       state.activeDocumentId = null;
       state.currentDocsCache = [];
 
-      // 0 documents: show upload guidance hint below the 3 prompt cards
+      // 0 custom documents: show upload guidance hint below the 3 prompt cards
       if (docUploadHint) docUploadHint.style.display = "flex";
       if (docPromptGrid) docPromptGrid.style.display = "grid";
 
@@ -218,21 +229,29 @@ export async function loadDocuments() {
       }
 
       if (docChatInput) {
-        docChatInput.placeholder = getDocPlaceholder(null);
+        docChatInput.disabled = false;
+        docChatInput.placeholder = "Ask anything about Acme Enterprise Handbook (PTO, leadership, expenses)...";
+      }
+      if (docSendBtn) {
+        docSendBtn.disabled = false;
       }
 
-      // Update doc manager pill in top right
+      // Ensure tab-nav-doc-controls is visible in top right
+      const docNavControls = document.getElementById("tab-nav-doc-controls");
+      if (docNavControls) docNavControls.style.display = "flex";
+
+      // Update doc manager pill in top right to show default handbook
       const docManagerDot = document.getElementById("doc-manager-dot");
       const docManagerLabel = document.getElementById("doc-manager-label");
       const docPopoverBadge = document.getElementById("doc-popover-badge");
       const docPopoverList = document.getElementById("doc-popover-list");
 
-      if (docManagerDot) docManagerDot.classList.remove("active");
+      if (docManagerDot) docManagerDot.classList.add("active");
       if (docManagerLabel) {
-        docManagerLabel.textContent = "No document";
-        docManagerLabel.title = "No documents uploaded yet";
+        docManagerLabel.textContent = "Acme Enterprise Handbook";
+        docManagerLabel.title = "Default policy handbook active. Upload your document to query your own.";
       }
-      if (docPopoverBadge) docPopoverBadge.textContent = "0 files";
+      if (docPopoverBadge) docPopoverBadge.textContent = "Default handbook";
       if (docPopoverList) {
         renderDocPopoverList(docPopoverList, [], null);
       }
@@ -244,8 +263,15 @@ export async function loadDocuments() {
       return;
     }
 
-    // 1+ documents: hide upload guidance hint, SHOW "Try asking" prompt cards
-    if (docUploadHint) docUploadHint.style.display = "none";
+    const readyDocs = docs.filter((d) => d.status === "ready");
+    const customDocs = readyDocs.filter((d) => !d.filename.includes("Acme_Enterprise_Handbook"));
+
+    // If no custom documents were uploaded yet, show default upload guidance hint
+    if (customDocs.length === 0) {
+      if (docUploadHint) docUploadHint.style.display = "flex";
+    } else {
+      if (docUploadHint) docUploadHint.style.display = "none";
+    }
     if (docPromptGrid) docPromptGrid.style.display = "grid";
 
     if (btnToggleUpload) {
@@ -255,19 +281,21 @@ export async function loadDocuments() {
       uploadContainer.style.display = "none";
     }
 
-    const readyDocs = docs.filter((d) => d.status === "ready");
-
-    // Select active document: prioritize explicitly active doc (e.g. freshly uploaded),
-    // otherwise default to the latest uploaded document so older files never interfere!
+    // Select active document: prioritize explicitly active doc (e.g. freshly selected),
+    // otherwise default to the latest uploaded custom document (or handbook if only handbook exists)
     let activeDoc = null;
     if (state.activeDocumentId) {
       activeDoc = readyDocs.find((d) => d.id === state.activeDocumentId) || docs.find((d) => d.id === state.activeDocumentId);
     }
     if (!activeDoc) {
-      activeDoc = readyDocs[readyDocs.length - 1] || docs[docs.length - 1];
+      if (customDocs.length > 0) {
+        activeDoc = customDocs[0]; // latest custom document uploaded
+      } else {
+        activeDoc = readyDocs[0] || docs[0];
+      }
       state.activeDocumentId = activeDoc ? activeDoc.id : null;
     }
-    const activeDocName = activeDoc ? activeDoc.filename : "your document";
+    const activeDocName = activeDoc ? activeDoc.filename : "Acme Enterprise Handbook";
 
     if (documentChatSection) {
       documentChatSection.style.display = "flex";
@@ -288,17 +316,6 @@ export async function loadDocuments() {
       docNavControls.style.display = "flex";
     }
 
-    // Update main header right corner badge
-    const headerDocBadge = document.getElementById("header-doc-badge");
-    const headerDocName = document.getElementById("header-doc-name");
-    const headerDocDot = document.getElementById("header-doc-dot");
-    if (headerDocBadge && headerDocName) {
-      headerDocBadge.style.display = "inline-flex";
-      headerDocName.textContent = activeDocName;
-      headerDocBadge.title = `Active grounded document: ${activeDocName} (click to view/switch)`;
-      if (headerDocDot) headerDocDot.classList.add("active");
-    }
-
     // Update doc manager pill in top right
     const docManagerDot = document.getElementById("doc-manager-dot");
     const docManagerLabel = document.getElementById("doc-manager-label");
@@ -307,16 +324,19 @@ export async function loadDocuments() {
 
     if (docManagerDot) docManagerDot.classList.add("active");
     if (docManagerLabel) {
-      if (docs.length === 1) {
+      if (customDocs.length === 0) {
+        docManagerLabel.textContent = "Acme Enterprise Handbook";
+        docManagerLabel.title = "Default policy handbook active. Upload your document to query your own.";
+      } else if (docs.length === 1) {
         docManagerLabel.textContent = activeDocName;
         docManagerLabel.title = activeDocName;
       } else {
-        docManagerLabel.textContent = `${activeDocName} (${docs.length})`;
+        docManagerLabel.textContent = `${activeDocName} (${docs.length} files)`;
         docManagerLabel.title = `${activeDocName} (and ${docs.length - 1} other file${docs.length > 2 ? 's' : ''})`;
       }
     }
     if (docPopoverBadge) {
-      docPopoverBadge.textContent = `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
+      docPopoverBadge.textContent = customDocs.length === 0 ? "Default handbook" : `${docs.length} file${docs.length !== 1 ? "s" : ""}`;
     }
     if (docPopoverList) {
       renderDocPopoverList(docPopoverList, docs, state.activeDocumentId);
@@ -1383,16 +1403,5 @@ export function initDocuments() {
   const btnDocHintUpload = document.getElementById("btn-doc-hint-upload");
   btnDocHintUpload?.addEventListener("click", () => {
     document.getElementById("file-input")?.click();
-  });
-
-  const headerDocBadge = document.getElementById("header-doc-badge");
-  headerDocBadge?.addEventListener("click", () => {
-    if (typeof window.switchTab === "function") {
-      window.switchTab("documents");
-    }
-    const docFilesTrigger = document.getElementById("doc-files-trigger");
-    if (docFilesTrigger) {
-      docFilesTrigger.click();
-    }
   });
 }

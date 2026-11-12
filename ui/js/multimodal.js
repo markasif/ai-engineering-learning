@@ -2,7 +2,7 @@
  * AskRaggy Enterprise Platform - Multimodal AI (Voice & Vision) Module
  */
 import { state } from "./state.js";
-import { showToast } from "./utils.js";
+import { showToast, escapeHtml } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
 import { appendMessage, sendMessage } from "./chat.js";
 

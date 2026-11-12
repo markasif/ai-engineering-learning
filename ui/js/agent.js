@@ -9,7 +9,10 @@ import {
   setButtonStopState,
   appendStoppedNotice,
   playNotificationSound,
-  startThinkingPercentage
+  startThinkingPercentage,
+  renderRateLimitNotice,
+  buildSmartExportRow,
+  detectExportWorthy
 } from "./utils.js";
 import { API_BASE, getAuthHeaders, recordVisitorSession } from "./api.js";
 import { setActiveSession, loadSessions } from "./chat.js";

@@ -612,10 +612,13 @@ async def ask_documents(
                 timeout=15.0,
             )
             answer = res.content
-            if answer and "Here's a thinking process:" in answer:
-                cleaned_ans = re.sub(r"^Here's a thinking process:.*?(?=\n\n(?:\*\*|[A-Z]|#|\d+\.))", "", answer, flags=re.DOTALL | re.IGNORECASE).strip()
-                if cleaned_ans:
-                    answer = cleaned_ans
+            if answer and ("thinking process" in answer.lower() or "1.  **Analyze" in answer):
+                # Strip internal reasoning and preserve the final grounded answer
+                sub_parts = [p.strip() for p in re.split(r"\n\n(?=(?:[A-Z][a-z]|I cannot|Based on|According to|\*\*))", answer) if p.strip()]
+                for p in reversed(sub_parts):
+                    if not re.search(r"^(?:Here's|\d+\.)\s+\*\*", p, flags=re.IGNORECASE):
+                        answer = p
+                        break
             if not answer or not answer.strip() or is_refusal_answer(answer):
                 if is_refusal_answer(answer):
                     return {
