@@ -31,7 +31,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon.png?v=9.0.0" />
   <link rel="shortcut icon" href="assets/icons/favicon.ico?v=9.0.0" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=9.0.0" />
-  <link rel="stylesheet" href="style.css?v=9.4.3" />
+  <link rel="stylesheet" href="style.css?v=9.4.4" />
   <script>
     (function() {
       var saved = localStorage.getItem("askraggy_theme") || "dark";
@@ -206,8 +206,8 @@
               </button>
             </div>
 
-            <!-- DOCUMENT Q&A HEADER CONTROLS (Top right side on desktop) -->
-            <div class="tab-nav-doc-controls" id="tab-nav-doc-controls" style="display: flex;">
+            <!-- DOCUMENT Q&A HEADER CONTROLS (Top right side on desktop, shown only in Documents tab) -->
+            <div class="tab-nav-doc-controls" id="tab-nav-doc-controls" style="display: none;">
               <!-- CAG popover trigger -->
               <div class="cag-wrapper" id="cag-wrapper">
                 <button type="button" class="toolbar-pill-btn cag-btn" id="cag-trigger" aria-haspopup="dialog" aria-expanded="false" title="What is CAG?">
@@ -1231,7 +1231,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="js/main.js?v=9.4.3"></script>
+  <script type="module" src="js/main.js?v=9.4.4"></script>
 </body>
 
 </html>

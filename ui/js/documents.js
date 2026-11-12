@@ -307,9 +307,10 @@ export async function loadDocuments() {
         docSendBtn.disabled = false;
       }
 
-      // Ensure tab-nav-doc-controls is visible in top right
+      // Ensure tab-nav-doc-controls is visible in top right ONLY if in Documents tab
       const docNavControls = document.getElementById("tab-nav-doc-controls");
-      if (docNavControls) docNavControls.style.display = "flex";
+      const isDocTab = document.querySelector(".tab-btn[data-tab='documents']")?.classList.contains("active");
+      if (docNavControls) docNavControls.style.display = isDocTab ? "flex" : "none";
 
       // Update doc manager pill in top right to show default handbook
       const docManagerDot = document.getElementById("doc-manager-dot");
@@ -401,10 +402,11 @@ export async function loadDocuments() {
       docSendBtn.disabled = false;
     }
 
-    // Ensure tab-nav-doc-controls is visible in top right
+    // Ensure tab-nav-doc-controls is visible in top right ONLY if in Documents tab
     const docNavControls = document.getElementById("tab-nav-doc-controls");
+    const isDocTab = document.querySelector(".tab-btn[data-tab='documents']")?.classList.contains("active");
     if (docNavControls) {
-      docNavControls.style.display = "flex";
+      docNavControls.style.display = isDocTab ? "flex" : "none";
     }
 
     // Update doc manager pill in top right
@@ -808,14 +810,6 @@ export function appendDocAiResponse(data) {
   // 1. TOP SECTION: Synthesized human-readable answer in plain English
   const summarySection = document.createElement("div");
   summarySection.className = "doc-summary-section";
-
-  // If auto-routed by the backend, display the intelligent routing badge
-  if (data && data.auto_routed && data.reason) {
-    const routeTag = document.createElement("div");
-    routeTag.className = "doc-auto-route-badge";
-    routeTag.innerHTML = `🧠 <strong>Adaptive Routing:</strong> ${escapeHtml(data.reason)}`;
-    summarySection.appendChild(routeTag);
-  }
 
   const summaryHeader = document.createElement("div");
   summaryHeader.className = "doc-summary-header";

@@ -116,10 +116,10 @@ export function switchTab(tabName) {
     chatNavControls.style.display = (tabName === "chat" || tabName === "agent") ? "flex" : "none";
   }
 
-  // Toggle top-right document controls in navigation bar (visible in both Documents and Chat tabs)
+  // Toggle top-right document controls in navigation bar (strictly visible ONLY in Documents tab)
   const docNavControls = document.getElementById("tab-nav-doc-controls");
   if (docNavControls) {
-    docNavControls.style.display = (tabName === "documents" || tabName === "chat") ? "flex" : "none";
+    docNavControls.style.display = tabName === "documents" ? "flex" : "none";
   }
 
   // Dismiss document popover when switching away
