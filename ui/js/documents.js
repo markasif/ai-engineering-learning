@@ -16,7 +16,16 @@ import {
   getDocPlaceholder,
   renderRateLimitNotice
 } from "./utils.js";
-import { API_BASE, getAuthHeaders } from "./api.js";
+import {
+  API_BASE,
+  getAuthHeaders,
+  getVisitorDocIds,
+  recordVisitorDoc,
+  removeVisitorDoc,
+  isVisitorDocsInitialized,
+  markVisitorDocsInitialized,
+  getVisitorSessionIds
+} from "./api.js";
 import { startEditMessage } from "./chat.js";
 
 export const uploadArea = document.getElementById("upload-area");
@@ -84,6 +93,7 @@ export async function uploadFile(file) {
 
     const uploadedDoc = await res.json().catch(() => null);
     if (uploadedDoc && uploadedDoc.id) {
+      recordVisitorDoc(uploadedDoc.id);
       // If user now has multiple files, default to querying across all uploaded documents!
       if (state.currentDocsCache && state.currentDocsCache.length > 0) {
         state.activeDocumentId = "all";
@@ -281,7 +291,31 @@ export async function loadDocuments() {
     const res = await fetch(`${API_BASE}/api/documents`, { headers });
     if (!res.ok) throw new Error("documents endpoint not available");
 
-    const docs = await res.json();
+    const allDocs = await res.json();
+    let myDocIds = getVisitorDocIds();
+    const isCustomTenant = Boolean(state.activeTenantId && state.activeTenantId !== "default");
+
+    // Preserve existing uploaded documents for current active user
+    if (!isVisitorDocsInitialized()) {
+      markVisitorDocsInitialized();
+      const existingSessionIds = getVisitorSessionIds();
+      if (existingSessionIds.length > 0 && myDocIds.length === 0) {
+        allDocs.forEach((d) => {
+          if (!d.filename?.includes("Acme_Enterprise_Handbook")) {
+            recordVisitorDoc(d.id);
+          }
+        });
+        myDocIds = getVisitorDocIds();
+      }
+    }
+
+    // Isolate documents to this visitor: only show default handbook and documents uploaded on this machine
+    const docs = isCustomTenant
+      ? allDocs
+      : allDocs.filter((d) => {
+          const isDefault = d.filename?.includes("Acme_Enterprise_Handbook");
+          return isDefault || myDocIds.includes(d.id);
+        });
     state.currentDocsCache = docs;
 
     const docUploadHint = document.getElementById("doc-upload-hint");
@@ -440,21 +474,6 @@ export async function loadDocuments() {
 
     if (typeof updateStrategyAdvisory === "function") {
       updateStrategyAdvisory();
-    }
-
-    // Dynamic update for minimal default document notice in chat & documents view
-    const chatDefaultNotice = document.getElementById("chat-default-doc-notice");
-    if (chatDefaultNotice) {
-      if (!activeDoc || activeDoc.filename.includes("Acme_Enterprise_Handbook")) {
-        chatDefaultNotice.innerHTML = `<span>Default document applied (Acme Enterprise Handbook).</span><button type="button" class="btn-notice-switch-tab" id="btn-goto-doc-upload">Upload your document ➔</button>`;
-      } else {
-        chatDefaultNotice.innerHTML = `<span>Grounded in <strong>${escapeHtml(activeDocName)}</strong></span><button type="button" class="btn-notice-switch-tab" id="btn-goto-doc-upload">Switch / Upload ➔</button>`;
-      }
-      chatDefaultNotice.querySelector("#btn-goto-doc-upload")?.addEventListener("click", (e) => {
-        e.preventDefault();
-        window.switchTab?.("documents");
-        setTimeout(() => document.getElementById("file-input")?.click(), 150);
-      });
     }
 
     const docHintStatus = document.getElementById("doc-hint-status");
@@ -617,6 +636,7 @@ export async function deleteDocumentById(docId) {
     if (state.activeDocumentId === docId) {
       state.activeDocumentId = null;
     }
+    removeVisitorDoc(docId);
 
     showToast(`"${docName}" was deleted successfully.`, "success");
     await loadDocuments();
@@ -668,7 +688,13 @@ export async function loadSearchDocumentFilter(preloadedDocs = null) {
   searchDocFilter.innerHTML = "";
 
   try {
-    const docs = Array.isArray(preloadedDocs) ? preloadedDocs : await (await fetch(`${API_BASE}/api/documents`)).json();
+    let docs = preloadedDocs;
+    if (!Array.isArray(docs)) {
+      const allDocs = await (await fetch(`${API_BASE}/api/documents`)).json();
+      const myDocIds = getVisitorDocIds();
+      const isCustomTenant = Boolean(state.activeTenantId && state.activeTenantId !== "default");
+      docs = isCustomTenant ? allDocs : allDocs.filter((d) => d.filename?.includes("Acme_Enterprise_Handbook") || myDocIds.includes(d.id));
+    }
     state.currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
     updateStrategyAdvisory();

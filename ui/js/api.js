@@ -1,7 +1,13 @@
 /**
  * AskRaggy Enterprise Platform - Centralized API & Networking Module
  */
-import { state, VISITOR_SESSIONS_STORAGE_KEY, BYOK_STORAGE_KEY } from "./state.js";
+import {
+  state,
+  VISITOR_SESSIONS_STORAGE_KEY,
+  VISITOR_DOCS_STORAGE_KEY,
+  VISITOR_DOCS_INIT_KEY,
+  BYOK_STORAGE_KEY
+} from "./state.js";
 import { escapeHtml } from "./utils.js";
 
 export const API_BASE = "";
@@ -51,6 +57,49 @@ export function removeVisitorSession(sessionId) {
   try {
     const ids = getVisitorSessionIds().filter((id) => id !== sessionId);
     localStorage.setItem(VISITOR_SESSIONS_STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
+// Visitor Document Isolation Helpers (isolates uploaded files to this computer/browser)
+export function getVisitorDocIds() {
+  try {
+    const raw = localStorage.getItem(VISITOR_DOCS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function recordVisitorDoc(docId) {
+  if (!docId) return;
+  try {
+    const ids = getVisitorDocIds();
+    if (!ids.includes(docId)) {
+      ids.unshift(docId);
+      localStorage.setItem(VISITOR_DOCS_STORAGE_KEY, JSON.stringify(ids.slice(0, 100)));
+    }
+  } catch {}
+}
+
+export function removeVisitorDoc(docId) {
+  if (!docId) return;
+  try {
+    const ids = getVisitorDocIds().filter((id) => id !== docId);
+    localStorage.setItem(VISITOR_DOCS_STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
+export function isVisitorDocsInitialized() {
+  try {
+    return localStorage.getItem(VISITOR_DOCS_INIT_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function markVisitorDocsInitialized() {
+  try {
+    localStorage.setItem(VISITOR_DOCS_INIT_KEY, "true");
   } catch {}
 }
 

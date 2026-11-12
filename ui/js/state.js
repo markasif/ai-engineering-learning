@@ -6,6 +6,8 @@ export const THEME_STORAGE_KEY = "askraggy_theme";
 export const BYOK_STORAGE_KEY = "askraggy_byok_key";
 export const SOUND_STORAGE_KEY = "askraggy_sound";
 export const VISITOR_SESSIONS_STORAGE_KEY = "askraggy_my_sessions";
+export const VISITOR_DOCS_STORAGE_KEY = "askraggy_my_documents";
+export const VISITOR_DOCS_INIT_KEY = "askraggy_my_docs_init";
 
 export const DEMO_MAX_MESSAGES_PER_SESSION = 15;
 
