@@ -511,58 +511,63 @@ async def ask_documents(
             "mode": req_mode,
         }
 
-    # If document_id is not specified, default to the most recently uploaded ready document
-    if not doc_id:
-        tenant_docs = list_documents(tenant_id=tenant_id)
-        ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
-        if ready_tenant_docs:
-            doc_id = ready_tenant_docs[0].id
+    is_all_docs = bool(not doc_id or doc_id.lower() in ("all", "all_documents", "*"))
+    tenant_docs = list_documents(tenant_id=tenant_id)
+    ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
 
-    # Retrieve target document metadata & size metrics
-    target_doc = get_document(doc_id, tenant_id=tenant_id) if doc_id else None
-    target_filename = target_doc.filename if target_doc else "Uploaded Document"
-    raw_doc_text = get_document_text(doc_id) if doc_id else ""
-    page_count = getattr(target_doc, "page_count", 1) if target_doc else 1
-    char_count = (
-        getattr(target_doc, "char_count", len(raw_doc_text or ""))
-        if target_doc
-        else len(raw_doc_text or "")
-    )
-    if char_count == 0 and raw_doc_text:
-        char_count = len(raw_doc_text)
-
-    # Architectural threshold: <= 4 pages and <= 15,000 characters is optimal for fast CAG
-    is_cag_optimal = bool(page_count <= 4 and char_count <= 15_000)
-
-    # Resolve Effective Mode (Adaptive Auto vs Forced CAG vs Forced RAG)
     auto_routed = False
     auto_route_reason = None
     warning_msg = None
     tip_msg = None
 
-    if req_mode == "auto":
+    if is_all_docs:
+        # Multi-document mode: query across all uploaded documents in the knowledge base
+        target_filename = f"All Documents ({len(ready_tenant_docs)} files)" if ready_tenant_docs else "Knowledge Base"
+        effective_mode = "rag"
         auto_routed = True
-        if is_cag_optimal:
-            effective_mode = "cag"
-            auto_route_reason = f"Document is compact ({page_count} page{'s' if page_count != 1 else ''}, {char_count:,} chars) — auto-routed to CAG for 100% full-document visibility."
-        else:
-            effective_mode = "rag"
-            auto_route_reason = f"Document is large ({page_count} pages, {char_count:,} chars) — auto-routed to RAG (Sentence-aware) for efficient vector search."
+        auto_route_reason = "Multi-document query — searching vector chunks across all uploaded files."
+        is_cag_optimal = False
+        page_count = sum(getattr(d, "page_count", 1) for d in ready_tenant_docs)
+        char_count = sum(getattr(d, "char_count", 0) for d in ready_tenant_docs)
     else:
-        effective_mode = req_mode
+        # Single document mode: query isolated to specific document
+        target_doc = get_document(doc_id, tenant_id=tenant_id) if doc_id else None
+        target_filename = target_doc.filename if target_doc else "Uploaded Document"
+        raw_doc_text = get_document_text(doc_id) if doc_id else ""
+        page_count = getattr(target_doc, "page_count", 1) if target_doc else 1
+        char_count = (
+            getattr(target_doc, "char_count", len(raw_doc_text or ""))
+            if target_doc
+            else len(raw_doc_text or "")
+        )
+        if char_count == 0 and raw_doc_text:
+            char_count = len(raw_doc_text)
 
-    # Generate intelligent size advisory warning / tip
-    if effective_mode == "cag" and not is_cag_optimal:
-        warning_msg = (
-            f"⚠️ Large Document Notice: This document has {page_count} pages ({char_count:,} characters). "
-            f"CAG is optimized for files <50 pages. We recommend switching to RAG (Sentence-aware) "
-            f"for faster retrieval and lower token consumption."
-        )
-    elif effective_mode in ("rag", "sentence", "paragraph") and is_cag_optimal and page_count <= 25:
-        tip_msg = (
-            f"✨ Optimal for CAG: This file is only {page_count} page{'s' if page_count != 1 else ''} ({char_count:,} characters). "
-            f"You can switch to CAG (Full Context) for 100% full-document visibility with zero retrieval errors."
-        )
+        # Architectural threshold: <= 4 pages and <= 15,000 characters is optimal for fast CAG
+        is_cag_optimal = bool(page_count <= 4 and char_count <= 15_000)
+
+        if req_mode == "auto":
+            auto_routed = True
+            if is_cag_optimal:
+                effective_mode = "cag"
+                auto_route_reason = f"Document is compact ({page_count} page{'s' if page_count != 1 else ''}, {char_count:,} chars) — auto-routed to CAG for 100% full-document visibility."
+            else:
+                effective_mode = "rag"
+                auto_route_reason = f"Document is large ({page_count} pages, {char_count:,} chars) — auto-routed to RAG (Sentence-aware) for efficient vector search."
+        else:
+            effective_mode = req_mode
+
+        if effective_mode == "cag" and not is_cag_optimal:
+            warning_msg = (
+                f"⚠️ Large Document Notice: This document has {page_count} pages ({char_count:,} characters). "
+                f"CAG is optimized for files <50 pages. We recommend switching to RAG (Sentence-aware) "
+                f"for faster retrieval and lower token consumption."
+            )
+        elif effective_mode in ("rag", "sentence", "paragraph") and is_cag_optimal and page_count <= 25:
+            tip_msg = (
+                f"✨ Optimal for CAG: This file is only {page_count} page{'s' if page_count != 1 else ''} ({char_count:,} characters). "
+                f"You can switch to CAG (Full Context) for 100% full-document visibility with zero retrieval errors."
+            )
 
     # =========================================================================
     # CAG (Cache-Augmented Generation) Full-Context Inference Pipeline
@@ -663,22 +668,19 @@ async def ask_documents(
             "total_matches": 0,
         }
 
-    # If document_id is not specified, default to the most recently uploaded ready document
-    # to guarantee older documents never contaminate the answer!
-    if not doc_id:
-        tenant_docs = list_documents(tenant_id=tenant_id)
-        ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
-        if ready_tenant_docs:
-            doc_id = ready_tenant_docs[0].id
-
-    filters = {"document_id": doc_id} if doc_id else None
-    chunks = await asyncio.to_thread(
-        vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id
-    )
-
-    # Secondary defense: strictly isolate to the target document
-    if doc_id:
-        chunks = [c for c in chunks if c.get("document_id") == doc_id]
+    if is_all_docs:
+        # Search all documents for this tenant in ChromaDB vector store
+        filters = {"tenant_id": tenant_id} if tenant_id and tenant_id != "default" else None
+        chunks = await asyncio.to_thread(
+            vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id
+        )
+    else:
+        filters = {"document_id": doc_id} if doc_id else None
+        chunks = await asyncio.to_thread(
+            vector_search, q, top_k=k, filters=filters, tenant_id=tenant_id
+        )
+        if doc_id:
+            chunks = [c for c in chunks if c.get("document_id") == doc_id]
 
     if not chunks:
         return {

@@ -83,7 +83,12 @@ export async function uploadFile(file) {
 
     const uploadedDoc = await res.json().catch(() => null);
     if (uploadedDoc && uploadedDoc.id) {
-      state.activeDocumentId = uploadedDoc.id;
+      // If user now has multiple files, default to querying across all uploaded documents!
+      if (state.currentDocsCache && state.currentDocsCache.length > 0) {
+        state.activeDocumentId = "all";
+      } else {
+        state.activeDocumentId = uploadedDoc.id;
+      }
     }
 
     await loadDocuments();
@@ -139,9 +144,54 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
     return;
   }
 
+  const isAllActive = currentActiveId === "all" || (!currentActiveId && docs.length > 1);
+
+  // If there are multiple documents, add "All Uploaded Documents" as top master option
+  if (docs.length > 1) {
+    const allItem = document.createElement("div");
+    allItem.className = `doc-popover-item doc-popover-all-item ${isAllActive ? "is-active" : ""}`;
+    allItem.dataset.id = "all";
+    allItem.innerHTML = `
+      <div class="doc-popover-item-left" title="Query across all uploaded documents">
+        <span class="doc-file-type-icon">📚</span>
+        <div class="doc-popover-item-details">
+          <span class="doc-popover-item-name">All Uploaded Documents</span>
+          <span class="doc-popover-item-meta">Search across all ${docs.length} files • Whole Knowledge Base</span>
+        </div>
+      </div>
+      <div class="doc-popover-item-actions">
+        ${isAllActive 
+          ? '<span class="doc-active-badge">Active</span>' 
+          : '<button type="button" class="btn-select-doc" data-id="all" title="Query all uploaded documents">Set Active</button>'}
+      </div>
+    `;
+
+    allItem.querySelector(".doc-popover-item-left")?.addEventListener("click", () => {
+      if (state.activeDocumentId !== "all") {
+        state.activeDocumentId = "all";
+        loadDocuments();
+        showToast(`Active: All ${docs.length} Uploaded Documents (Whole Knowledge Base)`, "info");
+      }
+    });
+
+    allItem.querySelector(".btn-select-doc")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.activeDocumentId = "all";
+      loadDocuments();
+      showToast(`Active: All ${docs.length} Uploaded Documents (Whole Knowledge Base)`, "info");
+    });
+
+    popoverListEl.appendChild(allItem);
+
+    const divider = document.createElement("div");
+    divider.className = "doc-popover-section-label";
+    divider.textContent = "OR SELECT INDIVIDUAL FILE";
+    popoverListEl.appendChild(divider);
+  }
+
   docs.forEach((doc) => {
     const item = document.createElement("div");
-    const isActive = doc.id === currentActiveId;
+    const isActive = !isAllActive && (doc.id === currentActiveId || (docs.length === 1 && !currentActiveId));
     item.className = `doc-popover-item ${isActive ? "is-active" : ""}`;
     item.dataset.id = doc.id;
 
@@ -162,12 +212,12 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
       <div class="doc-popover-item-actions">
         ${isActive 
           ? '<span class="doc-active-badge">Active</span>' 
-          : `<button type="button" class="btn-select-doc" data-id="${doc.id}" title="Set as active grounded document">Set Active</button>`}
+          : `<button type="button" class="btn-select-doc" data-id="${doc.id}" title="Focus queries on ${escapeHtml(doc.filename)}">Set Active</button>`}
         <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
       </div>
     `;
 
-    // Click on item body or "Set Active" to ground chat in this document
+    // Click on item body or "Set Active" to ground chat in this specific document
     item.querySelector(".doc-popover-item-left")?.addEventListener("click", () => {
       if (state.activeDocumentId !== doc.id) {
         state.activeDocumentId = doc.id;
@@ -282,20 +332,36 @@ export async function loadDocuments() {
     }
 
     // Select active document: prioritize explicitly active doc (e.g. freshly selected),
-    // otherwise default to the latest uploaded custom document (or handbook if only handbook exists)
+    // otherwise default to "all" when multiple custom documents exist so user can query whole knowledge base!
     let activeDoc = null;
-    if (state.activeDocumentId) {
+    let isAllActive = false;
+
+    if (state.activeDocumentId === "all" || (!state.activeDocumentId && customDocs.length > 1)) {
+      isAllActive = true;
+      state.activeDocumentId = "all";
+    } else if (state.activeDocumentId) {
       activeDoc = readyDocs.find((d) => d.id === state.activeDocumentId) || docs.find((d) => d.id === state.activeDocumentId);
-    }
-    if (!activeDoc) {
-      if (customDocs.length > 0) {
-        activeDoc = customDocs[0]; // latest custom document uploaded
-      } else {
-        activeDoc = readyDocs[0] || docs[0];
+      if (!activeDoc) {
+        if (customDocs.length > 1) {
+          isAllActive = true;
+          state.activeDocumentId = "all";
+        } else {
+          activeDoc = customDocs[0] || readyDocs[0] || docs[0];
+          state.activeDocumentId = activeDoc ? activeDoc.id : null;
+        }
       }
-      state.activeDocumentId = activeDoc ? activeDoc.id : null;
+    } else {
+      if (customDocs.length > 1) {
+        isAllActive = true;
+        state.activeDocumentId = "all";
+      } else {
+        activeDoc = customDocs[0] || readyDocs[0] || docs[0];
+        state.activeDocumentId = activeDoc ? activeDoc.id : null;
+      }
     }
-    const activeDocName = activeDoc ? activeDoc.filename : "Acme Enterprise Handbook";
+    const activeDocName = isAllActive 
+      ? `All Documents (${docs.length} files)` 
+      : (activeDoc ? activeDoc.filename : "Acme Enterprise Handbook");
 
     if (documentChatSection) {
       documentChatSection.style.display = "flex";
@@ -304,7 +370,11 @@ export async function loadDocuments() {
     // Explicitly ENABLE the input and send button!
     if (docChatInput) {
       docChatInput.disabled = false;
-      docChatInput.placeholder = getDocPlaceholder(activeDocName);
+      if (isAllActive) {
+        docChatInput.placeholder = `Ask anything across all ${docs.length} uploaded documents...`;
+      } else {
+        docChatInput.placeholder = getDocPlaceholder(activeDocName);
+      }
     }
     if (docSendBtn) {
       docSendBtn.disabled = false;
@@ -327,6 +397,9 @@ export async function loadDocuments() {
       if (customDocs.length === 0) {
         docManagerLabel.textContent = "Acme Enterprise Handbook";
         docManagerLabel.title = "Default policy handbook active. Upload your document to query your own.";
+      } else if (isAllActive) {
+        docManagerLabel.textContent = `All Documents (${docs.length} files)`;
+        docManagerLabel.title = `Querying all ${docs.length} files across whole knowledge base`;
       } else if (docs.length === 1) {
         docManagerLabel.textContent = activeDocName;
         docManagerLabel.title = activeDocName;
@@ -764,13 +837,15 @@ export function appendDocAiResponse(data) {
 
     evidence.forEach((r) => {
       const pct = Math.round((r.score || 0) * 100);
+      const scoreLabel = (r.score && r.score > 0) ? `${pct}% Match` : "Full Context";
+      const chunkLabel = (r.chunk_index !== undefined && r.chunk_index !== null) ? `chunk ${r.chunk_index}` : "Context";
       const card = document.createElement("div");
       card.className = "doc-evidence-card";
       card.innerHTML = `
         <div class="evidence-card-header">
           <span class="evidence-file-badge">${escapeHtml(r.filename || "Document")}</span>
-          <span class="evidence-chunk-meta">chunk ${r.chunk_index}</span>
-          <span class="evidence-score-pill">${pct}% Match</span>
+          <span class="evidence-chunk-meta">${chunkLabel}</span>
+          <span class="evidence-score-pill">${scoreLabel}</span>
         </div>
         <p class="evidence-excerpt">${escapeHtml(sanitizeDocText(r.text))}</p>
       `;
@@ -835,11 +910,15 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
   }
 
   if (!state.activeDocumentId && state.currentDocsCache?.length) {
-    const readyDocs = state.currentDocsCache.filter((d) => d.status === "ready");
-    state.activeDocumentId = (readyDocs[readyDocs.length - 1] || state.currentDocsCache[state.currentDocsCache.length - 1]).id;
+    if (state.currentDocsCache.length > 1) {
+      state.activeDocumentId = "all";
+    } else {
+      const readyDocs = state.currentDocsCache.filter((d) => d.status === "ready");
+      state.activeDocumentId = (readyDocs[readyDocs.length - 1] || state.currentDocsCache[state.currentDocsCache.length - 1]).id;
+    }
   }
 
-  if (!state.currentDocsCache?.length || !state.activeDocumentId) {
+  if (!state.currentDocsCache?.length && !state.activeDocumentId) {
     showToast("Please upload a document to enable document questions.", "info");
     return;
   }
@@ -858,7 +937,7 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
   state.activeDocAbortController = new AbortController();
   setButtonStopState(docSendBtn, true, "Ask document");
 
-  const documentId = searchDocFilter?.value || state.activeDocumentId || null;
+  const documentId = state.activeDocumentId || searchDocFilter?.value || null;
   const headers = getAuthHeaders();
 
   try {

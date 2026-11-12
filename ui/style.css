@@ -3875,53 +3875,86 @@ textarea:focus,
 }
 
 .doc-evidence-card {
-  background: #fdfbf7;
-  border: 1px solid #e6ded1;
-  border-radius: var(--radius-sm);
-  padding: 0.55rem 0.75rem;
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: 3px solid var(--color-matcha, #10b981) !important;
+  border-radius: 8px !important;
+  padding: 0.65rem 0.85rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="dark"] .doc-evidence-card {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-left: 3px solid #10b981 !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35) !important;
 }
 
 .evidence-card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-bottom: 0.35rem !important;
+  flex-wrap: wrap !important;
 }
 
 .evidence-file-badge {
-  background: var(--color-carob);
-  color: #ffffff;
-  padding: 0.1rem 0.45rem;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.72rem;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 0.15rem 0.5rem !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  max-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+[data-theme="dark"] .evidence-file-badge {
+  background: #090d16 !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
 }
 
 .evidence-chunk-meta {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+}
+
+[data-theme="dark"] .evidence-chunk-meta {
+  color: #94a3b8 !important;
 }
 
 .evidence-score-pill {
-  margin-left: auto;
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--color-matcha);
-  font-weight: 700;
-  font-size: 0.72rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 99px;
+  margin-left: auto !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  padding: 0.15rem 0.55rem !important;
+  border-radius: 999px !important;
+}
+
+[data-theme="dark"] .evidence-score-pill {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
 }
 
 .evidence-excerpt {
-  font-size: 0.80rem;
-  color: #44403c;
-  line-height: 1.45;
-  margin: 0;
-  font-style: italic;
+  font-size: 0.78rem !important;
+  color: #1e293b !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+  font-style: normal !important;
+}
+
+[data-theme="dark"] .evidence-excerpt {
+  color: #f1f5f9 !important;
 }
 
 /* Uploaded Document Details (Positioned Below Chat) */
@@ -6081,6 +6114,51 @@ input.modern-input-field:active,
 .doc-popover-item.is-active {
   border-color: rgba(16, 185, 129, 0.4);
   background: #f0fdf4;
+}
+
+.doc-popover-all-item {
+  background: #f0fdf4 !important;
+  border: 1.5px solid #86efac !important;
+}
+
+.doc-popover-all-item:hover {
+  background: #dcfce7 !important;
+}
+
+.doc-popover-all-item.is-active {
+  border-color: #10b981 !important;
+  background: #d1fae5 !important;
+  box-shadow: 0 0 0 1px #10b981 !important;
+}
+
+.doc-popover-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #78716c;
+  padding: 0.35rem 0.25rem 0.15rem;
+  margin-top: 0.25rem;
+  border-top: 1px dashed #e2d9cc;
+}
+
+[data-theme="dark"] .doc-popover-all-item {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1.5px solid rgba(52, 211, 153, 0.45) !important;
+}
+
+[data-theme="dark"] .doc-popover-all-item:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="dark"] .doc-popover-all-item.is-active {
+  background: rgba(16, 185, 129, 0.28) !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme="dark"] .doc-popover-section-label {
+  color: #94a3b8;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
 }
 
 .doc-popover-item-left {
