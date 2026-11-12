@@ -803,10 +803,10 @@
                       <div class="agent-multistep-note-body">
                         <strong class="agent-multistep-note-title">Multi-Step Mode:</strong>
                         <span class="agent-multistep-note-desc agent-multistep-desc-desktop">
-                          For compound actions, switch to <strong>Multi-Step</strong> at top right to plan and execute safely.
+                          For compound actions, switch to <strong>Multi-Step</strong> in the toolbar below to plan and execute safely.
                         </span>
                         <span class="agent-multistep-note-desc agent-multistep-desc-mobile">
-                          Switch to <strong>Multi-Step</strong> for compound actions.
+                          Switch to <strong>Multi-Step</strong> in toolbar for compound actions.
                         </span>
                       </div>
                     </div>
@@ -824,31 +824,8 @@
               <div class="modern-chat-toolbar">
                 <div class="toolbar-left-group">
                   <div class="agent-mode-switcher-pill" role="group" aria-label="Agent execution mode">
-                    <button type="button" class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick" title="Quick single-turn tool execution">⚡ Quick</button>
-                    <button type="button" class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep" title="Multi-step reasoning and plan execution">🔄 Multi-Step</button>
-                  </div>
-                  <div class="mcp-services-wrapper" id="mcp-services-wrapper">
-                    <button class="toolbar-pill-btn mcp-services-toggle" id="mcp-services-toggle" type="button" aria-expanded="false"
-                      aria-controls="mcp-services-body" title="View connected MCP servers &amp; tools">
-                      <span class="mcp-services-icon" aria-hidden="true">🔌</span>
-                      <span class="mcp-services-label">Connected Services</span>
-                      <span class="mcp-services-count" id="mcp-services-count"></span>
-                      <span class="mcp-toggle-chevron" aria-hidden="true">▼</span>
-                    </button>
-
-                    <!-- Connected Services Popover Body (floats upward above input) -->
-                    <div class="mcp-services-popover" id="mcp-services-body" hidden>
-                      <div class="mcp-services-popover-header">
-                        <div class="mcp-popover-title-row">
-                          <strong class="mcp-popover-title">Connected Tool Servers</strong>
-                          <span class="mcp-popover-badge">Live MCP</span>
-                        </div>
-                        <span class="mcp-popover-desc">Autonomous tools available for agent execution</span>
-                      </div>
-                      <div id="mcp-servers-list" class="mcp-servers-list">
-                        <span class="mcp-loading">Click to load connected MCP servers…</span>
-                      </div>
-                    </div>
+                    <button type="button" class="agent-mode-btn active" id="agent-mode-quick" data-mode="quick" aria-pressed="true" title="Quick single-turn tool execution">⚡ Quick</button>
+                    <button type="button" class="agent-mode-btn" id="agent-mode-multistep" data-mode="multistep" aria-pressed="false" title="Multi-step reasoning and plan execution">🔄 Multi-Step</button>
                   </div>
                 </div>
                 <div class="toolbar-right-group">

@@ -140,13 +140,6 @@ export function switchTab(tabName) {
     agentNavControls.style.display = tabName === "agent" ? "flex" : "none";
   }
 
-  // Dismiss MCP popover if open when switching away
-  const mcpBody = document.getElementById("mcp-services-body");
-  if (mcpBody) mcpBody.hidden = true;
-  document.getElementById("mcp-services-toggle")?.setAttribute("aria-expanded", "false");
-  const mcpChevron = document.querySelector("#mcp-services-toggle .mcp-toggle-chevron");
-  if (mcpChevron) mcpChevron.textContent = "▼";
-
   if (tabName === "documents") {
     loadDocuments();
   }

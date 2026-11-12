@@ -4986,29 +4986,37 @@ textarea:focus,
 .agent-mode-switcher-pill {
   display: inline-flex;
   align-items: center;
-  background: #faf7f2;
-  border: 1px solid var(--color-pistache, #e0d6c5);
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
-  padding: 2px;
-  gap: 2px;
+  padding: 3px;
+  gap: 3px;
+  user-select: none;
 }
 
 .agent-mode-switcher-pill .agent-mode-btn {
   background: transparent;
   border: none;
   border-radius: 999px;
-  padding: 0.28rem 0.75rem;
-  font-size: 0.76rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #78716c;
+  color: #64748b;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.agent-mode-switcher-pill .agent-mode-btn:hover:not(.active) {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .agent-mode-switcher-pill .agent-mode-btn.active {
-  background: #ffffff;
-  color: #10b981;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
 }
 
 .strategy-select-compact {
@@ -9522,8 +9530,8 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
 
 /* 5. Quick vs. Multi-step switcher buttons in Dark Mode */
 [data-theme="dark"] .agent-mode-switcher-pill {
-  background: #1C1F26 !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 [data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn {
@@ -9531,16 +9539,16 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   background: transparent !important;
 }
 
-[data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn:hover {
+[data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn:hover:not(.active) {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-theme="dark"] .agent-mode-switcher-pill .agent-mode-btn.active {
-  background: #000000 !important;
+  background: #10b981 !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
 }
 
 
@@ -10554,28 +10562,6 @@ body.drawer-open {
   border: 1.5px solid #e0d6c5 !important;
   color: #1c1917 !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
-}
-
-[data-theme="dark"] .modern-chat-toolbar .agent-mode-switcher-pill {
-  background: #f5f0e6 !important;
-  border: 1.5px solid #e0d6c5 !important;
-}
-
-[data-theme="dark"] .modern-chat-toolbar .agent-mode-switcher-pill .agent-mode-btn {
-  color: #57534e !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-[data-theme="dark"] .modern-chat-toolbar .agent-mode-switcher-pill .agent-mode-btn.active {
-  background: #10b981 !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
-}
-
-[data-theme="dark"] .modern-chat-toolbar .agent-mode-switcher-pill .agent-mode-btn:hover:not(.active) {
-  color: #1c1917 !important;
-  background: rgba(0, 0, 0, 0.05) !important;
 }
 
 [data-theme="dark"] .mcp-services-popover-header {

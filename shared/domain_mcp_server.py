@@ -307,10 +307,16 @@ async def list_department_staff(department: str) -> dict[str, Any]:
                 if resp.status_code == 200:
                     records = resp.json()
                     if records:
+                        normalized = []
+                        for r in records:
+                            rec = dict(r)
+                            rec["name"] = rec.get("name") or rec.get("full_name") or "Employee"
+                            rec["employee_code"] = rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                            normalized.append(rec)
                         return {
                             "department": clean_dept,
-                            "count": len(records),
-                            "staff": records,
+                            "count": len(normalized),
+                            "staff": normalized,
                             "source": "Supabase PostgreSQL Database",
                         }
         except Exception:

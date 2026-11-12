@@ -379,18 +379,36 @@ document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn
 /** "quick" = Feature 7 single-turn loop. "multistep" = Feature 8 plan-and-execute. */
 let agentMode = "quick";
 
-const agentModeBtns = document.querySelectorAll(".agent-mode-btn");
-agentModeBtns.forEach((btn) => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setAgentMode(btn.dataset.mode);
-  });
-});
+export function getAgentMode() {
+  return agentMode;
+}
 
 export function setAgentMode(mode) {
+  if (!mode || (mode !== "quick" && mode !== "multistep")) return;
   agentMode = mode;
-  agentModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.mode === agentMode));
+
+  const allBtns = document.querySelectorAll(".agent-mode-btn");
+  allBtns.forEach((b) => {
+    const bMode = b.dataset.mode || (b.id && b.id.includes("multistep") ? "multistep" : "quick");
+    const isActive = bMode === agentMode;
+    b.classList.toggle("active", isActive);
+    b.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  if (agentInput) {
+    if (agentMode === "multistep") {
+      agentInput.placeholder = "Describe compound workflow (e.g. check pending expenses, verify balance, and approve)...";
+    } else {
+      agentInput.placeholder = "Ask agent anything… (Quick direct action)";
+    }
+  }
+
+  showToast(
+    agentMode === "multistep"
+      ? "Switched to Multi-Step Mode (Plan & Execute)"
+      : "Switched to Quick Mode (Direct Action)",
+    "info"
+  );
 }
 
 /** Check if a user's prompt is a compound or multi-action workflow. */
@@ -529,7 +547,6 @@ export async function runMultiStepAgent(overrideText = null, existingUserEl = nu
     } catch {}
   }
 
-  agentAppendUser(text);
   // Insert a placeholder progress card — we'll update it as the task runs.
   const progressCard = agentAppendPlanningCard(text);
 
@@ -752,7 +769,12 @@ export function initAgent() {
   });
 
   document.querySelectorAll(".agent-mode-btn").forEach((btn) => {
-    btn.addEventListener("click", () => setAgentMode(btn.dataset.agentMode));
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetMode = btn.dataset.mode || (btn.id && btn.id.includes("multistep") ? "multistep" : "quick");
+      setAgentMode(targetMode);
+    });
   });
 
   const dismissBtn = document.getElementById("multistep-modal-dismiss");
