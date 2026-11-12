@@ -3331,10 +3331,17 @@ html, body, #app, .app-body, .main-content, .sidebar, .session-list, .message-hi
 
 /* AI Message Bubble (where the data comes) with green status dot */
 .message.ai .bubble {
-  background: #ffffff !important;
-  color: #1c1917 !important;
-  border: 1px solid #e7ded2 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+  background: #ffffff;
+  color: #1c1917;
+  border: 1px solid #e7ded2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .message.ai .bubble {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
 }
 .message.ai .role-label {
   display: none !important;
@@ -3750,13 +3757,20 @@ textarea:focus,
 
 /* AI Bubble Content and Evidence Citations inside Document Chat */
 .doc-ai-bubble {
-  background: #ffffff !important;
-  color: #1c1917 !important;
-  border: 1px solid #e7ded2 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
-  padding: 1.15rem 1.25rem !important;
+  background: #ffffff;
+  color: #1c1917;
+  border: 1px solid #e7ded2;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  padding: 1.15rem 1.25rem;
   width: 100%;
-  border-radius: var(--radius-md) !important;
+  border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] .doc-ai-bubble {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* 1. TOP SECTION: Plain English Summary Card */
@@ -3828,6 +3842,16 @@ textarea:focus,
 .doc-answer-body strong {
   font-weight: 700;
   color: #111827;
+}
+
+[data-theme="dark"] .doc-answer-body p,
+[data-theme="dark"] .doc-answer-body li,
+[data-theme="dark"] .doc-answer-body span {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .doc-answer-body strong {
+  color: #ffffff !important;
 }
 
 /* 2. BOTTOM SECTION: Attached Evidence Drawer inside the AI Bubble */
