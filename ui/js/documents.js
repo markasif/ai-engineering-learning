@@ -162,7 +162,7 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
       <div class="doc-popover-item-actions">
         ${isAllActive 
           ? '<span class="doc-active-badge">Active</span>' 
-          : '<button type="button" class="btn-select-doc" data-id="all" title="Query all uploaded documents">Set Active</button>'}
+          : '<button type="button" class="btn-select-doc" data-id="all" title="Query all uploaded documents">Activate All</button>'}
       </div>
     `;
 
@@ -185,14 +185,15 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
 
     const divider = document.createElement("div");
     divider.className = "doc-popover-section-label";
-    divider.textContent = "OR SELECT INDIVIDUAL FILE";
+    divider.textContent = isAllActive ? "ALL FILES INCLUDED (OR FOCUS A SPECIFIC FILE)" : "OR FOCUS A SPECIFIC FILE";
     popoverListEl.appendChild(divider);
   }
 
   docs.forEach((doc) => {
     const item = document.createElement("div");
-    const isActive = !isAllActive && (doc.id === currentActiveId || (docs.length === 1 && !currentActiveId));
-    item.className = `doc-popover-item ${isActive ? "is-active" : ""}`;
+    // When isAllActive is true, EVERY document is currently active in the multi-doc query!
+    const isDocActive = isAllActive || doc.id === currentActiveId || (docs.length === 1 && !currentActiveId);
+    item.className = `doc-popover-item ${isDocActive ? "is-active" : ""}`;
     item.dataset.id = doc.id;
 
     const icon = getDocFileIcon(doc.filename);
@@ -200,6 +201,28 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
       ? `${doc.chunk_count} chunk${doc.chunk_count !== 1 ? "s" : ""}`
       : "Indexed";
     const strategyInfo = doc.strategy ? ` • ${escapeHtml(doc.strategy)}` : "";
+
+    let actionsHtml = "";
+    if (isAllActive) {
+      // In multi-document mode, all files are active in vector retrieval
+      actionsHtml = `
+        <span class="doc-active-badge">Active</span>
+        <button type="button" class="btn-select-doc btn-focus-doc" data-id="${doc.id}" title="Focus queries strictly on ${escapeHtml(doc.filename)}">Focus</button>
+        <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
+      `;
+    } else if (isDocActive) {
+      // Single-document focus mode: this document is the selected active one
+      actionsHtml = `
+        <span class="doc-active-badge">Active</span>
+        <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
+      `;
+    } else {
+      // Single-document focus mode: other inactive document
+      actionsHtml = `
+        <button type="button" class="btn-select-doc" data-id="${doc.id}" title="Switch focus to ${escapeHtml(doc.filename)}">Set Active</button>
+        <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
+      `;
+    }
 
     item.innerHTML = `
       <div class="doc-popover-item-left" title="Ground Q&amp;A in ${escapeHtml(doc.filename)}">
@@ -210,19 +233,16 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
         </div>
       </div>
       <div class="doc-popover-item-actions">
-        ${isActive 
-          ? '<span class="doc-active-badge">Active</span>' 
-          : `<button type="button" class="btn-select-doc" data-id="${doc.id}" title="Focus queries on ${escapeHtml(doc.filename)}">Set Active</button>`}
-        <button type="button" class="btn-popover-delete" data-id="${doc.id}" title="Delete ${escapeHtml(doc.filename)}" aria-label="Delete document">🗑️</button>
+        ${actionsHtml}
       </div>
     `;
 
-    // Click on item body or "Set Active" to ground chat in this specific document
+    // Click on item body or "Focus" / "Set Active" to ground chat in this specific document
     item.querySelector(".doc-popover-item-left")?.addEventListener("click", () => {
       if (state.activeDocumentId !== doc.id) {
         state.activeDocumentId = doc.id;
         loadDocuments();
-        showToast(`Active grounded document: "${doc.filename}"`, "info");
+        showToast(`Focusing chat on: "${doc.filename}"`, "info");
       }
     });
 
@@ -230,7 +250,7 @@ export function renderDocPopoverList(popoverListEl, docs, currentActiveId) {
       e.stopPropagation();
       state.activeDocumentId = doc.id;
       loadDocuments();
-      showToast(`Active grounded document: "${doc.filename}"`, "info");
+      showToast(`Focusing chat on: "${doc.filename}"`, "info");
     });
 
     // Click delete button

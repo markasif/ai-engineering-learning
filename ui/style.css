@@ -6231,6 +6231,43 @@ input.modern-input-field:active,
   background: #f0fdf4;
 }
 
+.btn-select-doc.btn-focus-doc {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #64748b;
+  font-size: 0.65rem;
+}
+
+.btn-select-doc.btn-focus-doc:hover {
+  border-color: #10b981;
+  color: #059669;
+  background: #f0fdf4;
+}
+
+[data-theme="dark"] .btn-select-doc {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .btn-select-doc:hover {
+  border-color: #10b981;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .btn-select-doc.btn-focus-doc {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .btn-select-doc.btn-focus-doc:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
 .btn-popover-delete {
   background: transparent;
   border: none;
