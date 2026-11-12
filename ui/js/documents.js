@@ -282,6 +282,23 @@ export async function loadDocuments() {
       docSendBtn.disabled = false;
     }
 
+    // Ensure tab-nav-doc-controls is visible in top right
+    const docNavControls = document.getElementById("tab-nav-doc-controls");
+    if (docNavControls) {
+      docNavControls.style.display = "flex";
+    }
+
+    // Update main header right corner badge
+    const headerDocBadge = document.getElementById("header-doc-badge");
+    const headerDocName = document.getElementById("header-doc-name");
+    const headerDocDot = document.getElementById("header-doc-dot");
+    if (headerDocBadge && headerDocName) {
+      headerDocBadge.style.display = "inline-flex";
+      headerDocName.textContent = activeDocName;
+      headerDocBadge.title = `Active grounded document: ${activeDocName} (click to view/switch)`;
+      if (headerDocDot) headerDocDot.classList.add("active");
+    }
+
     // Update doc manager pill in top right
     const docManagerDot = document.getElementById("doc-manager-dot");
     const docManagerLabel = document.getElementById("doc-manager-label");
@@ -536,7 +553,7 @@ export async function loadSearchDocumentFilter(preloadedDocs = null) {
 
   try {
     const docs = Array.isArray(preloadedDocs) ? preloadedDocs : await (await fetch(`${API_BASE}/api/documents`)).json();
-    currentDocsCache = docs;
+    state.currentDocsCache = docs;
     const readyDocs = docs.filter((d) => d.status === "ready");
     updateStrategyAdvisory();
 
@@ -568,7 +585,7 @@ export async function loadSearchDocumentFilter(preloadedDocs = null) {
 // Synchronize state.activeDocumentId and UI when user picks a different document in filter
 searchDocFilter?.addEventListener("change", () => {
   state.activeDocumentId = searchDocFilter.value || null;
-  const doc = currentDocsCache.find((d) => d.id === state.activeDocumentId);
+  const doc = state.currentDocsCache.find((d) => d.id === state.activeDocumentId);
   const groundingTitle = document.getElementById("grounding-title");
   const groundingSubtitle = document.getElementById("grounding-subtitle");
   const docChatInput = document.getElementById("doc-chat-input");
@@ -789,15 +806,26 @@ export function appendDocAiResponse(data) {
  * Send query to Document Chat
  */
 export async function sendDocMessage(customQuery = null, existingUserEl = null) {
-  const query = (typeof customQuery === "string" ? customQuery : (docChatInput?.value || "")).trim();
+  const inputEl = document.getElementById("doc-chat-input");
+  const query = (typeof customQuery === "string" ? customQuery : (inputEl?.value || docChatInput?.value || "")).trim();
   if (!query) return;
 
-  if (!currentDocsCache.length || !state.activeDocumentId) {
+  if (!state.currentDocsCache || !state.currentDocsCache.length) {
+    await loadDocuments();
+  }
+
+  if (!state.activeDocumentId && state.currentDocsCache?.length) {
+    const readyDocs = state.currentDocsCache.filter((d) => d.status === "ready");
+    state.activeDocumentId = (readyDocs[readyDocs.length - 1] || state.currentDocsCache[state.currentDocsCache.length - 1]).id;
+  }
+
+  if (!state.currentDocsCache?.length || !state.activeDocumentId) {
     showToast("Please upload a document to enable document questions.", "info");
     return;
   }
 
   if (docChatInput) docChatInput.value = "";
+  if (inputEl) inputEl.value = "";
 
   let userEl = existingUserEl;
   if (!userEl) {
@@ -898,9 +926,16 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
       };
     }
 
+    if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
+      thinkingEl.updateThinkingProgress(100);
+      await new Promise((r) => setTimeout(r, 60));
+    }
     thinkingEl.remove();
     appendDocAiResponse(data);
   } catch (err) {
+    if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
+      thinkingEl.updateThinkingProgress(100);
+    }
     thinkingEl.remove();
     if (err.name === "AbortError") {
       appendStoppedNotice("doc");
@@ -1348,5 +1383,16 @@ export function initDocuments() {
   const btnDocHintUpload = document.getElementById("btn-doc-hint-upload");
   btnDocHintUpload?.addEventListener("click", () => {
     document.getElementById("file-input")?.click();
+  });
+
+  const headerDocBadge = document.getElementById("header-doc-badge");
+  headerDocBadge?.addEventListener("click", () => {
+    if (typeof window.switchTab === "function") {
+      window.switchTab("documents");
+    }
+    const docFilesTrigger = document.getElementById("doc-files-trigger");
+    if (docFilesTrigger) {
+      docFilesTrigger.click();
+    }
   });
 }

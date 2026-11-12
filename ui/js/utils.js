@@ -192,7 +192,7 @@ export function appendStoppedNotice(context = "general") {
 // --- Thinking Percentage Timer ---
 export function startThinkingPercentage(wrapper, percentEl) {
   let currentProgress = 0;
-  let targetProgress = 25; // Phase 1: Query analysis & routing
+  let targetProgress = 20; // Phase 1: Query analysis & intent routing
   const startTime = Date.now();
 
   const timer = setInterval(() => {
@@ -202,35 +202,35 @@ export function startThinkingPercentage(wrapper, percentEl) {
     }
     const elapsed = (Date.now() - startTime) / 1000;
 
-    // Dynamically advance targetProgress based on real pipeline timing
-    // if no explicit server SSE event has overridden it yet:
-    if (targetProgress < 60 && elapsed >= 0.8) {
-      targetProgress = 60; // Phase 2: Vector retrieval in progress
-    } else if (targetProgress < 85 && elapsed >= 2.5) {
-      targetProgress = 85; // Phase 3: Synthesizing context & connecting to LLM
-    } else if (targetProgress < 95 && elapsed >= 5.0) {
-      targetProgress = 94; // Phase 4: Long context / generation buffer
+    // Organic pipeline pacing reflecting actual backend stages:
+    if (targetProgress < 45 && elapsed >= 0.4) {
+      targetProgress = 45; // Phase 2: Vector retrieval & chunk search
+    } else if (targetProgress < 70 && elapsed >= 1.2) {
+      targetProgress = 70; // Phase 3: Grounded context synthesis
+    } else if (targetProgress < 88 && elapsed >= 2.5) {
+      targetProgress = 88; // Phase 4: Model inference & generating answer
     }
 
-    // Smooth ease toward targetProgress to avoid sudden jumps or freezing
+    // Steady, smooth increment without sudden jumps or rushing to 99%
     if (currentProgress < targetProgress) {
       const remaining = targetProgress - currentProgress;
-      const step = Math.max(0.4, remaining * 0.12);
+      const step = Math.max(0.3, remaining * 0.08);
       currentProgress = Math.min(targetProgress, currentProgress + step);
     }
 
-    if (currentProgress > 98 && targetProgress < 100) {
-      currentProgress = 98;
+    // Cap at 88% while waiting for generation so it never freezes at 98-99%
+    if (currentProgress > 88 && targetProgress < 100) {
+      currentProgress = 88;
     }
 
     percentEl.textContent = `${Math.round(currentProgress)}%`;
-  }, 50);
+  }, 45);
 
   wrapper._thinkingTimer = timer;
 
   // Real-time synchronization hook called when backend retrieval/token events arrive
   wrapper.updateThinkingProgress = function (newTarget) {
-    targetProgress = Math.max(targetProgress, newTarget);
+    targetProgress = newTarget;
     if (newTarget >= 100) {
       currentProgress = 100;
       percentEl.textContent = "100%";

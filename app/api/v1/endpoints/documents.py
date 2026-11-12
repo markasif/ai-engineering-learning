@@ -593,7 +593,8 @@ async def ask_documents(
             "2. You have 100% full-document visibility—analyze the entire text holistically.\n"
             "3. RELEVANCE RULE: If the user's question is completely unrelated to the provided document, or if the document does not contain enough information to answer it, YOU MUST explicitly reply:\n"
             "'I cannot find any information about that in your uploaded document(s). This chat is strictly grounded in your file. Please ask a question related to your document.'\n"
-            "4. Never invent facts outside the provided document text."
+            "4. Never invent facts outside the provided document text.\n"
+            "5. Do NOT output internal reasoning, thinking steps, or meta-commentary; directly provide the final synthesized response."
         )
         user_prompt = f"=== FULL DOCUMENT CONTEXT ({target_filename}) ===\n\n{truncated_text}\n\n=== USER QUESTION ===\n{q}"
 
@@ -611,6 +612,10 @@ async def ask_documents(
                 timeout=15.0,
             )
             answer = res.content
+            if answer and "Here's a thinking process:" in answer:
+                cleaned_ans = re.sub(r"^Here's a thinking process:.*?(?=\n\n(?:\*\*|[A-Z]|#|\d+\.))", "", answer, flags=re.DOTALL | re.IGNORECASE).strip()
+                if cleaned_ans:
+                    answer = cleaned_ans
             if not answer or not answer.strip() or is_refusal_answer(answer):
                 if is_refusal_answer(answer):
                     return {
@@ -661,7 +666,7 @@ async def ask_documents(
         tenant_docs = list_documents(tenant_id=tenant_id)
         ready_tenant_docs = [d for d in tenant_docs if d.status == "ready"]
         if ready_tenant_docs:
-            doc_id = ready_tenant_docs[-1].id
+            doc_id = ready_tenant_docs[0].id
 
     filters = {"document_id": doc_id} if doc_id else None
     chunks = await asyncio.to_thread(
