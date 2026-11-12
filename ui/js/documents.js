@@ -17,6 +17,7 @@ import {
   renderRateLimitNotice
 } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
+import { startEditMessage } from "./chat.js";
 
 export const uploadArea = document.getElementById("upload-area");
 export const fileInput = document.getElementById("file-input");

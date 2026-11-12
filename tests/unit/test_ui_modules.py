@@ -141,3 +141,58 @@ def test_upload_document_auto_strategy():
     assert body["chunking_strategy"] in ("cag", "sentence")
 
 
+def test_all_ui_module_imports_and_function_calls_valid():
+    """Verify that every imported identifier is actually exported, and any cross-module function call is imported."""
+    js_dir = Path("ui/js")
+    files = list(js_dir.glob("*.js"))
+
+    exports = {}
+    for f in files:
+        content = f.read_text(encoding="utf-8")
+        exp = set()
+        for m in re.finditer(r"export\s+(?:function|const|let|var|class|async\s+function)\s+([a-zA-Z0-9_$]+)", content):
+            exp.add(m.group(1))
+        for m in re.finditer(r"export\s*\{([^}]+)\}", content):
+            for item in m.group(1).split(","):
+                parts = item.strip().split(" as ")
+                name = parts[-1].strip()
+                if name:
+                    exp.add(name)
+        exports[f.name] = exp
+
+    all_exports_flattened = {}
+    for src_file, names in exports.items():
+        for name in names:
+            all_exports_flattened[name] = src_file
+
+    missing = []
+    for f in files:
+        content = f.read_text(encoding="utf-8")
+        imported_in_file = set()
+        for m in re.finditer(r"import\s*\{([^}]+)\}\s*from\s*['\"]([^'\"]+)['\"]", content):
+            items = [x.strip().split(" as ")[0].strip() for x in m.group(1).split(",") if x.strip()]
+            for item in items:
+                imported_in_file.add(item)
+            src = Path(m.group(2)).name
+            if src in exports:
+                for item in items:
+                    assert item in exports[src], f"{f.name} imports '{item}' from '{src}', but '{item}' is NOT exported in {src}!"
+
+        local_defs = exports[f.name]
+        for func_name, source_file in all_exports_flattened.items():
+            if source_file == f.name:
+                continue
+            for match in re.finditer(r"([a-zA-Z0-9_$.]*\b)(" + re.escape(func_name) + r")\s*\(", content):
+                prefix = match.group(1)
+                if "window." in prefix or "this." in prefix:
+                    continue
+                line = content[max(0, match.start() - 100):match.end() + 100]
+                if "onclick=" in line:
+                    continue
+                if func_name not in imported_in_file and func_name not in local_defs:
+                    missing.append(f"{f.name} calls '{func_name}()' (defined in {source_file}), but does not import it!")
+
+    assert not missing, f"Missing imports found: {missing}"
+
+
+

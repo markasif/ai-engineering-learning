@@ -855,6 +855,12 @@ document.addEventListener("click", (e) => {
   }
 });
 
+export function getActiveMessagesContainer(contextType = "general") {
+  if (contextType === "doc") return document.getElementById("doc-message-history");
+  if (contextType === "agent") return document.getElementById("agent-history") || document.getElementById("agent-message-history");
+  return document.getElementById("message-history");
+}
+
 export function exportChatAsCsv(contextType = "general") {
   const messagesEl = getActiveMessagesContainer(contextType);
   if (!messagesEl) return;

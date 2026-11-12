@@ -154,7 +154,9 @@ export async function handleDocChatEdit(msgWrapper, newText) {
   if (targetIndex !== -1) {
     children.slice(targetIndex + 1).forEach(el => el.remove());
   }
-  await sendDocMessage(newText, msgWrapper);
+  if (typeof window.sendDocMessage === "function") {
+    await window.sendDocMessage(newText, msgWrapper);
+  }
 }
 
 /** Handle saving & submitting an edited user query in Agent Chat */
@@ -178,7 +180,9 @@ export async function handleAgentChatEdit(msgWrapper, newText) {
       }
     }
   }
-  await runAgent(newText, msgWrapper);
+  if (typeof window.runAgent === "function") {
+    await window.runAgent(newText, msgWrapper);
+  }
 }
 
 /**
@@ -1085,11 +1089,7 @@ export function hideDemoLimitModal() {
   if (modal) modal.hidden = true;
 }
 
-export function getActiveMessagesContainer(contextType = "general") {
-  if (contextType === "doc") return document.getElementById("doc-message-history");
-  if (contextType === "agent") return document.getElementById("agent-history") || document.getElementById("agent-message-history");
-  return document.getElementById("message-history");
-}
+export { getActiveMessagesContainer } from "./utils.js";
 
 /**
  * Smart Content Detection — determines whether an AI response is "export-worthy".

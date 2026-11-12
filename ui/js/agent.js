@@ -15,7 +15,13 @@ import {
   detectExportWorthy
 } from "./utils.js";
 import { API_BASE, getAuthHeaders, recordVisitorSession } from "./api.js";
-import { setActiveSession, loadSessions } from "./chat.js";
+import {
+  setActiveSession,
+  loadSessions,
+  updateDemoQuotaDisplay,
+  showDemoLimitModal,
+  startEditMessage
+} from "./chat.js";
 
 export const agentInput = document.getElementById("agent-input");
 export const agentChatInput = agentInput;

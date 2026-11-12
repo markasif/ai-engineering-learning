@@ -4,7 +4,7 @@
 import { state } from "./state.js";
 import { showToast, escapeHtml } from "./utils.js";
 import { API_BASE, getAuthHeaders } from "./api.js";
-import { appendMessage, sendMessage } from "./chat.js";
+import { appendMessage, sendMessage, loadSessions } from "./chat.js";
 
 const voiceBtn = document.getElementById("voice-btn");
 const voiceModal = document.getElementById("voice-modal");

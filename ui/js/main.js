@@ -27,15 +27,18 @@ import {
   updateDemoQuotaDisplay,
   getActiveMessagesContainer,
   createNewSession,
-  hideDemoLimitModal
+  hideDemoLimitModal,
+  sendMessage
 } from "./chat.js";
 import {
   initDocuments,
-  loadDocuments
+  loadDocuments,
+  sendDocMessage
 } from "./documents.js";
 import {
   initAgent,
-  checkAgentSessionState
+  checkAgentSessionState,
+  runAgent
 } from "./agent.js";
 import {
   initMcp,
@@ -171,6 +174,9 @@ export function switchTab(tabName) {
 // Attach switchTab to window for backward compatibility with inline calls
 window.switchTab = switchTab;
 window.toggleMobileSidebar = toggleMobileSidebar;
+window.runAgent = runAgent;
+window.sendDocMessage = sendDocMessage;
+window.sendMessage = sendMessage;
 
 // BYOK Settings UI Manager
 function initByokSettings() {
