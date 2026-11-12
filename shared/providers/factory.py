@@ -176,7 +176,7 @@ def get_provider(role: str = "llm", api_key: str | None = None) -> LLMProvider:
     elif role == "vlm":
         provider_name = settings.effective_vlm_provider().lower().strip()
     else:
-        provider_name = settings.llm_provider.lower().strip()
+        provider_name = settings.effective_llm_provider().lower().strip()
 
     if not provider_name or provider_name not in _VALID_PROVIDERS:
         raise ValueError(

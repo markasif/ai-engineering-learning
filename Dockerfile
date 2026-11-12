@@ -36,7 +36,7 @@ RUN groupadd -g 1001 appuser && \
     useradd -u 1001 -g appuser -s /bin/bash -m appuser
 
 # Create persistent state directories
-RUN mkdir -p /data/chroma /data/uploads && \
+RUN mkdir -p /data/chroma /data/uploads /app/data && \
     chown -R appuser:appuser /data /app
 
 # Copy application and shared library code
@@ -44,6 +44,7 @@ COPY shared/ ./shared/
 COPY app/ ./app/
 COPY ui/ ./ui/
 COPY pyproject.toml .
+COPY README.md .
 
 # Install package in editable/local mode without reinstalling dependencies
 RUN pip install --no-deps -e .
@@ -53,10 +54,10 @@ USER appuser
 
 EXPOSE 8000
 
-# Built-in container healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; sys_exit = 0 if urllib.request.urlopen('http://localhost:8000/api/health').getcode() == 200 else 1; exit(sys_exit)"
+# Built-in container healthcheck supporting dynamic Render $PORT
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import os, urllib.request; p = os.environ.get('PORT', '8000'); sys_exit = 0 if urllib.request.urlopen(f'http://localhost:{p}/api/health').getcode() == 200 else 1; exit(sys_exit)"
 
-# Launch production server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Launch production server supporting dynamic Render/Cloud $PORT
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 

@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     custom_base_url: str = ""
     custom_api_key: str = ""
-    custom_model: str = ""
+    custom_model: str = "nvidia/nemotron-3.5-bolt-e4b"
 
     # -------------------------------------------------------------------------
     # Vector database (Feature 5+)
@@ -205,6 +205,20 @@ class Settings(BaseSettings):
         """Return the active operational domain name for prompts and UI."""
         return self.domain_name or self.assistant_name or "Enterprise Knowledge Base"
 
+    def effective_llm_provider(self) -> str:
+        """Return the effective LLM provider, auto-detecting based on configured keys."""
+        if self.llm_provider and self.llm_provider.strip():
+            return self.llm_provider.lower().strip()
+        if self.custom_api_key or self.custom_base_url:
+            return "custom"
+        if self.groq_api_key:
+            return "groq"
+        if self.openai_api_key:
+            return "openai"
+        if self.anthropic_api_key:
+            return "anthropic"
+        return "custom"
+
     def effective_voice_provider(self) -> str:
         """Return the provider to use for voice features.
 
@@ -212,7 +226,7 @@ class Settings(BaseSettings):
         so students using a speech-capable provider everywhere don't need
         to set this separately.
         """
-        return self.voice_provider or self.llm_provider
+        return self.voice_provider or self.effective_llm_provider()
 
     def effective_vlm_provider(self) -> str:
         """Return the provider to use for image analysis (VLM).
@@ -221,7 +235,7 @@ class Settings(BaseSettings):
         If your main provider doesn't support vision (groq, cohere), set
         VLM_PROVIDER=openai or VLM_PROVIDER=ollama with a vision model.
         """
-        return self.vlm_provider or self.llm_provider
+        return self.vlm_provider or self.effective_llm_provider()
 
 
 # Single shared instance — import this object, don't instantiate Settings yourself.
