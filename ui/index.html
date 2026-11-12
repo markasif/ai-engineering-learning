@@ -11,13 +11,13 @@
   <meta property="og:site_name" content="AskRaggy Enterprise Platform" />
   <meta property="og:title" content="AskRaggy · Enterprise AI Platform &amp; Autonomous Agent Architecture" />
   <meta property="og:description" content="Production-grade AI microservice featuring RAG, Model Context Protocol (MCP), ReAct tool-calling agents, multimodal voice/vision, and real-time observability." />
-  <meta property="og:image" content="https://raw.githubusercontent.com/markasif/ai-engineering-learning/main/ui/assets/images/askraggy-brand.png" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/markasif/ai-engineering-learning/main/ui/askraggy-brand.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AskRaggy · Enterprise AI Platform &amp; Agent Architecture" />
   <meta name="twitter:description" content="Autonomous RAG, ReAct agents, and enterprise telemetry microservice built with FastAPI." />
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/markasif/ai-engineering-learning/main/ui/assets/images/askraggy-brand.png" />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/markasif/ai-engineering-learning/main/ui/askraggy-brand.png" />
 
   <!-- Mobile Browser & PWA Integration -->
   <meta name="theme-color" content="#062e1e" />
@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- Favicon and Brand Icons -->
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon.png?v=9.0.0" />
-  <link rel="shortcut icon" href="assets/icons/favicon.ico?v=9.0.0" />
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=9.0.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=7.12.0" />
+  <link rel="shortcut icon" href="favicon.ico?v=7.12.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.12.0" />
   <link rel="stylesheet" href="style.css?v=8.2.0" />
   <script>
     (function() {
@@ -60,7 +60,7 @@
 
 <!-- Official AskRaggy 3D Origami/Ribbon Logo Image -->
         <div class="brand-logo-mark" title="AskRaggy Enterprise Intelligence">
-          <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="brand-logo-img" width="36" height="36" />
+          <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="brand-logo-img" width="36" height="36" />
         </div>
 
         <div class="titles">
@@ -299,7 +299,7 @@
             <div class="message-history" id="message-history" role="log" aria-live="polite" aria-label="Conversation">
               <div class="empty-state welcome-clean" id="empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
                 
                 <h1 class="hero-heading">How can I assist you today?</h1>
@@ -359,12 +359,10 @@
                   </button>
                 </div>
 
-                <!-- Grounding Context Notice (Minimal, unobtrusive) -->
-                <div class="default-handbook-note" id="chat-handbook-note">
-                  <span class="note-text">No document uploaded &mdash; sample Acme Handbook applied.</span>
-                  <button type="button" class="btn-note-upload" id="btn-goto-doc-upload" title="Switch to Documents tab to upload your own files">
-                    Upload your file &rarr;
-                  </button>
+                <!-- Minimal Plain-Text Document Notice & Navigation Button -->
+                <div class="minimal-default-doc-notice" id="chat-default-doc-notice">
+                  <span>Default document applied (Acme Enterprise Handbook).</span>
+                  <button type="button" class="btn-notice-switch-tab" id="btn-goto-doc-upload">Upload your document ➔</button>
                 </div>
               </div>
             </div>
@@ -473,7 +471,7 @@
               aria-label="Document Conversation">
               <div class="empty-state welcome-clean" id="doc-empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
 
                 <h2 class="hero-heading">How can I assist you today?</h2>
@@ -538,9 +536,9 @@
                       </svg>
                     </span>
                     <div class="doc-hint-text">
-                      <strong>Sample Acme Enterprise Handbook applied</strong>
-                      <span class="doc-hint-desc-desktop">Default policy handbook active. Click <em>Attach file</em> or drop a PDF, DOCX, or TXT file to query your own.</span>
-                      <span class="doc-hint-desc-mobile">Default handbook active. Attach or drop your file to query your own.</span>
+                      <strong id="doc-hint-status">Default document active (Acme Enterprise Handbook)</strong>
+                      <span class="doc-hint-desc-desktop">Click <button type="button" class="btn-inline-upload-trigger" id="btn-doc-hint-upload">Attach file</button> or drop a custom PDF, DOCX, or TXT file below to query your own document.</span>
+                      <span class="doc-hint-desc-mobile">Attach or drop a custom PDF, DOCX, or TXT file below to start.</span>
                     </div>
                   </div>
                 </div>
@@ -724,7 +722,7 @@
             <div class="message-history" id="agent-history" role="log" aria-live="polite" aria-label="Agent conversation">
               <div class="empty-state welcome-clean" id="agent-empty-state">
                 <div class="hero-logo-wrapper" aria-hidden="true">
-                  <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+                  <img src="askraggy-logo-mark.png?v=6.4.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
                 </div>
 
                 <h2 class="hero-heading">How can I assist you today?</h2>
@@ -1232,7 +1230,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="js/main.js?v=9.0.0"></script>
+  <script src="app.js?v=8.2.0" defer></script>
 </body>
 
 </html>

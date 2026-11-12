@@ -45,9 +45,9 @@ async def upload_document(
     tenant_id: str = Depends(get_tenant_id),
 ) -> Document:
     """Upload and index documents (PDF, DOCX, TXT) into vector storage."""
-    valid_strategies = set(CHUNKING_STRATEGIES.keys()) | {"auto"}
-    if strategy not in valid_strategies:
-        raise HTTPException(status_code=400, detail=f"Unknown strategy '{strategy}'.")
+    # Fallback gracefully if 'auto', 'adaptive', 'smart', or unrecognized strategy is sent
+    if not strategy or strategy in ("auto", "adaptive", "smart") or strategy not in CHUNKING_STRATEGIES:
+        strategy = "sentence"
 
     filename = file.filename or "unknown"
     doc = save_document(filename, tenant_id=tenant_id)
@@ -61,19 +61,13 @@ async def upload_document(
                 detail=f"File exceeds maximum allowed upload size of 25 MB (got {len(file_bytes) / (1024 * 1024):.1f} MB).",
             )
 
-        def _process() -> tuple[int, int, int, str]:
+        def _process() -> tuple[int, int, int]:
             text = extract_text(file_bytes, filename)
             save_document_text(doc.id, text)
             pages = extract_pages(file_bytes, filename)
             page_count = len(pages) if pages else 1
             char_count = len(text)
-
-            # Adaptive auto strategy: CAG for compact files (<= 50 pages & <= 120k chars), else sentence RAG
-            effective_strategy = strategy
-            if strategy == "auto":
-                effective_strategy = "cag" if (page_count <= 50 and char_count <= 120_000) else "sentence"
-
-            chunk_dicts = CHUNKING_STRATEGIES[effective_strategy](text, pages)
+            chunk_dicts = CHUNKING_STRATEGIES[strategy](text, pages)
 
             for cd in chunk_dicts:
                 save_chunk(
@@ -92,14 +86,14 @@ async def upload_document(
                 [{"filename": filename, "chunk_index": cd["chunk_index"]} for cd in chunk_dicts],
                 tenant_id=tenant_id,
             )
-            return len(chunk_dicts), page_count, char_count, effective_strategy
+            return len(chunk_dicts), page_count, char_count
 
-        chunk_count, page_count, char_count, resolved_strategy = await asyncio.to_thread(_process)
+        chunk_count, page_count, char_count = await asyncio.to_thread(_process)
         update_document(
             doc.id,
             status="ready",
             chunk_count=chunk_count,
-            chunking_strategy=resolved_strategy,
+            chunking_strategy=strategy,
             page_count=page_count,
             char_count=char_count,
         )
@@ -537,8 +531,8 @@ async def ask_documents(
     if char_count == 0 and raw_doc_text:
         char_count = len(raw_doc_text)
 
-    # Architectural threshold: <= 50 pages and <= 120,000 characters is optimal for CAG
-    is_cag_optimal = bool(page_count <= 50 and char_count <= 120_000)
+    # Architectural threshold: <= 4 pages and <= 15,000 characters is optimal for fast CAG
+    is_cag_optimal = bool(page_count <= 4 and char_count <= 15_000)
 
     # Resolve Effective Mode (Adaptive Auto vs Forced CAG vs Forced RAG)
     auto_routed = False
@@ -587,8 +581,8 @@ async def ask_documents(
                 "is_large_doc": not is_cag_optimal,
             }
 
-        # Safe limit up to 150,000 chars (~35,000 tokens)
-        truncated_text = full_text[:150_000]
+        # Optimized limit up to 20,000 chars (~4,500 tokens) for sub-2s inference
+        truncated_text = full_text[:20_000]
 
         system_prompt = (
             "You are AskRaggy running in CAG (Cache-Augmented Generation) Full-Context Mode.\n"
@@ -611,10 +605,10 @@ async def ask_documents(
                         {"role": "user", "content": user_prompt},
                     ],
                     temperature=0.1,
-                    max_tokens=1500 if user_api_key else 500,
+                    max_tokens=500 if user_api_key else 350,
                     api_key=user_api_key,
                 ),
-                timeout=30.0,
+                timeout=15.0,
             )
             answer = res.content
             if not answer or not answer.strip() or is_refusal_answer(answer):
@@ -720,10 +714,10 @@ async def ask_documents(
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
-                max_tokens=1500 if user_api_key else 500,
+                max_tokens=500 if user_api_key else 350,
                 api_key=user_api_key,
             ),
-            timeout=25.0,
+            timeout=15.0,
         )
         answer = res.content
         if not answer or not answer.strip() or is_refusal_answer(answer):
