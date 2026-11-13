@@ -102,4 +102,3 @@ def seed_default_knowledge_if_empty(tenant_id: str = "default") -> None:
         )
     except Exception as exc:
         logger.warning("Default knowledge seeding notice: %s", exc)
-

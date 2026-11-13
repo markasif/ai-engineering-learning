@@ -19,6 +19,7 @@ Enable via .env:
 """
 
 import asyncio
+import contextlib
 import json
 import os
 import time
@@ -259,7 +260,9 @@ async def lookup_employee(query: str) -> dict[str, Any]:
                     for e in records:
                         rec = dict(e)
                         rec["name"] = rec.get("name") or rec.get("full_name") or "Employee"
-                        rec["employee_code"] = rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                        rec["employee_code"] = (
+                            rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                        )
                         rec["leave_balance"] = rec.get("leave_balance", 18)
                         normalized.append(rec)
 
@@ -311,7 +314,9 @@ async def list_department_staff(department: str) -> dict[str, Any]:
                         for r in records:
                             rec = dict(r)
                             rec["name"] = rec.get("name") or rec.get("full_name") or "Employee"
-                            rec["employee_code"] = rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                            rec["employee_code"] = (
+                                rec.get("employee_code") or f"EMP-{str(rec.get('id', ''))[:6]}"
+                            )
                             normalized.append(rec)
                         return {
                             "department": clean_dept,
@@ -530,7 +535,9 @@ async def submit_expense_claim(
                     alt_payload: dict[str, Any] = {
                         "amount": amt,
                         "category": category.strip(),
-                        "description": f"{merchant.strip()} - {description.strip()}" if description.strip() else merchant.strip(),
+                        "description": f"{merchant.strip()} - {description.strip()}"
+                        if description.strip()
+                        else merchant.strip(),
                         "status": approval_status,
                     }
                     if lookup.get("found"):
@@ -607,10 +614,8 @@ async def get_expense_claims(
                         for r in records:
                             rec = dict(r)
                             # Resolve amount
-                            try:
+                            with contextlib.suppress(ValueError, TypeError):
                                 rec["amount"] = float(rec.get("amount", 0.0))
-                            except (ValueError, TypeError):
-                                pass
 
                             # Resolve employee_name
                             if not rec.get("employee_name"):
@@ -625,7 +630,9 @@ async def get_expense_claims(
 
                             # Resolve merchant
                             if not rec.get("merchant"):
-                                rec["merchant"] = rec.get("description") or rec.get("category") or "Vendor"
+                                rec["merchant"] = (
+                                    rec.get("description") or rec.get("category") or "Vendor"
+                                )
 
                             # Resolve category & status
                             rec["category"] = rec.get("category") or "General"
@@ -636,7 +643,9 @@ async def get_expense_claims(
                         if status and status.strip():
                             s_filter = status.strip().lower()
                             normalized = [
-                                r for r in normalized if s_filter in str(r.get("status", "")).lower()
+                                r
+                                for r in normalized
+                                if s_filter in str(r.get("status", "")).lower()
                             ]
 
                         # Filter by employee_name in memory (case-insensitive substring)

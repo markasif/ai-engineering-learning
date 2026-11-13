@@ -73,10 +73,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path.lower().rstrip("/")
         # Skip static files, root, and internal telemetry/keepalive/health polling
-        if (
-            not path.startswith("/api")
-            or path.endswith(("/metrics", "/health", "/keepalive"))
-        ):
+        if not path.startswith("/api") or path.endswith(("/metrics", "/health", "/keepalive")):
             return await call_next(request)
 
         start = time.perf_counter()

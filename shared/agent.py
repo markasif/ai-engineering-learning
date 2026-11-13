@@ -482,9 +482,7 @@ async def run_agent_with_mcp(
         # Guard against oversized tool outputs overflowing model context window
         if len(dumped_tool) > 20000:
             dumped_tool = dumped_tool[:20000] + "\n... (truncated for context limits)"
-        messages.append(
-            {"role": "tool", "tool_call_id": tool_call_id, "content": dumped_tool}
-        )
+        messages.append({"role": "tool", "tool_call_id": tool_call_id, "content": dumped_tool})
 
     # Call 2: synthesize final answer.
     try:
@@ -492,11 +490,15 @@ async def run_agent_with_mcp(
             messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key
         )
         answer = second_response.content or ""
-    except Exception as exc:
+    except Exception:
         # Fallback synthesis if second LLM call fails
         first_step = steps[0] if steps else {}
         first_res = first_step.get("result", {})
-        if isinstance(first_res, dict) and "largest_expense" in first_res and first_res["largest_expense"]:
+        if (
+            isinstance(first_res, dict)
+            and "largest_expense" in first_res
+            and first_res["largest_expense"]
+        ):
             le = first_res["largest_expense"]
             answer = (
                 f"The largest expense is **${le.get('amount')}** for **{le.get('description', 'N/A')}** "

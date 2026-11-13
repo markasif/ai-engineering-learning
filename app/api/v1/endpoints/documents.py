@@ -46,7 +46,11 @@ async def upload_document(
 ) -> Document:
     """Upload and index documents (PDF, DOCX, TXT) into vector storage."""
     # Fallback gracefully if 'auto', 'adaptive', 'smart', or unrecognized strategy is sent
-    if not strategy or strategy in ("auto", "adaptive", "smart") or strategy not in CHUNKING_STRATEGIES:
+    if (
+        not strategy
+        or strategy in ("auto", "adaptive", "smart")
+        or strategy not in CHUNKING_STRATEGIES
+    ):
         strategy = "sentence"
 
     filename = file.filename or "unknown"
@@ -510,6 +514,7 @@ async def ask_documents(
         if session_id and resp.get("answer"):
             try:
                 from shared.session_store import add_message
+
                 add_message(session_id, "user", q)
                 add_message(session_id, "assistant", resp["answer"])
             except Exception:
@@ -517,12 +522,14 @@ async def ask_documents(
         return resp
 
     if not q:
-        return _record_and_return({
-            "answer": "Please ask a question about your uploaded document.",
-            "evidence": [],
-            "total_matches": 0,
-            "mode": req_mode,
-        })
+        return _record_and_return(
+            {
+                "answer": "Please ask a question about your uploaded document.",
+                "evidence": [],
+                "total_matches": 0,
+                "mode": req_mode,
+            }
+        )
 
     is_all_docs = bool(not doc_id or doc_id.lower() in ("all", "all_documents", "*"))
     tenant_docs = list_documents(tenant_id=tenant_id)
@@ -535,10 +542,16 @@ async def ask_documents(
 
     if is_all_docs:
         # Multi-document mode: query across all uploaded documents in the knowledge base
-        target_filename = f"All Documents ({len(ready_tenant_docs)} files)" if ready_tenant_docs else "Knowledge Base"
+        target_filename = (
+            f"All Documents ({len(ready_tenant_docs)} files)"
+            if ready_tenant_docs
+            else "Knowledge Base"
+        )
         effective_mode = "rag"
         auto_routed = True
-        auto_route_reason = "Multi-document query — searching vector chunks across all uploaded files."
+        auto_route_reason = (
+            "Multi-document query — searching vector chunks across all uploaded files."
+        )
         is_cag_optimal = False
         page_count = sum(getattr(d, "page_count", 1) for d in ready_tenant_docs)
         char_count = sum(getattr(d, "char_count", 0) for d in ready_tenant_docs)
@@ -576,7 +589,11 @@ async def ask_documents(
                 f"CAG is optimized for files <50 pages. We recommend switching to RAG (Sentence-aware) "
                 f"for faster retrieval and lower token consumption."
             )
-        elif effective_mode in ("rag", "sentence", "paragraph") and is_cag_optimal and page_count <= 25:
+        elif (
+            effective_mode in ("rag", "sentence", "paragraph")
+            and is_cag_optimal
+            and page_count <= 25
+        ):
             tip_msg = (
                 f"✨ Optimal for CAG: This file is only {page_count} page{'s' if page_count != 1 else ''} ({char_count:,} characters). "
                 f"You can switch to CAG (Full Context) for 100% full-document visibility with zero retrieval errors."
@@ -589,15 +606,17 @@ async def ask_documents(
     if effective_mode == "cag":
         full_text = raw_doc_text
         if not full_text:
-            return _record_and_return({
-                "answer": OUT_OF_DOMAIN_MESSAGE,
-                "evidence": [],
-                "total_matches": 0,
-                "mode": "cag",
-                "page_count": page_count,
-                "char_count": char_count,
-                "is_large_doc": not is_cag_optimal,
-            })
+            return _record_and_return(
+                {
+                    "answer": OUT_OF_DOMAIN_MESSAGE,
+                    "evidence": [],
+                    "total_matches": 0,
+                    "mode": "cag",
+                    "page_count": page_count,
+                    "char_count": char_count,
+                    "is_large_doc": not is_cag_optimal,
+                }
+            )
 
         # Optimized limit up to 20,000 chars (~4,500 tokens) for sub-2s inference
         truncated_text = full_text[:20_000]
@@ -632,47 +651,57 @@ async def ask_documents(
             answer = res.content
             if answer and ("thinking process" in answer.lower() or "1.  **Analyze" in answer):
                 # Strip internal reasoning and preserve the final grounded answer
-                sub_parts = [p.strip() for p in re.split(r"\n\n(?=(?:[A-Z][a-z]|I cannot|Based on|According to|\*\*))", answer) if p.strip()]
+                sub_parts = [
+                    p.strip()
+                    for p in re.split(
+                        r"\n\n(?=(?:[A-Z][a-z]|I cannot|Based on|According to|\*\*))", answer
+                    )
+                    if p.strip()
+                ]
                 for p in reversed(sub_parts):
                     if not re.search(r"^(?:Here's|\d+\.)\s+\*\*", p, flags=re.IGNORECASE):
                         answer = p
                         break
             if not answer or not answer.strip() or is_refusal_answer(answer):
                 if is_refusal_answer(answer):
-                    return _record_and_return({
-                        "answer": OUT_OF_DOMAIN_MESSAGE,
-                        "evidence": [],
-                        "total_matches": 0,
-                        "mode": "cag",
-                        "page_count": page_count,
-                        "char_count": char_count,
-                        "is_large_doc": not is_cag_optimal,
-                        "warning": warning_msg,
-                    })
+                    return _record_and_return(
+                        {
+                            "answer": OUT_OF_DOMAIN_MESSAGE,
+                            "evidence": [],
+                            "total_matches": 0,
+                            "mode": "cag",
+                            "page_count": page_count,
+                            "char_count": char_count,
+                            "is_large_doc": not is_cag_optimal,
+                            "warning": warning_msg,
+                        }
+                    )
                 answer = "Based on the full document context: " + truncated_text[:500]
         except Exception:
             answer = f"**[CAG Full Context]** Based on {target_filename}: {truncated_text[:350]}…"
 
-        return _record_and_return({
-            "answer": answer,
-            "evidence": [
-                {
-                    "filename": target_filename,
-                    "text": f"Cache-Augmented Generation (CAG): Full document ({page_count} pages, {len(full_text):,} characters) pre-cached in context with 100% visibility.",
-                    "chunk_index": 0,
-                    "document_id": doc_id,
-                }
-            ],
-            "total_matches": 1,
-            "mode": "cag",
-            "page_count": page_count,
-            "char_count": char_count,
-            "is_large_doc": not is_cag_optimal,
-            "auto_routed": auto_routed,
-            "reason": auto_route_reason,
-            "warning": warning_msg,
-            "tip": tip_msg,
-        })
+        return _record_and_return(
+            {
+                "answer": answer,
+                "evidence": [
+                    {
+                        "filename": target_filename,
+                        "text": f"Cache-Augmented Generation (CAG): Full document ({page_count} pages, {len(full_text):,} characters) pre-cached in context with 100% visibility.",
+                        "chunk_index": 0,
+                        "document_id": doc_id,
+                    }
+                ],
+                "total_matches": 1,
+                "mode": "cag",
+                "page_count": page_count,
+                "char_count": char_count,
+                "is_large_doc": not is_cag_optimal,
+                "auto_routed": auto_routed,
+                "reason": auto_route_reason,
+                "warning": warning_msg,
+                "tip": tip_msg,
+            }
+        )
 
     if not q:
         return {
@@ -768,19 +797,21 @@ async def ask_documents(
         item["text"] = clean_text(c.get("text", ""))
         sanitized_evidence.append(item)
 
-    return _record_and_return({
-        "answer": answer,
-        "evidence": sanitized_evidence,
-        "total_matches": len(chunks),
-        "mode": "rag",
-        "page_count": page_count,
-        "char_count": char_count,
-        "is_large_doc": not is_cag_optimal,
-        "auto_routed": auto_routed,
-        "reason": auto_route_reason,
-        "warning": warning_msg,
-        "tip": tip_msg,
-    })
+    return _record_and_return(
+        {
+            "answer": answer,
+            "evidence": sanitized_evidence,
+            "total_matches": len(chunks),
+            "mode": "rag",
+            "page_count": page_count,
+            "char_count": char_count,
+            "is_large_doc": not is_cag_optimal,
+            "auto_routed": auto_routed,
+            "reason": auto_route_reason,
+            "warning": warning_msg,
+            "tip": tip_msg,
+        }
+    )
 
 
 @router.delete("/documents/{doc_id}", tags=["F4 · Feed the Brain"])

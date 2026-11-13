@@ -31,4 +31,3 @@ def test_ping_supabase_structure():
     assert isinstance(result, dict)
     assert "configured" in result
     assert "status" in result
-
