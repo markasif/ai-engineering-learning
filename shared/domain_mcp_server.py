@@ -563,16 +563,18 @@ async def submit_expense_claim(
 async def get_expense_claims(
     employee_name: str | None = None,
     status: str | None = None,
+    limit: int = 25,
 ) -> dict[str, Any]:
     """Retrieve expense reimbursement claims, optionally filtered by employee name or approval status."""
     url, key = _get_supabase_config()
+    safe_limit = max(1, min(int(limit or 25), 50))
 
     if url and key:
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 headers = _get_supabase_headers(key)
                 resp = await client.get(
-                    f"{url}/rest/v1/expenses?select=*",
+                    f"{url}/rest/v1/expenses?select=*&order=amount.desc&limit=100",
                     headers=headers,
                 )
                 if resp.status_code == 200:
@@ -590,8 +592,8 @@ async def get_expense_claims(
                                     for e in emp_resp.json():
                                         eid = str(e.get("id", ""))
                                         name = (
-                                            e.get("name")
-                                            or e.get("full_name")
+                                            e.get("full_name")
+                                            or e.get("name")
                                             or e.get("email")
                                             or f"Employee {eid[:6]}"
                                         )
@@ -646,9 +648,20 @@ async def get_expense_claims(
                                 if e_filter in str(r.get("employee_name", "")).lower()
                             ]
 
+                        # Sort descending by amount
+                        normalized.sort(key=lambda r: float(r.get("amount", 0.0)), reverse=True)
+
+                        total_matching = len(normalized)
+                        largest = normalized[0] if normalized else None
+                        smallest = normalized[-1] if normalized else None
+                        top_slice = normalized[:safe_limit]
+
                         return {
-                            "count": len(normalized),
-                            "expenses": normalized,
+                            "total_matching_count": total_matching,
+                            "largest_expense": largest,
+                            "smallest_expense": smallest,
+                            "count": len(top_slice),
+                            "expenses": top_slice,
                             "source": "Supabase PostgreSQL Database",
                         }
         except Exception:
@@ -662,9 +675,16 @@ async def get_expense_claims(
         s = status.strip().lower()
         records = [r for r in records if s in r["status"].lower()]
 
+    records.sort(key=lambda r: float(r.get("amount", 0.0)), reverse=True)
+    largest = records[0] if records else None
+    smallest = records[-1] if records else None
+
     return {
-        "count": len(records),
-        "expenses": records,
+        "total_matching_count": len(records),
+        "largest_expense": largest,
+        "smallest_expense": smallest,
+        "count": len(records[:safe_limit]),
+        "expenses": records[:safe_limit],
         "source": "Finance & Expense System (In-Memory Database)",
     }
 

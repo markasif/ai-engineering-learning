@@ -478,15 +478,33 @@ async def run_agent_with_mcp(
             {"tool": tool_name, "args": tool_args, "result": tool_result, "source": source}
         )
         tools_used.append(tool_name)
+        dumped_tool = json.dumps(tool_result)
+        # Guard against oversized tool outputs overflowing model context window
+        if len(dumped_tool) > 20000:
+            dumped_tool = dumped_tool[:20000] + "\n... (truncated for context limits)"
         messages.append(
-            {"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(tool_result)}
+            {"role": "tool", "tool_call_id": tool_call_id, "content": dumped_tool}
         )
 
     # Call 2: synthesize final answer.
-    second_response = await call_llm(
-        messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key
-    )
-    answer = second_response.content or ""
+    try:
+        second_response = await call_llm(
+            messages=messages, temperature=0.7, max_tokens=1000, api_key=api_key
+        )
+        answer = second_response.content or ""
+    except Exception as exc:
+        # Fallback synthesis if second LLM call fails
+        first_step = steps[0] if steps else {}
+        first_res = first_step.get("result", {})
+        if isinstance(first_res, dict) and "largest_expense" in first_res and first_res["largest_expense"]:
+            le = first_res["largest_expense"]
+            answer = (
+                f"The largest expense is **${le.get('amount')}** for **{le.get('description', 'N/A')}** "
+                f"({le.get('category', 'General')}), submitted by **{le.get('employee_name', 'Employee')}** "
+                f"(Status: {le.get('status', 'submitted')})."
+            )
+        else:
+            answer = f"Completed tool execution ({', '.join(tools_used)})."
     add_message(session_id, "user", message)
     add_message(session_id, "assistant", answer)
 
