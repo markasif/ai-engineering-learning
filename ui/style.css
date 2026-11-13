@@ -2437,6 +2437,12 @@ html, body {
   white-space: nowrap;
 }
 
+[data-theme="dark"] .agent-tool-badge {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border: 1px solid rgba(16, 185, 129, 0.38) !important;
+  color: #6ee7b7 !important;
+}
+
 /* Steps toggle */
 .agent-steps-toggle {
   display: inline-block;
@@ -9549,6 +9555,51 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   color: #ffffff !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* 6. Agent Tool Badges, Source Tags & Steps in Dark Mode */
+[data-theme="dark"] .agent-tool-badge {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border: 1px solid rgba(16, 185, 129, 0.38) !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .agent-tool-badge .agent-source-tag {
+  background: rgba(16, 185, 129, 0.28) !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
+  color: #a7f3d0 !important;
+}
+
+[data-theme="dark"] .agent-steps-toggle {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .agent-steps-toggle:hover {
+  color: #7dd3fc !important;
+}
+
+[data-theme="dark"] .agent-step {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-left: 3px solid #10b981 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .agent-step-tool {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .agent-step-args {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .agent-step-result {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 
