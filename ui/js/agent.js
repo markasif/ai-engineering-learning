@@ -31,6 +31,141 @@ export const agentMessageHistory = agentHistory;
 export const agentNoSession = document.getElementById("agent-no-session");
 export const agentEmptyState = document.getElementById("agent-empty-state");
 
+export function renderAgentEmptyState() {
+  return `
+    <div class="empty-state welcome-clean" id="agent-empty-state">
+      <div class="hero-logo-wrapper" aria-hidden="true">
+        <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+      </div>
+
+      <h2 class="hero-heading">How can I assist you today?</h2>
+      <p class="hero-desc">
+        Execute enterprise workflows, inspect leave records, or approve transactions across connected systems.
+      </p>
+
+      <!-- Transparent Modern Agent Cards -->
+      <div class="clean-prompt-grid" role="region" aria-label="Available Specialized Agents">
+        <button type="button" class="clean-prompt-card agent-prompt-chip"
+          data-prompt="List all staff members and roles in the Engineering department">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Directory</strong>
+          </div>
+          <span class="clean-prompt-desc">Staff &amp; roles</span>
+        </button>
+        <button type="button" class="clean-prompt-card agent-prompt-chip"
+          data-prompt="Show all pending leave requests for HR review">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <path d="M8 14h.01"></path>
+                <path d="M12 14h.01"></path>
+                <path d="M16 14h.01"></path>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Leave</strong>
+          </div>
+          <span class="clean-prompt-desc">Review &amp; approve</span>
+        </button>
+        <button type="button" class="clean-prompt-card agent-prompt-chip"
+          data-prompt="Submit an expense claim of $85 for team client lunch at Starbucks">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+                <path d="M16 16h2"></path>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Expenses</strong>
+          </div>
+          <span class="clean-prompt-desc">Claims &amp; policy</span>
+        </button>
+        <button type="button" class="clean-prompt-card agent-prompt-chip agent-card-desktop-only"
+          data-prompt="Check pending leave requests, verify employee PTO balance, and approve LV-2026-001">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 3 21 3 21 8"></polyline>
+                <line x1="4" y1="20" x2="21" y2="3"></line>
+                <polyline points="21 16 21 21 16 21"></polyline>
+                <line x1="15" y1="15" x2="21" y2="21"></line>
+                <line x1="4" y1="4" x2="9" y2="9"></line>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Multi-Step</strong>
+          </div>
+          <span class="clean-prompt-desc">Plan &amp; execute workflow</span>
+        </button>
+        <!-- Transparent Guidance Note taking space of the two cards above it -->
+        <div class="agent-multistep-note-card" role="note" aria-label="Multi-Step Workflow Guidance">
+          <div class="agent-multistep-note-content">
+            <span class="agent-multistep-note-icon">💡</span>
+            <div class="agent-multistep-note-body">
+              <strong class="agent-multistep-note-title">Multi-Step Mode:</strong>
+              <span class="agent-multistep-note-desc agent-multistep-desc-desktop">
+                For compound actions, switch to <strong>Multi-Step</strong> in the toolbar below to plan and execute safely.
+              </span>
+              <span class="agent-multistep-note-desc agent-multistep-desc-mobile">
+                Switch to <strong>Multi-Step</strong> to plan compound actions.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function clearAgentChat() {
+  if (agentHistory) {
+    agentHistory.innerHTML = renderAgentEmptyState();
+  }
+  if (agentInput) agentInput.value = "";
+}
+
+export function renderAgentHistoryMessages(messages) {
+  if (!agentHistory) return;
+  agentHistory.innerHTML = "";
+  if (!messages || messages.length === 0) {
+    agentHistory.innerHTML = renderAgentEmptyState();
+    return;
+  }
+  messages.forEach((msg) => {
+    if (msg.role === "user") {
+      const wrapper = document.createElement("div");
+      wrapper.className = "message user";
+      wrapper.dataset.role = "user";
+      wrapper.dataset.rawText = msg.content;
+      wrapper.innerHTML = `
+        <span class="role-label">You</span>
+        <div class="bubble">${escapeHtml(msg.content)}</div>
+      `;
+      agentHistory.appendChild(wrapper);
+    } else {
+      const wrapper = document.createElement("div");
+      wrapper.className = "message ai";
+      wrapper.innerHTML = `
+        <span class="role-label"><strong>AskRaggy</strong> · Autonomous HR Agent</span>
+        <div class="bubble">${formatMarkdownToHtml(msg.content)}</div>
+      `;
+      agentHistory.appendChild(wrapper);
+    }
+  });
+  agentHistory.scrollTop = agentHistory.scrollHeight;
+}
+
 // ReAct Agent functions
 export function checkAgentSessionState() {
   if (agentNoSession) agentNoSession.hidden = true;
@@ -40,7 +175,7 @@ export function checkAgentSessionState() {
 
 /** Append a user message bubble to the agent history. */
 export function agentAppendUser(text) {
-  agentEmptyState?.remove();
+  document.getElementById("agent-empty-state")?.remove();
   const wrapper = document.createElement("div");
   wrapper.className = "message user";
   wrapper.dataset.role = "user";
@@ -373,6 +508,33 @@ document.querySelectorAll(".agent-example-btn, .agent-prompt-chip").forEach((btn
   });
 });
 
+// Delegated click handler on agentHistory for dynamically re-rendered chips
+agentHistory?.addEventListener("click", (e) => {
+  const chip = e.target.closest(".agent-prompt-chip, .agent-example-btn");
+  if (!chip) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const promptText = (
+    chip.dataset.prompt ||
+    chip.querySelector(".agent-example-text")?.textContent?.trim() ||
+    chip.textContent?.trim() ||
+    ""
+  );
+  if (agentInput) {
+    agentInput.value = "";
+    agentInput.blur();
+  }
+  if (agentMode === "quick" && isComplexMultiStepQuery(promptText)) {
+    showMultiStepModal(promptText);
+    return;
+  }
+  if (agentMode === "multistep") {
+    runMultiStepAgent(promptText);
+  } else {
+    runAgent(promptText);
+  }
+});
+
 
 
 // Multi-Step Agent functions
@@ -591,7 +753,7 @@ export async function runMultiStepAgent(overrideText = null, existingUserEl = nu
  * Returns the card element so pollTaskStatus() can update it.
  */
 export function agentAppendPlanningCard(message) {
-  agentEmptyState?.remove();
+  document.getElementById("agent-empty-state")?.remove();
 
   const wrapper = document.createElement("div");
   wrapper.className = "message ai";

@@ -24,6 +24,8 @@ import {
   getVisitorSessionIds,
   removeVisitorSession
 } from "./api.js";
+import { clearDocChat, renderDocHistoryMessages } from "./documents.js";
+import { clearAgentChat, renderAgentHistoryMessages } from "./agent.js";
 
 export const sessionSidebar = document.getElementById("session-sidebar");
 export const messageHistory = document.getElementById("message-history");
@@ -208,7 +210,7 @@ export async function handleAgentChatEdit(msgWrapper, newText) {
 
 // Append Message, Streaming Smart Chat & Send Message
 export function appendMessage(role, text, isThinking = false) {
-  if (emptyState) emptyState.remove();
+  document.getElementById("empty-state")?.remove();
 
   const wrapper = document.createElement("div");
   wrapper.className = `message ${role}${isThinking ? " thinking" : ""}`;
@@ -827,6 +829,14 @@ function renderEmptyChatState() {
 /** Clear the message history area and reset the empty-state placeholder. */
 export function clearChat() {
   messageHistory.innerHTML = renderEmptyChatState();
+  if (chatInput) chatInput.value = "";
+}
+
+/** Clear all three tab message areas (Chat, Documents, Agent) to fresh initial state. */
+export function clearAllTabs() {
+  clearChat();
+  clearDocChat();
+  clearAgentChat();
 }
 
 /** Mark one session item as active in the sidebar. */
@@ -958,17 +968,6 @@ export async function loadSessions() {
  * Create a new session via the API and switch to it.
  */
 export async function createNewSession() {
-  // If current session is already empty (no messages sent), don't create another empty session
-  if (state.currentSessionId) {
-    const currentMsgCount = document.querySelectorAll("#message-history .message").length;
-    if (currentMsgCount === 0) {
-      clearChat();
-      if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
-      if (chatInput) chatInput.focus();
-      return;
-    }
-  }
-
   const headers = {};
   if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
@@ -979,11 +978,14 @@ export async function createNewSession() {
     const data = await res.json();
     state.currentSessionId = data.session_id;
     recordVisitorSession(state.currentSessionId);
-    clearChat();
+    
+    // Clear all 3 tabs so fresh new session has zero lingering conversation
+    clearAllTabs();
+
     setActiveSession(state.currentSessionId);
     if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
     await loadSessions();
-    chatInput.focus();
+    chatInput?.focus();
   } catch (err) {
     alert(`Could not create a new session: ${err.message}\nIs the Feature 3 server running?`);
   }
@@ -1002,20 +1004,28 @@ export async function switchToSession(sessionId) {
 
     const messages = await res.json();
     state.currentSessionId = sessionId;
-    clearChat();
 
-    messages.forEach((msg) => {
-      if (msg.role === "user") {
-        appendMessage("user", msg.content);
-      } else {
-        // History messages are stored as plain answer text — render as plain bubbles.
-        appendMessage("ai", msg.content);
-      }
-    });
+    if (messages && messages.length > 0) {
+      // 1. Chat Tab: Show ONLY chat history — do NOT show default logo cards
+      messageHistory.innerHTML = "";
+      messages.forEach((msg) => {
+        appendMessage(msg.role === "user" ? "user" : "ai", msg.content);
+      });
+      document.getElementById("empty-state")?.remove();
+      messageHistory.scrollTop = messageHistory.scrollHeight;
+
+      // 2. Documents Tab: Render conversation messages — do NOT show logo cards
+      renderDocHistoryMessages(messages);
+
+      // 3. Agent Tab: Render conversation messages — do NOT show logo cards
+      renderAgentHistoryMessages(messages);
+    } else {
+      clearAllTabs();
+    }
 
     setActiveSession(sessionId);
     if (window.innerWidth <= 992 || sessionSidebar?.classList.contains('sidebar-open')) toggleMobileSidebar(true);
-    chatInput.focus();
+    chatInput?.focus();
   } catch (err) {
     appendMessage("ai", `Could not load session: ${err.message}`);
   }
@@ -1138,6 +1148,18 @@ export function initChat() {
         sendMessage();
       }
     });
+  });
+
+  // Delegated chip click on messageHistory for dynamically re-rendered chips
+  messageHistory?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".welcome-chip, .clean-prompt-card, .clean-prompt-pill");
+    if (!chip) return;
+    const q = chip.dataset.query || chip.dataset.prompt;
+    if (q && chatInput) {
+      chatInput.value = q;
+      chatInput.focus();
+      sendMessage();
+    }
   });
 
   newChatBtn?.addEventListener("click", createNewSession);

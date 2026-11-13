@@ -502,14 +502,27 @@ async def ask_documents(
     k = (req.top_k if req and req.top_k else top_k) or 6
     req_mode = (req.mode if req and req.mode else None) or "auto"
     req_mode = req_mode.lower().strip()
+    session_id = (req.session_id if req else None) or (
+        request.query_params.get("session_id") if request else None
+    )
+
+    def _record_and_return(resp: dict[str, Any]) -> dict[str, Any]:
+        if session_id and resp.get("answer"):
+            try:
+                from shared.session_store import add_message
+                add_message(session_id, "user", q)
+                add_message(session_id, "assistant", resp["answer"])
+            except Exception:
+                pass
+        return resp
 
     if not q:
-        return {
+        return _record_and_return({
             "answer": "Please ask a question about your uploaded document.",
             "evidence": [],
             "total_matches": 0,
             "mode": req_mode,
-        }
+        })
 
     is_all_docs = bool(not doc_id or doc_id.lower() in ("all", "all_documents", "*"))
     tenant_docs = list_documents(tenant_id=tenant_id)
@@ -576,7 +589,7 @@ async def ask_documents(
     if effective_mode == "cag":
         full_text = raw_doc_text
         if not full_text:
-            return {
+            return _record_and_return({
                 "answer": OUT_OF_DOMAIN_MESSAGE,
                 "evidence": [],
                 "total_matches": 0,
@@ -584,7 +597,7 @@ async def ask_documents(
                 "page_count": page_count,
                 "char_count": char_count,
                 "is_large_doc": not is_cag_optimal,
-            }
+            })
 
         # Optimized limit up to 20,000 chars (~4,500 tokens) for sub-2s inference
         truncated_text = full_text[:20_000]
@@ -626,7 +639,7 @@ async def ask_documents(
                         break
             if not answer or not answer.strip() or is_refusal_answer(answer):
                 if is_refusal_answer(answer):
-                    return {
+                    return _record_and_return({
                         "answer": OUT_OF_DOMAIN_MESSAGE,
                         "evidence": [],
                         "total_matches": 0,
@@ -635,17 +648,17 @@ async def ask_documents(
                         "char_count": char_count,
                         "is_large_doc": not is_cag_optimal,
                         "warning": warning_msg,
-                    }
+                    })
                 answer = "Based on the full document context: " + truncated_text[:500]
         except Exception:
             answer = f"**[CAG Full Context]** Based on {target_filename}: {truncated_text[:350]}…"
 
-        return {
+        return _record_and_return({
             "answer": answer,
             "evidence": [
                 {
                     "filename": target_filename,
-                    "text": f"⚡ Cache-Augmented Generation (CAG): Full document ({page_count} pages, {len(full_text):,} characters) pre-cached in context with 100% visibility.",
+                    "text": f"Cache-Augmented Generation (CAG): Full document ({page_count} pages, {len(full_text):,} characters) pre-cached in context with 100% visibility.",
                     "chunk_index": 0,
                     "document_id": doc_id,
                 }
@@ -659,7 +672,7 @@ async def ask_documents(
             "reason": auto_route_reason,
             "warning": warning_msg,
             "tip": tip_msg,
-        }
+        })
 
     if not q:
         return {
@@ -755,7 +768,7 @@ async def ask_documents(
         item["text"] = clean_text(c.get("text", ""))
         sanitized_evidence.append(item)
 
-    return {
+    return _record_and_return({
         "answer": answer,
         "evidence": sanitized_evidence,
         "total_matches": len(chunks),
@@ -767,7 +780,7 @@ async def ask_documents(
         "reason": auto_route_reason,
         "warning": warning_msg,
         "tip": tip_msg,
-    }
+    })
 
 
 @router.delete("/documents/{doc_id}", tags=["F4 · Feed the Brain"])

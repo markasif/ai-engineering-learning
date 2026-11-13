@@ -24,9 +24,10 @@ import {
   removeVisitorDoc,
   isVisitorDocsInitialized,
   markVisitorDocsInitialized,
-  getVisitorSessionIds
+  getVisitorSessionIds,
+  recordVisitorSession
 } from "./api.js";
-import { startEditMessage } from "./chat.js";
+import { startEditMessage, loadSessions, setActiveSession } from "./chat.js";
 
 export const uploadArea = document.getElementById("upload-area");
 export const fileInput = document.getElementById("file-input");
@@ -49,6 +50,129 @@ export const docMessageHistory = document.getElementById("doc-message-history");
 export const docEmptyState = document.getElementById("doc-empty-state");
 export const docFilterSelect = document.getElementById("search-doc-filter");
 export const searchDocFilter = document.getElementById("search-doc-filter");
+
+export function renderDocEmptyState() {
+  return `
+    <div class="empty-state welcome-clean" id="doc-empty-state">
+      <div class="hero-logo-wrapper" aria-hidden="true">
+        <img src="assets/images/askraggy-logo-mark.png?v=9.0.0" alt="AskRaggy Logo" class="hero-clean-logo" width="76" height="76" />
+      </div>
+
+      <h2 class="hero-heading">How can I assist you today?</h2>
+      <p class="hero-desc">
+        Chat with your uploaded documents grounded in verified source passages and citations.
+      </p>
+
+      <!-- Prompt Grid with 3 cards above and upload guidance note below taking the space of the 3 cards -->
+      <div class="clean-prompt-grid" id="doc-prompt-grid" role="region" aria-label="Document suggested prompts">
+        <button type="button" class="clean-prompt-card doc-prompt-chip"
+          data-query="Summarize the key points of this document">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Summarize</strong>
+          </div>
+          <span class="clean-prompt-desc">Key points &amp; takeaways</span>
+        </button>
+        <button type="button" class="clean-prompt-card doc-prompt-chip"
+          data-query="What are the key requirements, compliance rules, and policies?">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Policies</strong>
+          </div>
+          <span class="clean-prompt-desc">Rules &amp; guidelines</span>
+        </button>
+        <button type="button" class="clean-prompt-card doc-prompt-chip"
+          data-query="What important dates, deadlines, or metrics are mentioned?">
+          <div class="clean-prompt-header">
+            <span class="clean-prompt-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </span>
+            <strong class="clean-prompt-title">Metrics &amp; Dates</strong>
+          </div>
+          <span class="clean-prompt-desc">Deadlines &amp; key figures</span>
+        </button>
+
+        <!-- Default Document Status & Custom File Upload Prompt -->
+        <div class="doc-upload-hint-box" id="doc-upload-hint" role="note" aria-label="Document upload guidance">
+          <div class="doc-hint-top-row">
+            <div class="doc-hint-status-pill">
+              <span class="doc-status-dot active" aria-hidden="true"></span>
+              <strong id="doc-hint-status">Default document active (Acme Enterprise Handbook)</strong>
+            </div>
+            <button type="button" class="btn-doc-hint-upload-btn" id="btn-doc-hint-upload" title="Upload your own PDF, DOCX, or TXT document">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              <span>Upload Your Document</span>
+            </button>
+          </div>
+          <p class="doc-hint-body-text">
+            Grounded in company policies, PTO approvals, leadership directory, and expense allowances ($500 remote stipend).
+            Ask anything above, or click <em>Upload Your Document</em> to ground answers strictly in your own files.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function clearDocChat() {
+  if (docMessageHistory) {
+    docMessageHistory.innerHTML = renderDocEmptyState();
+  }
+  const docInput = document.getElementById("doc-chat-input");
+  if (docInput) docInput.value = "";
+}
+
+export function renderDocHistoryMessages(messages) {
+  if (!docMessageHistory) return;
+  docMessageHistory.innerHTML = "";
+  if (!messages || messages.length === 0) {
+    docMessageHistory.innerHTML = renderDocEmptyState();
+    return;
+  }
+  messages.forEach((msg) => {
+    if (msg.role === "user") {
+      const wrapper = document.createElement("div");
+      wrapper.className = "message user";
+      wrapper.dataset.role = "user";
+      wrapper.dataset.rawText = msg.content;
+      wrapper.innerHTML = `
+        <span class="role-label">You</span>
+        <div class="bubble">${escapeHtml(msg.content)}</div>
+      `;
+      docMessageHistory.appendChild(wrapper);
+    } else {
+      const wrapper = document.createElement("div");
+      wrapper.className = "message assistant-message doc-assistant-message";
+      wrapper.innerHTML = `
+        <span class="role-label">AskRaggy · Grounded in Document</span>
+        <div class="bubble doc-ai-bubble">
+          <div class="doc-summary-section">
+            <div class="doc-answer-body">${formatMarkdownToHtml(msg.content)}</div>
+          </div>
+        </div>
+      `;
+      docMessageHistory.appendChild(wrapper);
+    }
+  });
+  docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
+}
 
 // Document Ingestion & Cards
 export async function uploadFile(file) {
@@ -828,7 +952,7 @@ export function appendDocAiResponse(data) {
 
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = isCag ? "AskRaggy · ⚡ CAG Full Context" : "AskRaggy · Grounded in Document";
+  label.textContent = isCag ? "AskRaggy · CAG" : "AskRaggy · Grounded in Document";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble doc-ai-bubble";
@@ -839,15 +963,19 @@ export function appendDocAiResponse(data) {
 
   const summaryHeader = document.createElement("div");
   summaryHeader.className = "doc-summary-header";
-  const badgeTitle = isCag
-    ? "⚡ Cache-Augmented Generation · 100% Full Document Context"
-    : (isOutOfScope ? "Notice · Grounded Document Scope" : "Plain English Summary · Grounded in Document");
-  summaryHeader.innerHTML = `
-    <span class="doc-summary-badge ${isCag ? "cag" : (isOutOfScope ? "out-of-scope" : "")}">
-      <span class="summary-badge-icon">${isCag ? "⚡" : (isOutOfScope ? "ℹ️" : "✨")}</span>
-      <span class="summary-badge-title">${badgeTitle}</span>
-    </span>
-  `;
+  if (isCag) {
+    summaryHeader.innerHTML = `
+      <span class="doc-summary-badge cag minimal-cag-tag">CAG</span>
+    `;
+  } else {
+    const badgeTitle = isOutOfScope ? "Notice · Grounded Document Scope" : "Plain English Summary · Grounded in Document";
+    summaryHeader.innerHTML = `
+      <span class="doc-summary-badge ${isOutOfScope ? "out-of-scope" : ""}">
+        <span class="summary-badge-icon">${isOutOfScope ? "ℹ️" : "✨"}</span>
+        <span class="summary-badge-title">${badgeTitle}</span>
+      </span>
+    `;
+  }
   summarySection.appendChild(summaryHeader);
 
   const answerBody = document.createElement("div");
@@ -981,6 +1109,19 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
   const documentId = state.activeDocumentId || searchDocFilter?.value || null;
   const headers = getAuthHeaders();
 
+  if (!state.currentSessionId) {
+    try {
+      const sRes = await fetch(`${API_BASE}/api/sessions`, { method: "POST", headers });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        state.currentSessionId = sData.session_id;
+        recordVisitorSession(state.currentSessionId);
+        setActiveSession(state.currentSessionId);
+        loadSessions();
+      }
+    } catch {}
+  }
+
   try {
     let data = null;
 
@@ -993,7 +1134,7 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
       const res = await fetch(`${API_BASE}/api/documents/ask`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ query, top_k: 6, document_id: documentId, mode }),
+        body: JSON.stringify({ query, top_k: 6, document_id: documentId, mode, session_id: state.currentSessionId }),
         signal: state.activeDocAbortController.signal,
       });
       if (res.ok) {
@@ -1072,6 +1213,7 @@ export async function sendDocMessage(customQuery = null, existingUserEl = null) 
     }
     thinkingEl.remove();
     appendDocAiResponse(data);
+    if (state.currentSessionId) loadSessions();
   } catch (err) {
     if (thinkingEl && typeof thinkingEl.updateThinkingProgress === "function") {
       thinkingEl.updateThinkingProgress(100);
@@ -1107,7 +1249,7 @@ docChatInput?.addEventListener("keydown", (e) => {
   }
 });
 
-// Quick prompt chips delegate click
+// Quick prompt chips and upload hint button delegate click
 document.addEventListener("click", (e) => {
   const chip = e.target.closest(".doc-prompt-chip");
   if (chip && chip.dataset.query) {
@@ -1118,6 +1260,11 @@ document.addEventListener("click", (e) => {
       docChatInput.blur();
     }
     sendDocMessage(chip.dataset.query);
+    return;
+  }
+  const btnDocHint = e.target.closest("#btn-doc-hint-upload, .btn-doc-hint-upload-btn");
+  if (btnDocHint) {
+    document.getElementById("file-input")?.click();
   }
 });
 

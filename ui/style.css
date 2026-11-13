@@ -8815,10 +8815,28 @@ html:not([data-theme="dark"]) #mobile-sidebar-toggle svg line {
   color: #34d399 !important;
 }
 
-[data-theme="dark"] .doc-summary-badge.cag {
-  background: rgba(245, 158, 11, 0.15) !important;
-  border-color: rgba(245, 158, 11, 0.35) !important;
-  color: #fbbf24 !important;
+.doc-summary-badge.cag,
+.doc-summary-badge.cag.minimal-cag-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0.15rem 0.52rem !important;
+  border-radius: 5px !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  color: #059669 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .doc-summary-badge.cag,
+[data-theme="dark"] .doc-summary-badge.cag.minimal-cag-tag {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .doc-citation-card {

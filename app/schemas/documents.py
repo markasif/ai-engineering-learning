@@ -11,6 +11,7 @@ class SearchRequest(BaseModel):
         "auto",
         description="Inference mode: 'auto' (smart adaptive routing), 'rag' (vector search), or 'cag' (Cache-Augmented Generation)",
     )
+    session_id: str | None = Field(None, description="Optional session id to associate with conversation")
 
 
 __all__ = ["SearchRequest"]
