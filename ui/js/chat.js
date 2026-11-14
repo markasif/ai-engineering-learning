@@ -505,6 +505,7 @@ export async function sendMessage(overrideText = null, existingUserEl = null) {
     try {
       const sRes = await fetch(`${API_BASE}/api/sessions`, {
         method: "POST",
+        headers: getAuthHeaders(),
         signal: state.activeChatAbortController.signal,
       });
       if (sRes.ok) {
@@ -527,6 +528,8 @@ export async function sendMessage(overrideText = null, existingUserEl = null) {
         appendStoppedNotice("general");
       } else if (err.message && (err.message.includes("429") || err.message.toLowerCase().includes("rate limit"))) {
         renderRateLimitNotice("chat");
+      } else if (err.message && (err.message.includes("Failed to fetch") || err.message.toLowerCase().includes("network") || err.message.includes("504") || err.message.includes("502"))) {
+        appendMessage("ai", "Server connection timed out. On free hosting (like Render), the server spins down when idle and takes ~45-60 seconds to wake up. Please wait a moment and try again.");
       } else {
         appendMessage("ai", `Error: ${err.message}. Is the server running?`);
       }
@@ -609,6 +612,8 @@ export async function sendMessage(overrideText = null, existingUserEl = null) {
       appendStoppedNotice("general");
     } else if (err.message && (err.message.includes("429") || err.message.toLowerCase().includes("rate limit"))) {
       renderRateLimitNotice("chat");
+    } else if (err.message && (err.message.includes("Failed to fetch") || err.message.toLowerCase().includes("network") || err.message.includes("504") || err.message.includes("502"))) {
+      appendMessage("ai", "Server connection timed out. On free hosting (like Render), the server spins down when idle and takes ~45-60 seconds to wake up. Please wait a moment and try again.");
     } else {
       appendMessage("ai", `Error: ${err.message}. Is the server running?`);
     }
