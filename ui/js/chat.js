@@ -497,8 +497,8 @@ export async function sendMessage(overrideText = null, existingUserEl = null) {
   state.activeChatAbortController = new AbortController();
   setButtonStopState(sendBtn, true, "Send message");
 
-  const isStructured = structuredToggle?.checked ?? true;
-  const isSmartMode = smartToggle?.checked ?? true;
+  // Smart Streaming Mode is active by default with conversation memory & dynamic RAG
+  const isSmartMode = true;
 
   // Smart Mode requires a session. Auto-create one if none exists yet.
   if (isSmartMode && !state.currentSessionId) {
@@ -1228,18 +1228,6 @@ export function initChat() {
       showToast("Chat session deleted", "success");
     } catch (err) {
       showToast(`Failed to delete session: ${err.message}`, "error");
-    }
-  });
-
-  structuredToggle?.addEventListener("change", () => {
-    if (structuredToggle.checked && smartToggle) {
-      smartToggle.checked = false;
-    }
-  });
-
-  smartToggle?.addEventListener("change", () => {
-    if (smartToggle.checked && structuredToggle) {
-      structuredToggle.checked = false;
     }
   });
 }

@@ -288,7 +288,15 @@ async def smart_chat(
     system_prompt = _SMART_SYSTEM_PROMPT
 
     active_docs = list_documents(tenant_id=tenant_id)
-    ready_doc_ids = {d.id for d in active_docs if d.status == "ready"}
+    ready_docs = [d for d in active_docs if d.status == "ready"]
+    ready_doc_ids = {d.id for d in ready_docs}
+
+    if ready_docs:
+        doc_names = ", ".join([f"'{d.filename}'" for d in ready_docs])
+        system_prompt += (
+            f"\n\nAvailable uploaded documents in this organization: {doc_names}. "
+            "If the user asks what documents or files are uploaded, you can list and describe them."
+        )
 
     high_confidence = classification["confidence"] > 0.6
     if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
@@ -313,10 +321,6 @@ async def smart_chat(
             source = "hybrid"
             retrieval_method = "vector"
             system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
-
-    system_prompt += _build_persona_context(
-        body.persona or "employee", body.user_name, body.user_code
-    )
 
     system_prompt += _build_persona_context(
         body.persona or "employee", body.user_name, body.user_code
@@ -400,7 +404,15 @@ async def smart_chat_stream(
     system_prompt = _SMART_SYSTEM_PROMPT
 
     active_docs = list_documents(tenant_id=tenant_id)
-    ready_doc_ids = {d.id for d in active_docs if d.status == "ready"}
+    ready_docs = [d for d in active_docs if d.status == "ready"]
+    ready_doc_ids = {d.id for d in ready_docs}
+
+    if ready_docs:
+        doc_names = ", ".join([f"'{d.filename}'" for d in ready_docs])
+        system_prompt += (
+            f"\n\nAvailable uploaded documents in this organization: {doc_names}. "
+            "If the user asks what documents or files are uploaded, you can list and describe them."
+        )
 
     high_confidence = classification["confidence"] > 0.6
     if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
@@ -425,6 +437,10 @@ async def smart_chat_stream(
             source = "hybrid"
             retrieval_method = "vector"
             system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+
+    system_prompt += _build_persona_context(
+        body.persona or "employee", body.user_name, body.user_code
+    )
 
     if settings.enable_long_term_context:
         digest = get_current_digest(tenant_id)

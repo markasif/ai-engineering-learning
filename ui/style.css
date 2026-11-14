@@ -4912,6 +4912,32 @@ textarea:focus,
   flex-wrap: wrap;
 }
 
+.chat-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-warm-white, #faf7f2);
+  border: 1px solid var(--color-pistache, #e0d6c5);
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-charcoal, #44403c);
+  user-select: none;
+  cursor: default;
+}
+
+[data-theme="dark"] .chat-status-pill {
+  background: #262B35 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+.chat-status-pill .pill-dot-indicator.active {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
 .toolbar-pill-toggle {
   display: inline-flex;
   align-items: center;
@@ -10284,7 +10310,33 @@ body.drawer-open {
     flex-shrink: 1 !important;
   }
 
-  .toolbar-pill-toggle {
+  .chat-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-warm-white, #faf7f2);
+  border: 1px solid var(--color-pistache, #e0d6c5);
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-charcoal, #44403c);
+  user-select: none;
+  cursor: default;
+}
+
+[data-theme="dark"] .chat-status-pill {
+  background: #262B35 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+.chat-status-pill .pill-dot-indicator.active {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.toolbar-pill-toggle {
     padding: 0.2rem 0.38rem !important;
     font-size: 0.68rem !important;
     gap: 0.25rem !important;
@@ -10495,7 +10547,33 @@ body.drawer-open {
     max-width: 180px !important;
   }
 
-  .toolbar-pill-toggle {
+  .chat-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-warm-white, #faf7f2);
+  border: 1px solid var(--color-pistache, #e0d6c5);
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-charcoal, #44403c);
+  user-select: none;
+  cursor: default;
+}
+
+[data-theme="dark"] .chat-status-pill {
+  background: #262B35 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+.chat-status-pill .pill-dot-indicator.active {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.toolbar-pill-toggle {
     padding: 0.18rem 0.3rem !important;
     font-size: 0.65rem !important;
   }
