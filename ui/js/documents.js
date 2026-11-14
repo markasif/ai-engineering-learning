@@ -1,7 +1,7 @@
 /**
  * AskRaggy Enterprise Platform - Documents & Grounded Q&A Module
  */
-import { state } from "./state.js";
+import { state, saveSessionTabActivityToStorage } from "./state.js";
 import {
   escapeHtml,
   formatMarkdownToHtml,
@@ -129,6 +129,17 @@ export function renderDocEmptyState() {
       </div>
     </div>
   `;
+}
+
+export function saveDocSessionActivity() {
+  if (!state.currentSessionId || !docMessageHistory) return;
+  if (!state.sessionTabActivity) state.sessionTabActivity = {};
+  if (!state.sessionTabActivity[state.currentSessionId]) {
+    state.sessionTabActivity[state.currentSessionId] = {};
+  }
+  const hasMessages = docMessageHistory.querySelectorAll(".message").length > 0;
+  state.sessionTabActivity[state.currentSessionId].docHtml = hasMessages ? docMessageHistory.innerHTML : null;
+  saveSessionTabActivityToStorage(state.sessionTabActivity);
 }
 
 export function clearDocChat() {
@@ -934,6 +945,10 @@ export function appendDocChatMessage(role, text, isThinking = false) {
   docMessageHistory.appendChild(wrapper);
   docMessageHistory.scrollTop = docMessageHistory.scrollHeight;
 
+  if (!isThinking) {
+    saveDocSessionActivity();
+  }
+
   return wrapper;
 }
 
@@ -1064,6 +1079,7 @@ export function appendDocAiResponse(data) {
 
   // Play audio chime notification
   playNotificationSound();
+  saveDocSessionActivity();
 }
 
 /**

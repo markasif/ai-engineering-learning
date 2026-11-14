@@ -38,6 +38,23 @@ const getStorage = (type, key) => {
   }
 };
 
+export const loadSessionTabActivity = () => {
+  try {
+    const raw = typeof window !== "undefined" ? window.sessionStorage?.getItem("askraggy_tab_activity") : null;
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveSessionTabActivityToStorage = (activity) => {
+  try {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem("askraggy_tab_activity", JSON.stringify(activity));
+    }
+  } catch {}
+};
+
 export const state = {
   currentSessionId: null,
   currentPersona: DEMO_PERSONAS.employee,
@@ -54,4 +71,5 @@ export const state = {
   soundNotificationsEnabled: getStorage("localStorage", SOUND_STORAGE_KEY) !== "false",
   currentDemoCredits: DEMO_MAX_MESSAGES_PER_SESSION,
   activeTab: "chat",
+  sessionTabActivity: loadSessionTabActivity(),
 };

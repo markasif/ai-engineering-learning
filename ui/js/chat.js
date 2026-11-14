@@ -1,7 +1,7 @@
 /**
  * AskRaggy Enterprise Platform - Chat, Streaming & Sessions Module
  */
-import { state, DEMO_PERSONAS, DEMO_MAX_MESSAGES_PER_SESSION } from "./state.js";
+import { state, DEMO_PERSONAS, DEMO_MAX_MESSAGES_PER_SESSION, saveSessionTabActivityToStorage } from "./state.js";
 import {
   escapeHtml,
   formatMarkdownToHtml,
@@ -24,8 +24,8 @@ import {
   getVisitorSessionIds,
   removeVisitorSession
 } from "./api.js";
-import { clearDocChat, renderDocHistoryMessages } from "./documents.js";
-import { clearAgentChat, renderAgentHistoryMessages } from "./agent.js";
+import { clearDocChat, renderDocHistoryMessages, saveDocSessionActivity } from "./documents.js";
+import { clearAgentChat, renderAgentHistoryMessages, saveAgentSessionActivity } from "./agent.js";
 
 export const sessionSidebar = document.getElementById("session-sidebar");
 export const messageHistory = document.getElementById("message-history");
@@ -947,9 +947,13 @@ export async function loadSessions() {
           const delRes = await fetch(`${API_BASE}/api/sessions/${s.id}`, { method: "DELETE", headers: delHeaders });
           if (!delRes.ok) throw new Error(`Server returned ${delRes.status}`);
           removeVisitorSession(s.id);
+          if (state.sessionTabActivity && state.sessionTabActivity[s.id]) {
+            delete state.sessionTabActivity[s.id];
+            saveSessionTabActivityToStorage(state.sessionTabActivity);
+          }
           if (state.currentSessionId === s.id) {
             state.currentSessionId = null;
-            clearChat();
+            clearAllTabs();
             setActiveSession(null);
           }
           showToast("Conversation deleted.", "success");
@@ -973,6 +977,11 @@ export async function loadSessions() {
  * Create a new session via the API and switch to it.
  */
 export async function createNewSession() {
+  if (state.currentSessionId) {
+    saveDocSessionActivity();
+    saveAgentSessionActivity();
+  }
+
   const headers = {};
   if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
@@ -984,7 +993,7 @@ export async function createNewSession() {
     state.currentSessionId = data.session_id;
     recordVisitorSession(state.currentSessionId);
     
-    // Clear all 3 tabs so fresh new session has zero lingering conversation
+    // Clear all 3 tabs so fresh new session has zero lingering conversation and shows clean default empty cards
     clearAllTabs();
 
     setActiveSession(state.currentSessionId);
@@ -1000,6 +1009,12 @@ export async function createNewSession() {
  * Load a session's history from the API and render it in the chat area.
  */
 export async function switchToSession(sessionId) {
+  // Before switching away, save active tab states for current session
+  if (state.currentSessionId) {
+    saveDocSessionActivity();
+    saveAgentSessionActivity();
+  }
+
   const headers = {};
   if (state.activeTenantId) headers["X-Tenant-ID"] = state.activeTenantId;
 
@@ -1010,22 +1025,38 @@ export async function switchToSession(sessionId) {
     const messages = await res.json();
     state.currentSessionId = sessionId;
 
+    // 1. Chat Tab: Show ONLY this session's chat history
     if (messages && messages.length > 0) {
-      // 1. Chat Tab: Show ONLY chat history — do NOT show default logo cards
       messageHistory.innerHTML = "";
       messages.forEach((msg) => {
         appendMessage(msg.role === "user" ? "user" : "ai", msg.content);
       });
       document.getElementById("empty-state")?.remove();
       messageHistory.scrollTop = messageHistory.scrollHeight;
-
-      // 2. Documents Tab: Render conversation messages — do NOT show logo cards
-      renderDocHistoryMessages(messages);
-
-      // 3. Agent Tab: Render conversation messages — do NOT show logo cards
-      renderAgentHistoryMessages(messages);
     } else {
-      clearAllTabs();
+      clearChat();
+    }
+
+    // 2. Documents Tab: Show ONLY this session's document Q&A activity; if none, show clean default look with cards
+    const docHistoryEl = document.getElementById("doc-message-history");
+    const sessionDocHtml = state.sessionTabActivity?.[sessionId]?.docHtml;
+    if (sessionDocHtml && docHistoryEl) {
+      docHistoryEl.innerHTML = sessionDocHtml;
+      document.getElementById("doc-empty-state")?.remove();
+      docHistoryEl.scrollTop = docHistoryEl.scrollHeight;
+    } else {
+      clearDocChat();
+    }
+
+    // 3. Agent Tab: Show ONLY this session's agent activity; if none, show clean default look with cards
+    const agentHistoryEl = document.getElementById("agent-history");
+    const sessionAgentHtml = state.sessionTabActivity?.[sessionId]?.agentHtml;
+    if (sessionAgentHtml && agentHistoryEl) {
+      agentHistoryEl.innerHTML = sessionAgentHtml;
+      document.getElementById("agent-empty-state")?.remove();
+      agentHistoryEl.scrollTop = agentHistoryEl.scrollHeight;
+    } else {
+      clearAgentChat();
     }
 
     setActiveSession(sessionId);
@@ -1181,13 +1212,18 @@ export function initChat() {
     });
     if (!confirmed) return;
     try {
-      await fetch(`${API_BASE}/api/sessions/${state.currentSessionId}`, {
+      const deletedId = state.currentSessionId;
+      await fetch(`${API_BASE}/api/sessions/${deletedId}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-      removeVisitorSession(state.currentSessionId);
+      removeVisitorSession(deletedId);
+      if (state.sessionTabActivity && state.sessionTabActivity[deletedId]) {
+        delete state.sessionTabActivity[deletedId];
+        saveSessionTabActivityToStorage(state.sessionTabActivity);
+      }
       state.currentSessionId = null;
-      clearChat();
+      clearAllTabs();
       await loadSessions();
       showToast("Chat session deleted", "success");
     } catch (err) {

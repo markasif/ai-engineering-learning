@@ -1,7 +1,7 @@
 /**
  * AskRaggy Enterprise Platform - Autonomous ReAct & Multi-Step Agent Module
  */
-import { state } from "./state.js";
+import { state, saveSessionTabActivityToStorage } from "./state.js";
 import {
   escapeHtml,
   formatMarkdownToHtml,
@@ -128,6 +128,17 @@ export function renderAgentEmptyState() {
   `;
 }
 
+export function saveAgentSessionActivity() {
+  if (!state.currentSessionId || !agentHistory) return;
+  if (!state.sessionTabActivity) state.sessionTabActivity = {};
+  if (!state.sessionTabActivity[state.currentSessionId]) {
+    state.sessionTabActivity[state.currentSessionId] = {};
+  }
+  const hasMessages = agentHistory.querySelectorAll(".message").length > 0;
+  state.sessionTabActivity[state.currentSessionId].agentHtml = hasMessages ? agentHistory.innerHTML : null;
+  saveSessionTabActivityToStorage(state.sessionTabActivity);
+}
+
 export function clearAgentChat() {
   if (agentHistory) {
     agentHistory.innerHTML = renderAgentEmptyState();
@@ -218,6 +229,7 @@ export function agentAppendUser(text) {
 
   agentHistory.appendChild(wrapper);
   agentHistory.scrollTop = agentHistory.scrollHeight;
+  saveAgentSessionActivity();
   return wrapper;
 }
 
@@ -359,6 +371,7 @@ export function agentAppendResponse(data) {
   agentHistory.appendChild(wrapper);
   agentHistory.scrollTop = agentHistory.scrollHeight;
   playNotificationSound();
+  saveAgentSessionActivity();
 }
 
 /** Send a message to the agent endpoint. */
@@ -779,6 +792,7 @@ export function agentAppendPlanningCard(message) {
   wrapper.appendChild(card);
   agentHistory.appendChild(wrapper);
   agentHistory.scrollTop = agentHistory.scrollHeight;
+  saveAgentSessionActivity();
   return card;
 }
 
@@ -888,6 +902,7 @@ export async function pollTaskStatus(taskId, card) {
         updatePlanningCard(card, task);
         if (task.status === "done" || task.status === "error") {
           clearInterval(interval);
+          saveAgentSessionActivity();
           loadSessions();
           resolve();
         }
