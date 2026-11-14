@@ -42,8 +42,9 @@ Analyze the user's query and respond ONLY with a JSON object (no markdown, no ex
 Query type definitions:
 - "general": common knowledge — greetings, math, basic facts, general how-to questions.
   These don't need domain documents (e.g. "What is the capital of France?", "Hello").
-- "domain": questions about the organization's products, services, policies, or procedures
-  that would benefit from uploaded documents (e.g. "What is your return policy?").
+- "domain": questions about the organization's products, services, policies, or procedures,
+  or questions about uploaded documents (resumes, CVs, profiles, handbooks, contracts)
+  that would benefit from uploaded documents (e.g. "What is your return policy?", "What is my total experience?", "Summarize my resume").
 - "professional_document": questions requiring precise navigation of structured professional
   documents — financial filings, legal contracts, regulatory documents, technical specs.
   The answer requires finding a specific section, not just a semantically similar passage.
@@ -134,6 +135,34 @@ _DOMAIN_RETRIEVAL_KEYWORDS = {
     "acme",
     "rahul",
     "sarah",
+    "experience",
+    "resume",
+    "cv",
+    "background",
+    "work history",
+    "skills",
+    "skill",
+    "education",
+    "qualification",
+    "qualifications",
+    "profile",
+    "career",
+    "job",
+    "role",
+    "roles",
+    "project",
+    "projects",
+    "responsibilities",
+    "candidate",
+    "employment",
+    "certification",
+    "certifications",
+    "degree",
+    "university",
+    "college",
+    "graduated",
+    "worked",
+    "years",
 }
 
 

@@ -31,7 +31,7 @@ from shared.retrieval_memory import (
     get_recent_retrievals,
     log_retrieval,
 )
-from shared.router import classify_query
+from shared.router import _QUICK_GREETINGS, classify_query
 from shared.session_store import (
     add_message,
     create_session,
@@ -54,8 +54,15 @@ Respond ONLY with JSON: {{"intent": "...", "answer": "...", "confidence": 0.0, "
 _SMART_SYSTEM_PROMPT = (
     f"You are a helpful AI assistant for {_DOMAIN}. Answer clearly and concisely in plain English."
 )
-_SMART_RAG_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Use the provided document excerpts to answer accurately."
-_SMART_HYBRID_SYSTEM_PROMPT = f"You are a helpful AI assistant for {_DOMAIN}. Some excerpts have been retrieved — use them if helpful."
+_SMART_RAG_SYSTEM_PROMPT = (
+    f"You are a helpful AI assistant for {_DOMAIN}. "
+    "Use the provided document excerpts (which may include company handbooks, policies, contracts, resumes, or CVs) to answer accurately and factually. "
+    "When asked about experience, employment history, dates, or qualifications, extract and calculate the answers directly from the retrieved document context."
+)
+_SMART_HYBRID_SYSTEM_PROMPT = (
+    f"You are a helpful AI assistant for {_DOMAIN}. "
+    "Some excerpts from uploaded documents have been retrieved — use them if helpful to ground your answer."
+)
 
 DEMO_MAX_MESSAGES_PER_SESSION = 15
 
@@ -298,29 +305,25 @@ async def smart_chat(
             "If the user asks what documents or files are uploaded, you can list and describe them."
         )
 
-    high_confidence = classification["confidence"] > 0.6
-    if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
-        raw_chunks = vector_search(body.message, top_k=5, tenant_id=tenant_id)
+    normalized_q = body.message.strip().lower().rstrip("!?.,")
+    is_greeting = normalized_q in _QUICK_GREETINGS
+    should_retrieve = classification.get("needs_retrieval", False)
+
+    if ready_doc_ids and not is_greeting:
+        top_k = 5 if should_retrieve else 4
+        min_score = 0.30 if should_retrieve else 0.35
+        raw_chunks = vector_search(body.message, top_k=top_k, tenant_id=tenant_id)
         chunks_used = [
             c
             for c in raw_chunks
-            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= min_score
         ]
         if chunks_used:
-            source = "rag"
+            source = "rag" if should_retrieve else "hybrid"
             retrieval_method = "vector"
-            system_prompt = _SMART_RAG_SYSTEM_PROMPT
-    elif ready_doc_ids and not high_confidence:
-        raw_chunks = vector_search(body.message, top_k=3, tenant_id=tenant_id)
-        chunks_used = [
-            c
-            for c in raw_chunks
-            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
-        ]
-        if chunks_used:
-            source = "hybrid"
-            retrieval_method = "vector"
-            system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+            system_prompt = (
+                _SMART_RAG_SYSTEM_PROMPT if should_retrieve else _SMART_HYBRID_SYSTEM_PROMPT
+            )
 
     system_prompt += _build_persona_context(
         body.persona or "employee", body.user_name, body.user_code
@@ -414,29 +417,25 @@ async def smart_chat_stream(
             "If the user asks what documents or files are uploaded, you can list and describe them."
         )
 
-    high_confidence = classification["confidence"] > 0.6
-    if ready_doc_ids and high_confidence and classification["needs_retrieval"]:
-        raw_chunks = vector_search(body.message, top_k=5, tenant_id=tenant_id)
+    normalized_q = body.message.strip().lower().rstrip("!?.,")
+    is_greeting = normalized_q in _QUICK_GREETINGS
+    should_retrieve = classification.get("needs_retrieval", False)
+
+    if ready_doc_ids and not is_greeting:
+        top_k = 5 if should_retrieve else 4
+        min_score = 0.30 if should_retrieve else 0.35
+        raw_chunks = vector_search(body.message, top_k=top_k, tenant_id=tenant_id)
         chunks_used = [
             c
             for c in raw_chunks
-            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
+            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= min_score
         ]
         if chunks_used:
-            source = "rag"
+            source = "rag" if should_retrieve else "hybrid"
             retrieval_method = "vector"
-            system_prompt = _SMART_RAG_SYSTEM_PROMPT
-    elif ready_doc_ids and not high_confidence:
-        raw_chunks = vector_search(body.message, top_k=3, tenant_id=tenant_id)
-        chunks_used = [
-            c
-            for c in raw_chunks
-            if c.get("document_id") in ready_doc_ids and c.get("score", 0) >= 0.35
-        ]
-        if chunks_used:
-            source = "hybrid"
-            retrieval_method = "vector"
-            system_prompt = _SMART_HYBRID_SYSTEM_PROMPT
+            system_prompt = (
+                _SMART_RAG_SYSTEM_PROMPT if should_retrieve else _SMART_HYBRID_SYSTEM_PROMPT
+            )
 
     system_prompt += _build_persona_context(
         body.persona or "employee", body.user_name, body.user_code
